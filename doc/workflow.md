@@ -62,10 +62,10 @@
 
 ```mermaid
 flowchart TD
-  A[Start: Load Libraries] --> B[Authenticate with Google Sheets (read-only)]
+  A[Start: Load Libraries] --> B["Authenticate with Google Sheets (read-only)"]
   B --> C[Load Station Locations Sheet]
   C --> D[Clean & Rename Columns]
-  D --> E[Convert to Spatial Data (sf)]
+  D --> E["Convert to Spatial Data (sf)"]
   E --> F[Save as stas.RData]
 
   B --> G[Load Physical Data Sheet]
@@ -77,7 +77,7 @@ flowchart TD
 
   B --> M[Load Nutrient Data Sheet]
   M --> N[Clean & Rename Columns]
-  N --> O[Convert Units (TP, TN, Conductivity)]
+  N --> O["Convert Units (TP, TN, Conductivity)""]
   O --> P[Parse & Flag Secchi Data]
   P --> Q[Reorder Columns]
   Q --> R[Save as lkwdat.RData]
