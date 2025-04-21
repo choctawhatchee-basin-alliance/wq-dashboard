@@ -5,20 +5,20 @@
 
 ```mermaid
 flowchart TD
-  A[1. Start: Load Libraries] --> B["Authenticate with Google Sheets (read-only)"]
-  B --> C[2. Load Station Locations Sheet]
+  A["1. Start: Load Libraries"] --> B["Authenticate with Google Sheets (read-only)"]
+  B --> C["2. Load Station Locations Sheet"]
   C --> D[Clean & Rename Columns]
   D --> E["Convert to Spatial Data (sf)"]
   E --> F[Save as stas.RData]
 
-  B --> G[3. Load Physical Data Sheet]
+  B --> G["3. Load Physical Data Sheet"]
   G --> H[Clean & Rename Columns]
   H --> I[Convert Date and Clean Values]
   I --> J[Standardize County & Waterbody Names]
   J --> K[Drop Redundant Columns]
   K --> L[Save as cbadat.RData]
 
-  B --> M[4. Load Nutrient Data Sheet]
+  B --> M["4. Load Nutrient Data Sheet"]
   M --> N[Clean & Rename Columns]
   N --> O["Convert Units (TP, TN, Conductivity)"]
   O --> P[Parse & Flag Secchi Data]
