@@ -77,7 +77,7 @@ flowchart TD
 
   B --> M[Load Nutrient Data Sheet]
   M --> N[Clean & Rename Columns]
-  N --> O["Convert Units (TP, TN, Conductivity)""]
+  N --> O["Convert Units (TP, TN, Conductivity)"]
   O --> P[Parse & Flag Secchi Data]
   P --> Q[Reorder Columns]
   Q --> R[Save as lkwdat.RData]
