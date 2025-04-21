@@ -62,7 +62,7 @@
 
 ```mermaid
 flowchart TD
-  A[Start: Load Libraries] --> B[Authenticate with Google Sheets (read-only)]
+  A[Start: Load Libraries] --> B[Authenticate with Google Sheets read only]
   B --> C[Load Station Locations Sheet]
   C --> D[Clean & Rename Columns]
   D --> E[Convert to Spatial Data (sf)]
