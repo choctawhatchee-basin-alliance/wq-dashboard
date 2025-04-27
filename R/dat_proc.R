@@ -17,15 +17,16 @@ gs4_auth(scope = "https://www.googleapis.com/auth/spreadsheets.readonly")
 rawdat <- read_sheet('13ob5pYoKnYMTMn-jqKFFT6e0QyrDPXmBK9QtcB0gnrw')
 
 stas <- rawdat |> 
-  mutate(
-    WBID = unlist(WBID)
-  ) |> 
   rename(
     Longitude = Latitude, 
     Latitude = Longitude, 
     waterbody = `CBA Waterbody Name`, 
     station = `CBA Station #`,
     name = `Monitoring Location Name`
+  ) |> 
+  mutate(
+    WBID = unlist(WBID),
+    station = as.character(station)
   ) |> 
   st_as_sf(coords = c('Longitude', 'Latitude'), crs = 4326)
 
@@ -62,6 +63,7 @@ dat1 <- rawdat1 |>
   ) |> 
   mutate(
     date = as.Date(date),
+    station = as.character(station),
     county = case_when(
       county == 'okaloosa' ~ 'Okaloosa',
       county == 'walton' ~ 'Walton',
@@ -112,7 +114,8 @@ dat2 <- rawdat2 |>
       is.na(secchi_ft) & !is.na(secchi_onbott) ~ as.numeric(gsub('^.*\\(|\\).*$|Weeds|Bottom', '', secchi_onbott)), 
       T ~ secchi_ft
     ), 
-    secchi_onbott = grepl('Weeds|Bottom', secchi_onbott)
+    secchi_onbott = grepl('Weeds|Bottom', secchi_onbott), 
+    waterbody = gsub('^CBA\\sGAP', 'CBA Gap', waterbody)
   ) |> 
   select(-month, -day, -year, -cond_uscm) |> 
   select(county, waterbody,  station,  date, everything())

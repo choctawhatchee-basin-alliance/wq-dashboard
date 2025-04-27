@@ -7,7 +7,7 @@
 flowchart TD
   A["1 Start: Load Libraries"] --> B["Authenticate with Google Sheets (read-only)"]
   B --> C["2 Load Station Locations Sheet"]
-  C --> D[Clean & Rename Columns]
+  C --> D[Rename & Clean Columns]
   D --> E["Convert to Spatial Data (sf)"]
   E --> F[Save as stas.RData]
 
@@ -22,8 +22,9 @@ flowchart TD
   M --> N[Clean & Rename Columns]
   N --> O["Convert Units (TP, TN, Conductivity)"]
   O --> P[Parse & Flag Secchi Data]
-  P --> Q[Reorder Columns]
-  Q --> R[Save as lkwdat.RData]
+  P --> Q[Standardize Waterbody Names]
+  Q --> R[Reorder Columns]
+  R --> S[Save as lkwdat.RData]
 
   style A fill:#DDEEFF,stroke:#000,stroke-width:1px
   style F fill:#DFFFD6,stroke:#000,stroke-width:1px
@@ -33,7 +34,7 @@ flowchart TD
 
 ---
 
-## 🔧 1. Setup
+## 1. Setup
 - Load required libraries:  
   `tidyverse`, `googlesheets4`, `googledrive`, `sf`, `here`, `janitor`
 - Authenticate Google Sheets access (read-only scope)
@@ -42,7 +43,7 @@ flowchart TD
 
 ---
 
-## 📍 2. Load and Process Station Location Data
+## 2. Load and Process Station Location Data
 
 ### **Data Source**
 - Google Sheet ID: `13ob5pYoKnYMTMn-jqKFFT6e0QyrDPXmBK9QtcB0gnrw`
@@ -56,7 +57,7 @@ flowchart TD
 
 ---
 
-## 💧 3. Load and Process CBA Data (Discrete Physical)
+## 3. Load and Process CBA Data (Discrete Physical)
 
 #### **Data Source**
 - Google Sheet ID: `16_B7XLMDDgL-4RDz4UaFE4Gk569tYi2xaf1f96mAauY`
@@ -72,7 +73,7 @@ flowchart TD
 
 ---
 
-## 🧪 4. Load and Process LakeWatch Data (Nutrients)
+## 4. Load and Process LakeWatch Data (Nutrients)
 
 ### **Data Source**
 - Google Sheet ID: `1h4yvi9AnISVFbH_AvBw7wDx7s5-4VIOdqD-VToExmvg`
@@ -85,12 +86,15 @@ flowchart TD
 - Harmonize conductivity values (µS/cm → mS/cm)
 - Parse and extract `secchi_ft` values from notes where necessary
 - Flag if Secchi depth hit bottom or weeds
+- Standardize waterbody names
 - Reorder columns for readability
 - Save processed data as `lkwdat` to: `data/lkwdat.RData`
 
 ---
 
-## ❓ 5.  Questions
+## 6. Questions
 
-- Station location for Lakewatch data
-- Waterbody and station as unique identifier
+- Need waterbody, station location for Lakewatch data
+- Waterbody, station as unique identifier?
+- Multiple lakewatch waterbody, station values not in CBA data
+- A few CBA waterbody, station values not in station metadata
