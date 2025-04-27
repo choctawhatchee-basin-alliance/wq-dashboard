@@ -6,19 +6,19 @@
 ```mermaid
 flowchart TD
   A["1 Start: Load Libraries"] --> B["Authenticate with Google Sheets (read-only)"]
-  B --> C["2 Load Station Locations Sheet"]
+  B --> C["2 Load and Process Station Location Data"]
   C --> D[Rename & Clean Columns]
   D --> E["Convert to Spatial Data (sf)"]
   E --> F[Save as stas.RData]
 
-  B --> G["3 Load Physical Data Sheet"]
+  B --> G["3 Load and Process CBA Data"]
   G --> H[Clean & Rename Columns]
   H --> I[Convert Date and Clean Values]
   I --> J[Standardize County & Waterbody Names]
   J --> K[Drop Redundant Columns]
   K --> L[Save as cbadat.RData]
 
-  B --> M["4 Load Nutrient Data Sheet"]
+  B --> M["4 Load and Process LakeWatch Data"]
   M --> N[Clean & Rename Columns]
   N --> O["Convert Units (TP, TN, Conductivity)"]
   O --> P[Parse & Flag Secchi Data]
@@ -92,7 +92,7 @@ flowchart TD
 
 ---
 
-## 6. Questions
+## 5. Questions
 
 - Need waterbody, station location for Lakewatch data
 - Waterbody, station as unique identifier?
