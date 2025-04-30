@@ -34,7 +34,7 @@ save(stas, file = here('data', 'stas.RData'))
 
 # discrete samples ----------------------------------------------------------------------------
 
-# physical data
+# physical data - CBA
 rawdat1 <- read_sheet('16_B7XLMDDgL-4RDz4UaFE4Gk569tYi2xaf1f96mAauY', na = c('.'))
 
 dat1 <- rawdat1 |> 
@@ -85,7 +85,7 @@ cbadat <- dat1
 
 save(cbadat, file = here('data', 'cbadat.RData'))
 
-# nutrient data
+# nutrient data - lakewatch
 rawdat2 <- read_sheet('1h4yvi9AnISVFbH_AvBw7wDx7s5-4VIOdqD-VToExmvg', na = c('NA', ''))
 
 dat2 <- rawdat2 |> 
@@ -123,3 +123,44 @@ dat2 <- rawdat2 |>
 lkwdat <- dat2
 
 save(lkwdat, file = here('data', 'lkwdat.RData'))
+
+# metadata file -------------------------------------------------------------------------------
+
+data("lkwdat")
+data("cbadat")
+
+meta <- list(
+    physical = names(cbadat), 
+    discrete = names(lkwdat)
+  ) |> 
+  enframe(name = 'type', value = 'var') |> 
+  unnest('var') |> 
+  filter(!var %in% c('county', 'waterbody', 'station', 'date', 'secchi_onbott')) |> 
+  mutate(
+    units = gsub('^.*\\_(.*$)', '\\1', var), 
+    location = case_when(
+      grepl('surf', var) ~ 'surf',
+      grepl('bott', var) ~ 'bott',
+      type == 'discrete' ~ 'surf'
+    ), 
+    parameter = gsub("(.+?)(\\_.*)", "\\1", var), 
+    label = case_when(
+      parameter == 'temp' ~ 'Temperature (F)',
+      parameter == 'do' & units == 'psat' ~ 'Dissolved Oxygen (% Sat)',
+      parameter == 'do' & units == 'mgl' ~ 'Dissolved Oxygen (mg/L)',
+      parameter == 'cond' ~ 'Conductivity (mS/cm)',
+      parameter == 'sal' ~ 'Salinity (ppt)',
+      parameter == 'ph' ~ 'pH (su)',
+      parameter == 'turb' ~ 'Turbidity (NTU)',
+      parameter == 'secchi' ~ 'Secchi Depth (ft)',
+      parameter == 'chlcorr' ~ 'Chl-a (ug/L, corrected)',
+      parameter == 'chluncorr' ~ 'Chl-a (ug/L, uncorrected)',
+      parameter == 'tp' ~ 'Total Phosphorus (mg/L)',
+      parameter == 'tn' ~ 'Total Nitrogen (mg/L)',
+      parameter == 'color' ~ 'Color (pt-co)',
+      parameter == 'depth' ~ 'Depth (ft)'
+    )
+  )
+  
+save(meta, file = here('data', 'meta.RData'))
+  

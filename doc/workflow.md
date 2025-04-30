@@ -1,4 +1,3 @@
-
 # Workflow Overview: R Script for Water Quality Data
 
 <https://github.com/choctawhatchee-basin-alliance/wq-dashboard/blob/main/R/dat_proc.R>
@@ -25,11 +24,21 @@ flowchart TD
   P --> Q[Standardize Waterbody Names]
   Q --> R[Reorder Columns]
   R --> S[Save as lkwdat.RData]
+  
+  L --> T["5 Create Metadata File"]
+  S --> T
+  T --> U[Load Processed Data Files]
+  U --> V[Extract Variable Names]
+  V --> W[Filter Common Variables]
+  W --> X[Parse Units and Parameters]
+  X --> Y[Create Parameter Labels]
+  Y --> Z[Save as meta.RData]
 
   style A fill:#DDEEFF,stroke:#000,stroke-width:1px
   style F fill:#DFFFD6,stroke:#000,stroke-width:1px
   style L fill:#DFFFD6,stroke:#000,stroke-width:1px
-  style R fill:#DFFFD6,stroke:#000,stroke-width:1px
+  style S fill:#DFFFD6,stroke:#000,stroke-width:1px
+  style Z fill:#DFFFD6,stroke:#000,stroke-width:1px
 ```
 
 ---
@@ -92,7 +101,29 @@ flowchart TD
 
 ---
 
-## 5. Questions
+## 5. Create Metadata File
+
+### **Data Sources**
+- Previously processed datasets:
+  - `cbadat.RData` (CBA physical data)
+  - `lkwdat.RData` (LakeWatch nutrient data)
+
+### **Steps**
+- Load the processed CBA and LakeWatch datasets
+- Create a list containing variable names from both datasets, labeled by type:
+  - `physical` for CBA variables
+  - `discrete` for LakeWatch variables
+- Convert list to a dataframe with columns for type and variable name
+- Filter out common identification variables (county, waterbody, station, date, secchi_onbott)
+- Extract measurement units from variable names using regex
+- Determine measurement location (surface or bottom) based on variable names
+- Extract parameter names from variable names
+- Create human-readable labels for each parameter (e.g., `temp_surf_f` → `Temperature (F)`)
+- Save processed metadata as `meta.RData` to: `data/meta.RData`
+
+---
+
+## 6. Questions
 
 - Need waterbody, station location for Lakewatch data
 - Waterbody, station as unique identifier?
