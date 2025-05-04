@@ -23,22 +23,23 @@ flowchart TD
   O --> P[Parse & Flag Secchi Data]
   P --> Q[Standardize Waterbody Names]
   Q --> R[Reorder Columns]
-  R --> S[Save as lkwdat.RData]
+  R --> S[Remove Inactive Stations]
+  S --> T[Save as lkwdat.RData]
   
-  L --> T["5 Create Metadata File"]
-  S --> T
-  T --> U[Load Processed Data Files]
-  U --> V[Extract Variable Names]
-  V --> W[Filter Common Variables]
-  W --> X[Parse Units and Parameters]
-  X --> Y[Create Parameter Labels]
-  Y --> Z[Save as meta.RData]
+  L --> U["5 Create Metadata File"]
+  T --> U
+  U --> V[Load Processed Data Files]
+  V --> W[Extract Variable Names]
+  W --> X[Filter Common Variables]
+  X --> Y[Parse Units and Parameters]
+  Y --> Z[Create Parameter Labels]
+  Z --> AA[Save as meta.RData]
 
   style A fill:#DDEEFF,stroke:#000,stroke-width:1px
   style F fill:#DFFFD6,stroke:#000,stroke-width:1px
   style L fill:#DFFFD6,stroke:#000,stroke-width:1px
-  style S fill:#DFFFD6,stroke:#000,stroke-width:1px
-  style Z fill:#DFFFD6,stroke:#000,stroke-width:1px
+  style T fill:#DFFFD6,stroke:#000,stroke-width:1px
+  style AA fill:#DFFFD6,stroke:#000,stroke-width:1px
 ```
 
 ---
@@ -97,6 +98,7 @@ flowchart TD
 - Flag if Secchi depth hit bottom or weeds
 - Standardize waterbody names
 - Reorder columns for readability
+- Remove inactive stations from `data-raw/Lakewatch inactive_KW.xlsx`
 - Save processed data as `lkwdat` to: `data/lkwdat.RData`
 
 ---

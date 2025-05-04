@@ -6,6 +6,7 @@ library(googledrive)
 library(sf)
 library(here)
 library(janitor)
+library(readxl)
 
 # need to do this because read only, won't work in non-interactive session
 gs4_auth(scope = "https://www.googleapis.com/auth/spreadsheets.readonly")
@@ -88,6 +89,9 @@ save(cbadat, file = here('data', 'cbadat.RData'))
 # nutrient data - lakewatch
 rawdat2 <- read_sheet('1h4yvi9AnISVFbH_AvBw7wDx7s5-4VIOdqD-VToExmvg', na = c('NA', ''))
 
+# inactive lakewatch stations to remove
+torm <- read_excel(here('data-raw', 'Lakewatch inactive_kw.xlsx'))
+                 
 dat2 <- rawdat2 |> 
   clean_names() |> 
   rename(
@@ -118,7 +122,9 @@ dat2 <- rawdat2 |>
     waterbody = gsub('^CBA\\sGAP', 'CBA Gap', waterbody)
   ) |> 
   select(-month, -day, -year, -cond_uscm) |> 
-  select(county, waterbody,  station,  date, everything())
+  select(county, waterbody,  station,  date, everything()) |> 
+  anti_join(torm, by = c('waterbody', 'station')) |> 
+  filter(!(waterbody == 'Campbell' & station == '2 Deep')) # only one instance of this, not in stations
 
 lkwdat <- dat2
 
