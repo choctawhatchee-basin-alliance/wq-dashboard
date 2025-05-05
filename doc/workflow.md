@@ -15,7 +15,7 @@ flowchart TD
   H --> I[Convert Date and Clean Values]
   I --> J[Standardize County & Waterbody Names]
   J --> K[Drop Redundant Columns]
-  K --> L[Save as cbadat.RData]
+  K --> L[Store as cbadat]
 
   B --> M["4 Load and Process LakeWatch Data"]
   M --> N[Clean & Rename Columns]
@@ -24,7 +24,7 @@ flowchart TD
   P --> Q[Standardize Waterbody Names]
   Q --> R[Reorder Columns]
   R --> S[Remove Inactive Stations]
-  S --> T[Save as lkwdat.RData]
+  S --> T[Store as lkwdat]
   
   L --> U["5 Transform Data to Long Format"]
   T --> U
@@ -51,8 +51,8 @@ flowchart TD
 
   style A fill:#DDEEFF,stroke:#000,stroke-width:1px
   style F fill:#DFFFD6,stroke:#000,stroke-width:1px
-  style L fill:#DFFFD6,stroke:#000,stroke-width:1px
-  style T fill:#DFFFD6,stroke:#000,stroke-width:1px
+  style L fill:#ECF7E9,stroke:#000,stroke-width:1px
+  style T fill:#ECF7E9,stroke:#000,stroke-width:1px
   style AA fill:#DFFFD6,stroke:#000,stroke-width:1px
   style AF fill:#DFFFD6,stroke:#000,stroke-width:1px
   style AM fill:#DFFFD6,stroke:#000,stroke-width:1px
