@@ -15,7 +15,7 @@ flowchart TD
   H --> I[Convert Date and Clean Values]
   I --> J[Standardize County & Waterbody Names]
   J --> K[Drop Redundant Columns]
-  K --> L[Save as cbadat]
+  K --> L[Save as cbadat.RData]
 
   B --> M["4 Load and Process LakeWatch Data"]
   M --> N[Clean & Rename Columns]
@@ -24,7 +24,7 @@ flowchart TD
   P --> Q[Standardize Waterbody Names]
   Q --> R[Reorder Columns]
   R --> S[Remove Inactive Stations]
-  S --> T[Save as lkwdat]
+  S --> T[Save as lkwdat.RData]
   
   L --> U["5 Transform Data to Long Format"]
   T --> U
@@ -40,6 +40,14 @@ flowchart TD
   AC --> AD[Extract Parameter Information]
   AD --> AE[Create Parameter Labels]
   AE --> AF[Save as meta.RData]
+  
+  AF --> AG["7 Create Dummy Continuous Data"]
+  AG --> AH[Define Date Range]
+  AH --> AI[Create Data Frame with Stations & Types]
+  AI --> AJ[Generate Synthetic Time Series]
+  AJ --> AK[Reshape to Wide Format]
+  AK --> AL[Apply Data Constraints]
+  AL --> AM[Save as cntdat.RData]
 
   style A fill:#DDEEFF,stroke:#000,stroke-width:1px
   style F fill:#DFFFD6,stroke:#000,stroke-width:1px
@@ -47,6 +55,7 @@ flowchart TD
   style T fill:#DFFFD6,stroke:#000,stroke-width:1px
   style AA fill:#DFFFD6,stroke:#000,stroke-width:1px
   style AF fill:#DFFFD6,stroke:#000,stroke-width:1px
+  style AM fill:#DFFFD6,stroke:#000,stroke-width:1px
 ```
 
 ---
@@ -178,3 +187,37 @@ flowchart TD
   - `color` → 'Color (pt-co)'
   - `depth` → 'Depth (ft)'
 - Save processed metadata as `meta.RData` to: `data/meta.RData`
+
+---
+
+## Implementation Notes
+
+- The workflow uses Google Sheets integration for data sources, requiring authentication
+- Data processing emphasizes standardization of units, names, and formats
+- The final data structure supports both wide and long formats for different analysis needs
+- Metadata creation makes the data self-documenting for dashboard use
+- The dummy continuous data provides test data for time series visualization development
+
+---
+
+## 7. Create Dummy Continuous Data
+
+### **Purpose**
+- Generate synthetic time series data for testing and development of continuous data visualization
+
+### **Configuration**
+- Date range: January 1, 2023 to December 31, 2024 (two years)
+- Sample stations: 'Little Red Fish' and 'Western' waterbodies, stations '1' and '2'
+- Measurement types: 'temp_f' (temperature) and 'sal_ppt' (salinity)
+
+### **Steps**
+- Create a cross-join of waterbodies, stations, and data types using `crossing()`
+- Group and nest by data type using `group_nest()`
+- Configure simulation parameters for each data type:
+  - Salinity: amplitude = 0, base_value = 20, noise_sd = 3
+  - Temperature: amplitude = 10, base_value = 80, noise_sd = 5
+- Generate synthetic time series for each station and type using a custom function (`cntdat_fun`)
+- Unnest the generated values
+- Pivot the data to wide format (columns for each measurement type)
+- Apply data constraints (ensure salinity is not negative)
+- Save processed synthetic data as `cntdat.RData` to: `data/cntdat.RData`

@@ -207,3 +207,44 @@ meta <- alldat |>
   
 save(meta, file = here('data', 'meta.RData'))
   
+# create dummy file for continuous data -------------------------------------------------------
+
+# two years of data
+strdate <- "2023-01-01"
+enddate <- "2024-12-31"
+
+# create data
+cntdat <- crossing(
+    waterbody = c('Little Red Fish', 'Western'),
+    station = c('1', '2'), 
+    type = c('temp_f', 'sal_ppt'), 
+  ) |> 
+  group_nest(type) |> 
+  mutate(
+    amp = c(0, 10), 
+    base_value = c(20, 80),
+    noise_sd = c(3, 5)
+  ) |> 
+  unnest('data') |> 
+  rowwise() |> 
+  mutate(
+    value = pmap(list(amp, base_value, noise_sd), ~cntdat_fun(
+      start_date = strdate, 
+      end_date = enddate,
+      base_value = base_value,
+      amplitude = amp,
+      noise_sd = noise_sd
+    ))
+  ) |> 
+  ungroup() |> 
+  select(waterbody, station, type, value) |> 
+  unnest(value) |>
+  pivot_wider(
+    names_from = type,
+    values_from = value
+  ) |> 
+  mutate(
+    sal_ppt = pmax(sal_ppt, 0)
+  )
+
+save(cntdat, file = here('data', 'cntdat.RData'))
