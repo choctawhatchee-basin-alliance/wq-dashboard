@@ -33,7 +33,7 @@ stas <- rawdat |>
 
 save(stas, file = here('data', 'stas.RData'))
 
-# discrete samples ----------------------------------------------------------------------------
+# combine cba (physical) and lakewatch (discrete) ---------------------------------------------
 
 # physical data - CBA
 rawdat1 <- read_sheet('16_B7XLMDDgL-4RDz4UaFE4Gk569tYi2xaf1f96mAauY', na = c('.'))
@@ -84,8 +84,6 @@ dat1 <- rawdat1 |>
 
 cbadat <- dat1
 
-save(cbadat, file = here('data', 'cbadat.RData'))
-
 # nutrient data - lakewatch
 rawdat2 <- read_sheet('1h4yvi9AnISVFbH_AvBw7wDx7s5-4VIOdqD-VToExmvg', na = c('NA', ''))
 
@@ -128,28 +126,67 @@ dat2 <- rawdat2 |>
 
 lkwdat <- dat2
 
-save(lkwdat, file = here('data', 'lkwdat.RData'))
+# cba long format
+cbadatlng <- cbadat |> 
+  pivot_longer(
+    cols = -c(county, waterbody, station, date), 
+    names_to = 'var',
+    values_to = 'val'
+  ) |>
+  separate(
+    col = var, 
+    into = c('parameter', 'location', 'units'), 
+    sep = '_'
+  ) |> 
+  mutate(
+    notes = NA_character_
+  )
+
+# lakewatch long format
+secchi <- lkwdat |> 
+  select(county, waterbody, station, date, val = secchi_ft, notes = secchi_onbott) |> 
+  mutate(
+    parameter = 'secchi',
+    notes = ifelse(notes == T, 'on bottom', NA_character_)
+  ) |> 
+  unique()
+lkwdatlng <- lkwdat |> 
+  select(-secchi_onbott) |>
+  pivot_longer(
+    cols = -c(county, waterbody, station, date), 
+    names_to = 'var',
+    values_to = 'val'
+  ) |>
+  separate(
+    col = var, 
+    into = c('parameter', 'units'), 
+    sep = '_'
+  ) |> 
+  mutate(
+    location = 'surface'
+  ) |> 
+  left_join(
+    secchi, 
+    by = c('county', 'waterbody', 'station', 'date', 'parameter', 'val')
+  )
+
+alldat <- list(
+    physical = cbadatlng,
+    discrete = lkwdatlng
+  ) |> 
+  enframe(name = 'type') |> 
+  unnest('value')
+
+save(alldat, file = here('data', 'alldat.RData'))
 
 # metadata file -------------------------------------------------------------------------------
 
-data("lkwdat")
-data("cbadat")
+data("alldat")
 
-meta <- list(
-    physical = names(cbadat), 
-    discrete = names(lkwdat)
-  ) |> 
-  enframe(name = 'type', value = 'var') |> 
-  unnest('var') |> 
-  filter(!var %in% c('county', 'waterbody', 'station', 'date', 'secchi_onbott')) |> 
+meta <- alldat |> 
+  select(type, units, location, parameter) |> 
+  unique() |> 
   mutate(
-    units = gsub('^.*\\_(.*$)', '\\1', var), 
-    location = case_when(
-      grepl('surf', var) ~ 'surf',
-      grepl('bott', var) ~ 'bott',
-      type == 'discrete' ~ 'surf'
-    ), 
-    parameter = gsub("(.+?)(\\_.*)", "\\1", var), 
     label = case_when(
       parameter == 'temp' ~ 'Temperature (F)',
       parameter == 'do' & units == 'psat' ~ 'Dissolved Oxygen (% Sat)',
