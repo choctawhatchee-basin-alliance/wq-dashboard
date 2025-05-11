@@ -6,7 +6,8 @@ This document outlines the testing structure for the Choctawhatchee Basin Allian
 
 The wq-dashboard is an R Shiny application that follows standard R package testing conventions using the `testthat` framework. Tests are organized in the `tests/testthat/` directory with test files that follow the naming pattern `test-*.R`.
 
-Tests are currently setup for data used by the dashboard and are meant to ensure any updates to the data include relevant and correct information.  Any test failures will notify the maintainer by email for immediate attention.  Test are run any time updates are made to the main GitHub repository using GitHub Actions.  Test runs can be viewed clicking the badge on the README or accessing <https://github.com/choctawhatchee-basin-alliance/wq-dashboard/actions>.
+Tests are currently setup for data used by the dashboard and are meant to ensure any updates to the data include relevant and correct information.  Any test failures will notify the maintainer by email for immediate attention.  
+Tests are run any time updates are made to the main GitHub repository using GitHub Actions.  Test runs can be viewed by clicking the badge on the README or accessing <https://github.com/choctawhatchee-basin-alliance/wq-dashboard/actions>.
 
 ## Test Directory Structure
 
@@ -15,7 +16,7 @@ tests/
 ├── testthat.R           # Main test runner file
 └── testthat/            # Directory containing individual test files
     ├── test-*.R         # Individual test files
-    └── helper-*.R       # Optional helper files
+    └── helper-*.R       # Helper file
 ```
 
 ## Test Files
@@ -30,10 +31,10 @@ Each file evaluates conditions and characteristics of the following files in the
 Test files in `tests/testthat` evaluate the following:
 
 1. `test-checkcbastations.R` - Tests all waterbody, station combinations for CBA in `alldat` are found in `stas`
-1. `test-checkcntdatstations.R` - Tests  all waterbody, station combinations in `cntat` are found in `stas`
-1. `test-checkcntdattimestep.R` - All dates in the `timestamp` column are ascending for each waterbody, station
+1. `test-checkcntdatstations.R` - Tests  all waterbody, station combinations in `cntdat` are found in `stas`
+1. `test-checkcntdattimestep.R` - All dates in the `timestamp` column are ascending for each waterbody, station combination
 1. `test-checkcounties.R` - All counties in `alldat` are identifiable
-1. `test-checkdates.R` - Dates in `alldat` are not prior to 1992-11-08 and after the current data
+1. `test-checkdates.R` - Dates in `alldat` are not prior to 1992-11-08 or after the current date
 1. `test-checklkwstations.R` - Tests all waterbody, station combinations for LakeWatch in `alldat` are found in `stas`
 1. `test-checklocations.R` - Verifies all lat/lon entries in `stas` are within an appropriate bounding box polygon for the region
 1. `test-checkwaterbodies.R` - All waterbodies in `alldat` are identifiable
@@ -43,7 +44,7 @@ Please consult the file `tests/testthat/helper-data.R` for entries that are used
 
 ## Running Tests
 
-Tests can be run using:
+Tests can be run manually using:
 
 ```r
 # Run all tests
