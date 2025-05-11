@@ -29,6 +29,7 @@ stas <- rawdat |>
     WBID = unlist(WBID),
     station = as.character(station)
   ) |> 
+  select(-`GPS abbr.`) |> 
   st_as_sf(coords = c('Longitude', 'Latitude'), crs = 4326)
 
 save(stas, file = here('data', 'stas.RData'))
