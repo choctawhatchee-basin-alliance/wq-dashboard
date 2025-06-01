@@ -1,6 +1,6 @@
 # Workflow Overview: R Script for Water Quality Data
 
-<https://github.com/choctawhatchee-basin-alliance/wq-dashboard/blob/main/R/dat_proc.R>
+<https://github.com/choctawhatchee-basin-alliance/wq-dashboard/blob/main/prep/dat_proc.R>
 
 ```mermaid
 flowchart TD
