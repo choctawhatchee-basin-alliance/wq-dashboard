@@ -6,6 +6,7 @@ load(file = here('data/alldat.RData'))
 load(file = here('data/stas.RData'))
 load(file = here('data/cntdat.RData'))
 load(file = here('data/meta.RData'))
+load(file = here('data/cbawbid.RData'))
 
 dtrng <- c(as.Date('1992-11-08'), Sys.Date())
 stasbbox <- c(xmin = -86.6675, ymin = 30.2815, xmax = -85.68101, ymax = 31.10925) |> 

@@ -249,3 +249,14 @@ cntdat <- crossing(
   )
 
 save(cntdat, file = here('data', 'cntdat.RData'))
+
+# get wbids -----------------------------------------------------------------------------------
+
+load(file = here('data', 'stas.RData'))
+
+allwbid <- st_read('https://ca.dep.state.fl.us/arcgis/rest/services/OpenData/WBIDS/MapServer/0/query?outFields=*&where=1%3D1&f=geojson') |> 
+  st_make_valid()
+cbawbid <- allwbid[stas,] |> 
+  select(WBID)
+
+save(cbawbid, file = here('data', 'cbawbid.RData'))
