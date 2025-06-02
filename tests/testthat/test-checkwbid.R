@@ -1,11 +1,11 @@
 test_that("Test wbid in stas are as expected", {
   
-  staswbid <- stas |> 
+  chk <- stas |> 
     pull(WBID) |> 
     unique() |> 
-    sort()
+    setdiff(wbid)
   
-  expect_equal(staswbid, wbid)
+  expect_true(length(chk) == 0)
   
 })
 

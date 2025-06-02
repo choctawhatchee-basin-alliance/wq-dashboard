@@ -13,10 +13,11 @@ gs4_auth(scope = "https://www.googleapis.com/auth/spreadsheets.readonly")
 
 # all files https://drive.google.com/drive/u/1/folders/1x51X6p60KOKpC3UEStIkuAWRhOH-8FHS
 
-# station locations ---------------------------------------------------------------------------
+# station locations and wbid ------------------------------------------------------------------
 
 rawdat <- read_sheet('13ob5pYoKnYMTMn-jqKFFT6e0QyrDPXmBK9QtcB0gnrw')
 
+# this has wbid but it's from an older wbid layer, not all are in the current fdep layer
 stas <- rawdat |> 
   rename(
     Longitude = Latitude, 
@@ -26,11 +27,21 @@ stas <- rawdat |>
     name = `Monitoring Location Name`
   ) |> 
   mutate(
-    WBID = unlist(WBID),
     station = as.character(station)
   ) |> 
-  select(-`GPS abbr.`) |> 
+  select(-`GPS abbr.`, -WBID) |> 
   st_as_sf(coords = c('Longitude', 'Latitude'), crs = 4326)
+
+
+allwbid <- st_read('https://ca.dep.state.fl.us/arcgis/rest/services/OpenData/WBIDS/MapServer/0/query?outFields=*&where=1%3D1&f=geojson') |> 
+  st_make_valid()
+cbawbid <- allwbid[stas,] |> 
+  select(WBID)
+
+save(cbawbid, file = here('data', 'cbawbid.RData'))
+
+# add updated wbid
+stas <- st_intersection(stas, cbawbid)
 
 save(stas, file = here('data', 'stas.RData'))
 
@@ -249,14 +260,3 @@ cntdat <- crossing(
   )
 
 save(cntdat, file = here('data', 'cntdat.RData'))
-
-# get wbids -----------------------------------------------------------------------------------
-
-load(file = here('data', 'stas.RData'))
-
-allwbid <- st_read('https://ca.dep.state.fl.us/arcgis/rest/services/OpenData/WBIDS/MapServer/0/query?outFields=*&where=1%3D1&f=geojson') |> 
-  st_make_valid()
-cbawbid <- allwbid[stas,] |> 
-  select(WBID)
-
-save(cbawbid, file = here('data', 'cbawbid.RData'))
