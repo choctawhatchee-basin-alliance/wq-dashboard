@@ -1,10 +1,11 @@
+library(sf)
 
 # data
-load(file = here('data/alldat.RData'))
-load(file = here('data/cntdat.RData'))
-load(file = here('data/meta.RData'))
-load(file = here('data/stas.RData'))
-load(file = here('data/cbawbid.RData'))
+load(file = here::here('data/alldat.RData'))
+load(file = here::here('data/cntdat.RData'))
+load(file = here::here('data/meta.RData'))
+load(file = here::here('data/stas.RData'))
+load(file = here::here('data/cbawbid.RData'))
 
 # selections
 prms <- meta |> 

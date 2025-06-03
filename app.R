@@ -11,7 +11,7 @@ ui <- page_navbar(
 
   # Add logo
   nav_item(
-    tags$img(src = "logo.jpg", height = "30px", style = "margin-right: 10px;")
+    tags$img(src = "logo.png", height = "30px", style = "margin-right: 10px;")
   ),
   
   # First nav item - Overview
@@ -57,7 +57,7 @@ ui <- page_navbar(
         width = "400px",
         open = "desktop",
         
-          radioButtons("summarize1", "Summarize By:", choices = c("WBID", "HUC8", "Station"), selected = "WBID"), 
+          radioButtons("summarize1", "Summarize By:", choices = c("WBID", "Station"), selected = "WBID"), 
           selectInput('summstat1', "Summarize as:", choices = c("Mean", "Median", "Max", "Min")),
           selectInput('location1', "Sample location:", choices = list('Surface' = 'surface', 'Bottom' = 'bottom')),
           selectInput("parameter1", "Select Parameter:", choices = prms), 
@@ -75,13 +75,13 @@ ui <- page_navbar(
             open = FALSE
           ),
           border = FALSE,
-          tableOutput('byareadat')
-        
+          leaflet::leafletOutput('byareamap', height = "100%")
         )
       )
       
   ),
   
+  #####
   # Third nav item - by station
   nav_panel(
     title = "2 BY STATION",
@@ -114,6 +114,7 @@ ui <- page_navbar(
     
   ),
   
+  #####
   # Fourth nav item - continuous data
   nav_panel(
     title = "3 CONTINUOUS DATA",
@@ -146,6 +147,7 @@ ui <- page_navbar(
     
   ),
   
+  #####
   # Fifth nav item - download
   nav_panel(
     title = "DOWNLOAD",
@@ -189,48 +191,40 @@ ui <- page_navbar(
   )
 )
 
+#####
 server <- function(input, output, session) {
   
-  # by area data selection
-  byareadat <- reactive({
+  #####
+  # reactives
     
-    # inputs
-    summarize1 <- input$summarise1
-    summstat1 <- input$summstat1
-    location1 <- input$location1
-    parameter1 <- input$parameter1
-    daterange1 <- input$daterange1
+  # byareamap update
+  observeEvent(list(input$summarize1, input$summstat1, input$location1, input$parameter1, input$daterange1, input$`main-nav`), {
     
-    dat <- alldat |> 
-      dplyr::filter(
-        parameter == parameter1, 
-        date >= as.Date(daterange1[1]), 
-        date <= as.Date(daterange1[2]), 
-        location == location1
-      ) |> 
-      dplyr::select(waterbody, station, date, parameter, val)
-    
-    dat <- dplyr::left_join(dat, stas, by = c('waterbody', 'station'))
-    
-    browser()
-    
-    if (summarize1 == "WBID") {
-      out <- dat |>  
-        dplyr::summarise(
-          val = match.fun(tolower(summstat1))(val, na.rm = TRUE),
-          .by = 'WBID'
-        ) 
-      # join with wbid
+    if(input$`main-nav` == 'byarea'){
+      
+      # inputs
+      byareadat <- try(byareadat_fun(alldat, 
+                                 cbawbid, 
+                                 stas, 
+                                 input$summarize1, 
+                                 input$summstat1, 
+                                 input$location1, 
+                                 input$parameter1, 
+                                 input$daterange1
+      ))
+      
+      byareamap_fun(byareamap_proxy, byareadat, input$summarize1)
+      
     }
-    
-
-    
-    return(out)
-    
+   
   })
- 
-  output$byareadat <- renderTable(byareadat())
   
+  #####
+  # output
+  
+  output$byareamap <- leaflet::renderLeaflet(bsmap(stas))
+  byareamap_proxy <- leaflet::leafletProxy("byareamap")
+
 }
 
 shinyApp(ui, server)

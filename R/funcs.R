@@ -63,3 +63,144 @@ cntdat_fun <- function(start_date, end_date,
   return(out)
   
 }
+
+#' Create a base map for leafletproxy
+#'
+#' @param bnds input layer for bounding box
+#'
+#' @return An empty leaflet object
+bsmap <- function(bnds){
+  
+  bnds <- sf::st_bbox(bnds)
+  
+  esri <- rev(grep("^Esri", leaflet::providers, value = TRUE))
+  
+  m <- leaflet::leaflet() %>%
+    leaflet::fitBounds(bnds[['xmin']], bnds[['ymin']], bnds[['xmax']], bnds[['ymax']])
+  
+  for (provider in esri) {
+    m <- m %>% leaflet::addProviderTiles(provider, group = provider)
+  }
+  
+  out <- m %>%
+    leaflet::addLayersControl(baseGroups = names(esri),
+                              options = leaflet::layersControlOptions(collapsed = T),
+                              position = 'topleft')
+  
+  return(out)
+  
+}
+
+#' Function to update the map with summarized data by area
+#' 
+#' @param mapin Leaflet map object to update
+#' @param byareadat Data frame containing summarized data by area
+#' @param summarize1 Character string indicating how to summarize the data ('WBID' or 'Station')
+byareamap_fun <- function(mapin, byareadat, summarize1){
+  
+  # create map
+  if(inherits(byareadat, 'try-error'))
+    out <- mapin %>%
+      leaflet::clearMarkers() |> 
+      leaflet::clearShapes()
+  
+  if(!inherits(byareadat, 'try-error')) {
+    
+    pal <- leaflet::colorNumeric(
+      palette = "YlGnBu",
+      domain = byareadat$val,
+      na.color = "transparent"
+    )
+    
+    out <- mapin %>%
+      leaflet::clearMarkers() |> 
+      leaflet::clearShapes() 
+    
+    if(summarize1 == 'WBID')
+      out <- out |> 
+      leaflet::addPolygons(
+        data = byareadat,
+        fillColor = ~pal(val),
+        fillOpacity = 0.7,
+        color = "#666",
+        weight = 1,
+        highlightOptions = leaflet::highlightOptions(
+          weight = 3,
+          color = "#666",
+          fillOpacity = 0.7,
+          bringToFront = TRUE
+        ),
+        label = ~paste0(WBID, ": ", ", Value: ", val)
+      )
+    
+    if(summarize1 == 'Station')
+      out <- out |> 
+        leaflet::addCircleMarkers(
+          data = byareadat,
+          radius = 5,
+          fillColor = ~pal(val),
+          fillOpacity = 0.7,
+          color = "black",
+          weight = 1,
+          label = ~paste0(waterbody, ": ", station, ", Value: ", val)
+        )
+    
+  }
+  
+  return(out)
+  
+  
+}
+
+#' Function to summarize data by waterbody or station
+#' 
+#' @param alldat Data frame containing the data to summarize
+#' @param cbawbid sf object containing wbids
+#' @param stas sf object containing station geometries
+#' @param summarize1 Character string indicating how to summarize the data ('WBID' or 'Station')
+#' @param summstat1 Character string indicating the summary statistic to calculate (e.g., 'Mean', 'Median', 'Max', 'Min')
+#' @param location1 Character string indicating the sample location (e.g., 'surface', 'bottom')
+#' @param parameter1 Character string indicating the parameter to filter by
+#' @param daterange1 Date range to filter the data
+byareadat_fun <- function(alldat, cbawbid, stas, summarize1, summstat1, location1, parameter1, daterange1){
+  
+  dat <- alldat |> 
+    dplyr::filter(
+      parameter == parameter1, 
+      date >= as.Date(daterange1[1]), 
+      date <= as.Date(daterange1[2]), 
+      location == location1
+    ) |> 
+    dplyr::select(waterbody, station, date, parameter, val)
+  
+  dat <- dplyr::left_join(dat, stas, by = c('waterbody', 'station')) |> 
+    sf::st_as_sf()
+  
+  if (summarize1 == "WBID") {
+    
+    out <- dat |>  
+      sf::st_drop_geometry() |> 
+      dplyr::summarise(
+        val = match.fun(tolower(summstat1))(val, na.rm = TRUE),
+        .by = c(WBID)
+      ) |> 
+      dplyr::inner_join(cbawbid, by = 'WBID') |> 
+      sf::st_as_sf() |> 
+      dplyr::filter(!is.na(val))
+    
+  }
+  
+  if(summarize1 == 'Station'){
+    
+    out <- dat |> 
+      dplyr::summarise(
+        val = match.fun(tolower(summstat1))(val, na.rm = TRUE),
+        .by = c(waterbody, station, geometry)
+      ) |> 
+      dplyr::filter(!is.na(val))
+    
+  }
+  
+  return(out)
+  
+}
