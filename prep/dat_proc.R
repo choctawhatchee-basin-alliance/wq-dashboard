@@ -24,24 +24,29 @@ stas <- rawdat |>
     Latitude = Longitude, 
     waterbody = `CBA Waterbody Name`, 
     station = `CBA Station #`,
-    name = `Monitoring Location Name`
+    name = `Monitoring Location Name`,
+    WBIDorig = WBID
   ) |> 
   mutate(
-    station = as.character(station)
+    station = as.character(station), 
+    WBIDorig = unlist(WBIDorig)
   ) |> 
-  select(-`GPS abbr.`, -WBID) |> 
+  select(-`GPS abbr.`) |> 
   st_as_sf(coords = c('Longitude', 'Latitude'), crs = 4326)
 
-
 allwbid <- st_read('https://ca.dep.state.fl.us/arcgis/rest/services/OpenData/WBIDS/MapServer/0/query?outFields=*&where=1%3D1&f=geojson') |> 
-  st_make_valid()
-cbawbid <- allwbid[stas,] |> 
+  st_make_valid() |> 
   select(WBID)
+cbawbid <- allwbid[stas,] 
 
 save(cbawbid, file = here('data', 'cbawbid.RData'))
 
 # add updated wbid
-stas <- st_intersection(stas, cbawbid)
+# those in more than one wbid, use original
+stas <- st_join(stas, cbawbid, join = st_intersects, left = TRUE) |> 
+  mutate(isdup = n() > 1, .by = c(waterbody, station)) |> 
+  filter(!(isdup & WBID != WBIDorig)) |> 
+  select(-isdup, -WBIDorig)
 
 save(stas, file = here('data', 'stas.RData'))
 
