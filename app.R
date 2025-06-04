@@ -59,7 +59,7 @@ ui <- page_navbar(
         
           radioButtons("summarize1", "Summarize By:", choices = c("WBID", "Station"), selected = "WBID"), 
           selectInput('summstat1', "Summarize as:", choices = c("Mean", "Median", "Max", "Min")),
-          selectInput('location1', "Sample location:", choices = list('Surface' = 'surface', 'Bottom' = 'bottom')),
+          selectInput('location1', "Sample location:", choices = list('Surface' = 'surf', 'Bottom' = 'bott')),
           selectInput("parameter1", "Select Parameter:", choices = prms), 
           sliderInput("daterange1", "Select Date Range:", min = dtrng[1], max = dtrng[2], value = dtrng, 
                      timeFormat = "%Y-%m-%d")

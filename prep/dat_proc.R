@@ -180,7 +180,7 @@ lkwdatlng <- lkwdat |>
     sep = '_'
   ) |> 
   mutate(
-    location = 'surface'
+    location = 'surf'
   ) |> 
   left_join(
     secchi, 

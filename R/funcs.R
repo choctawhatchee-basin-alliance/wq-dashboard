@@ -166,13 +166,13 @@ byareadat_fun <- function(alldat, cbawbid, stas, summarize1, summstat1, location
   
   dat <- alldat |> 
     dplyr::filter(
-      parameter == parameter1, 
-      date >= as.Date(daterange1[1]), 
-      date <= as.Date(daterange1[2]), 
+      parameter == parameter1 &
+      date >= as.Date(daterange1[1]) & 
+      date <= as.Date(daterange1[2]) & 
       location == location1
     ) |> 
     dplyr::select(waterbody, station, date, parameter, val)
-  
+
   dat <- dplyr::left_join(dat, stas, by = c('waterbody', 'station')) |> 
     sf::st_as_sf()
   
