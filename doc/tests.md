@@ -37,8 +37,10 @@ Test files in `tests/testthat` evaluate the following:
 1. `test-checkdates.R` - Dates in `alldat` are not prior to 1992-11-08 or after the current date
 1. `test-checklkwstations.R` - Tests all waterbody, station combinations for LakeWatch in `alldat` are found in `stas`
 1. `test-checklocations.R` - Verifies all lat/lon entries in `stas` are within an appropriate bounding box polygon for the region
+1. `test-checkparameters.R` - Parameters in `alldat` are included in `meta`
+1. `test-checksamplelocations.R` - Verifies sample location in `alldat` is provided as `surf` or `bott`, no missing entries
 1. `test-checkwaterbodies.R` - All waterbodies in `alldat` are identifiable
-1. `test-checkwbid.R` - All WBIDs in `stas` are identifiable
+1. `test-checkwbid.R` - All WBIDs in `stas` are identifiable, WBIDs in `alldat` are present in `cbawbid`
 
 Please consult the file `tests/testthat/helper-data.R` for entries that are used for verifying correct values for the data. 
 
