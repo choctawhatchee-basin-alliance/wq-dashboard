@@ -40,6 +40,7 @@ ui <- page_navbar(
       ),
       nav_panel(
         title = 'METHODS', 
+        class = 'card-scroll',
         shiny::includeMarkdown('www/methods.md')
       )
     )
@@ -49,32 +50,45 @@ ui <- page_navbar(
   nav_panel(
     title = "1 BY AREA",
     value = 'byarea',
-    layout_sidebar(
-      sidebar = sidebar(
-        title = "Controls",
-        border_radius = FALSE, 
-        fillable = TRUE,
-        width = "400px",
-        open = "desktop",
-        
-          radioButtons("summarize1", "Summarize By:", choices = c("WBID", "Station"), selected = "WBID"), 
-          selectInput("parameter1", "Select Parameter:", choices = prms), 
-          uiOutput("location1"),
-          selectInput('summstat1', "Summarize as:", choices = c("Mean", "Median", "Max", "Min")),
-          uiOutput("daterange1")
-          
-        ),
-        
-        # Main content area with side-by-side visualizations
+    navset_card_underline(
+      full_screen = TRUE,
+      height = '100%',
+      nav_panel(
+        title = "DATA",
+        class = 'card-scroll',
         layout_sidebar(
           sidebar = sidebar(
-            "right contents",
-            width = "50%",
-            position = "right",
-            open = FALSE
+            title = "Controls",
+            border_radius = FALSE, 
+            fillable = TRUE,
+            width = "400px",
+            open = "desktop",
+            
+              radioButtons("summarize1", "Summarize By:", choices = c("WBID", "Station"), selected = "WBID"), 
+              selectInput("parameter1", "Select Parameter:", choices = prms), 
+              uiOutput("location1"),
+              selectInput('summstat1', "Summarize as:", choices = c("Mean", "Median", "Max", "Min")),
+              uiOutput("daterange1")
+              
           ),
-          border = FALSE,
-          leaflet::leafletOutput('byareamap', height = "100%")
+            
+          # Main content area with side-by-side visualizations
+          layout_sidebar(
+            sidebar = sidebar(
+              "right content",
+              width = "50%",
+              position = "right",
+              open = FALSE
+            ),
+            border = FALSE,
+            leaflet::leafletOutput('byareamap', height = "100%")
+          )
+        )
+      ), 
+      nav_panel(
+        title = "HOW TO USE",
+        class = 'card-scroll',
+        NULL
         )
       )
       
@@ -85,29 +99,42 @@ ui <- page_navbar(
   nav_panel(
     title = "2 BY STATION",
     value = 'bystation',
-    layout_sidebar(
-      sidebar = sidebar(
-        title = "Controls",
-        border_radius = FALSE, 
-        fillable = TRUE,
-        width = "400px",
-        open = "desktop",
-        
-        selectInput("variable2", "Select Variable:", choices = c("Option 1", "Option 2", "Option 3"))
-        
-      ),
-      
-      # Main content area with side-by-side visualizations
-      layout_sidebar(
-        sidebar = sidebar(
-          "right contents",
-          width = "50%",
-          position = "right",
-          open = FALSE
-        ),
-        border = FALSE,
-        "middle content"
-        
+    navset_card_underline(
+      full_screen = TRUE,
+      height = '100%',
+      nav_panel(
+        title = "DATA",
+        class = 'card-scroll',
+        layout_sidebar(
+          sidebar = sidebar(
+            title = "Controls",
+            border_radius = FALSE, 
+            fillable = TRUE,
+            width = "400px",
+            open = "desktop",
+            
+            selectInput("variable2", "Select Variable:", choices = c("Option 1", "Option 2", "Option 3"))
+            
+          ),
+          
+        # Main content area with side-by-side visualizations
+        layout_sidebar(
+          sidebar = sidebar(
+            "right content",
+            width = "50%",
+            position = "right",
+            open = FALSE
+          ),
+          border = FALSE,
+          "middle content"
+          
+          )
+        )
+      ), 
+      nav_panel(
+        title = "HOW TO USE",
+        class = 'card-scroll',
+        NULL
       )
     )
     
@@ -118,29 +145,42 @@ ui <- page_navbar(
   nav_panel(
     title = "3 CONTINUOUS DATA",
     value = 'continuousdata',
-    layout_sidebar(
-      sidebar = sidebar(
-        title = "Controls",
-        border_radius = FALSE, 
-        fillable = TRUE,
-        width = "400px",
-        open = "desktop",
-        
-        selectInput("variable3", "Select Variable:", choices = c("Option 1", "Option 2", "Option 3"))
-        
-      ),
-      
-      # Main content area with side-by-side visualizations
-      layout_sidebar(
-        sidebar = sidebar(
-          "right contents",
-          width = "50%",
-          position = "right",
-          open = FALSE
-        ),
-        border = FALSE,
-        "middle content"
-        
+    navset_card_underline(
+      full_screen = TRUE,
+      height = '100%',
+      nav_panel(
+        title = "DATA",
+        class = 'card-scroll',
+        layout_sidebar(
+          sidebar = sidebar(
+            title = "Controls",
+            border_radius = FALSE, 
+            fillable = TRUE,
+            width = "400px",
+            open = "desktop",
+            
+            selectInput("variable3", "Select Variable:", choices = c("Option 1", "Option 2", "Option 3"))
+            
+          ),
+          
+          # Main content area with side-by-side visualizations
+          layout_sidebar(
+            sidebar = sidebar(
+              "right content",
+              width = "50%",
+              position = "right",
+              open = FALSE
+            ),
+            border = FALSE,
+            "middle content"
+            
+          )
+        )
+      ), 
+      nav_panel(
+        title = "HOW TO USE",
+        class = 'card-scroll',
+        NULL
       )
     )
     
@@ -166,7 +206,7 @@ ui <- page_navbar(
       # Main content area with side-by-side visualizations
       layout_sidebar(
         sidebar = sidebar(
-          "right contents",
+          "right content",
           width = "50%",
           position = "right",
           open = FALSE
