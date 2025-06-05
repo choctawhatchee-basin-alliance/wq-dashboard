@@ -201,7 +201,14 @@ save(alldat, file = here('data', 'alldat.RData'))
 data("alldat")
 
 meta <- alldat |> 
-  select(type, units, location, parameter) |> 
+  select(type, units, location, parameter, date, val) |> 
+  filter(!is.na(val)) |> 
+  mutate(
+    datestr = min(date, na.rm = T), 
+    dateend = max(date, na.rm = T),
+    .by = c(type, units, location, parameter)
+  ) |> 
+  select(-date, -val) |>
   unique() |> 
   mutate(
     label = case_when(

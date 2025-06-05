@@ -58,11 +58,10 @@ ui <- page_navbar(
         open = "desktop",
         
           radioButtons("summarize1", "Summarize By:", choices = c("WBID", "Station"), selected = "WBID"), 
-          selectInput('summstat1', "Summarize as:", choices = c("Mean", "Median", "Max", "Min")),
-          selectInput('location1', "Sample location:", choices = list('Surface' = 'surf', 'Bottom' = 'bott')),
           selectInput("parameter1", "Select Parameter:", choices = prms), 
-          sliderInput("daterange1", "Select Date Range:", min = dtrng[1], max = dtrng[2], value = dtrng, 
-                     timeFormat = "%Y-%m-%d")
+          uiOutput("location1"),
+          selectInput('summstat1', "Summarize as:", choices = c("Mean", "Median", "Max", "Min")),
+          uiOutput("daterange1")
           
         ),
         
@@ -198,29 +197,71 @@ server <- function(input, output, session) {
   # reactives
     
   # byareamap update
-  observeEvent(list(input$summarize1, input$summstat1, input$location1, input$parameter1, input$daterange1, input$`main-nav`), {
+  
+  # reactive value to prevent double firing
+  values <- reactiveValues(
+    updating = FALSE
+  )
+  
+  # Single observer for all inputs
+  observeEvent(list(input$summarize1, input$parameter1, input$location1, input$summstat1, input$daterange1, input$`main-nav`), {
     
-    if(input$`main-nav` == 'byarea'){
+    if(input$`main-nav` == 'byarea' && !values$updating){
       
-      # inputs
-      byareadat <- try(byareadat_fun(alldat, 
-                                 cbawbid, 
-                                 stas, 
-                                 input$summarize1, 
-                                 input$summstat1, 
-                                 input$location1, 
-                                 input$parameter1, 
-                                 input$daterange1
-      ))
+      req(input$location1)
+      req(input$daterange1)
       
-      byareamap_fun(byareamap_proxy, byareadat, input$summarize1)
+      # Set flag to prevent concurrent updates
+      values$updating <- TRUE
+      
+      byareamap_fun(byareamap_proxy, alldat, cbawbid, stas, input$summarize1, input$summstat1, 
+                    input$location1, input$parameter1, input$daterange1)
+      
+      # reset flag after brief delay
+      later::later(function() {
+        values$updating <- FALSE
+      }, 0.1)  # 100ms delay
       
     }
-   
-  })
+    
+  }, ignoreInit = FALSE) 
   
   #####
   # output
+  
+  output$location1 <- renderUI({
+    
+    parameter1 <- input$parameter1
+    
+    locsin <- meta |> 
+      dplyr::filter(parameter == parameter1) |>
+      dplyr::pull(location) |> 
+      unique()
+
+    locsel <- locs[locs %in% locsin] 
+
+    selectInput('location1', "Sample location:", choices = locsel)
+    
+  })
+  
+  output$daterange1 <- renderUI({
+    
+    req(input$location1)
+    
+    # inputs
+    location1 <- input$location1 
+    parameter1 <- input$parameter1
+
+    dtrng <- meta |> 
+      dplyr::filter(location == location1 & parameter == parameter1) |> 
+      dplyr::select(datestr, dateend)
+    dtrng <- range(c(dtrng$datestr, dtrng$dateend))
+    
+    sliderInput("daterange1", "Select Date Range:", 
+                min = dtrng[1], max = dtrng[2], 
+                value = dtrng, timeFormat = "%Y-%m-%d")
+    
+  })
   
   output$byareamap <- leaflet::renderLeaflet(bsmap(stas))
   byareamap_proxy <- leaflet::leafletProxy("byareamap")

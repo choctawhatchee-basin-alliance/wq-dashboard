@@ -94,15 +94,28 @@ bsmap <- function(bnds){
 #' Function to update the map with summarized data by area
 #' 
 #' @param mapin Leaflet map object to update
-#' @param byareadat Data frame containing summarized data by area
+#' @param alldat Data frame containing the data to summarize
+#' @param cbawbid sf object containing wbids
+#' @param stas sf object containing station geometries
 #' @param summarize1 Character string indicating how to summarize the data ('WBID' or 'Station')
-byareamap_fun <- function(mapin, byareadat, summarize1){
+#' @param summstat1 Character string indicating the summary statistic to calculate (e.g., 'Mean', 'Median', 'Max', 'Min')
+#' @param location1 Character string indicating the sample location (e.g., 'surface', 'bottom')
+#' @param parameter1 Character string indicating the parameter to filter by
+#' @param daterange1 Date range to filter the data
+byareamap_fun <- function(mapin, alldat, cbawbid, stas, summarize1, summstat1, location1, parameter1, daterange1){
+  
+  # summarize data
+  byareadat <- try(
+    byareadat_fun(alldat, cbawbid, stas, summarize1, summstat1, location1, parameter1, daterange1),
+    silent = T
+  )
   
   # create map
   if(inherits(byareadat, 'try-error'))
     out <- mapin %>%
       leaflet::clearMarkers() |> 
-      leaflet::clearShapes()
+      leaflet::clearShapes() |> 
+      leaflet::clearControls()
   
   if(!inherits(byareadat, 'try-error')) {
     
@@ -112,9 +125,15 @@ byareamap_fun <- function(mapin, byareadat, summarize1){
       na.color = "transparent"
     )
     
+    lab <- meta |> 
+      dplyr::filter(parameter == parameter1) |> 
+      dplyr::pull(label) |> 
+      unique()
+    
     out <- mapin %>%
       leaflet::clearMarkers() |> 
-      leaflet::clearShapes() 
+      leaflet::clearShapes() |> 
+      leaflet::clearControls()
     
     if(summarize1 == 'WBID')
       out <- out |> 
@@ -130,20 +149,37 @@ byareamap_fun <- function(mapin, byareadat, summarize1){
           fillOpacity = 0.7,
           bringToFront = TRUE
         ),
-        label = ~paste0(WBID, ": ", ", Value: ", val)
+        label = ~paste0(WBID, ", Value: ", round(val, 2)),
+        labelOptions = leaflet::labelOptions(
+          style = list("font-size" = "16px")
+        )
       )
     
     if(summarize1 == 'Station')
       out <- out |> 
         leaflet::addCircleMarkers(
           data = byareadat,
-          radius = 5,
+          radius = 7,
           fillColor = ~pal(val),
           fillOpacity = 0.7,
           color = "black",
           weight = 1,
-          label = ~paste0(waterbody, ": ", station, ", Value: ", val)
+          label = ~paste0(waterbody, ": ", station, ", Value: ", round(val, 2)),
+          labelOptions = leaflet::labelOptions(
+            style = list("font-size" = "16px")
+          )
         )
+    
+    # add legend
+    out <- out |>
+      leaflet::addLegend(
+        pal = pal,
+        values = byareadat$val,
+        title = paste(lab, "<br>", summstat1),  # Dynamic title based on inputs
+        position = "topright",
+        opacity = 0.8,
+        na.label = "No Data"
+      )
     
   }
   
@@ -171,13 +207,14 @@ byareadat_fun <- function(alldat, cbawbid, stas, summarize1, summstat1, location
       date <= as.Date(daterange1[2]) & 
       location == location1
     ) |> 
-    dplyr::select(waterbody, station, date, parameter, val)
+    dplyr::select(waterbody, station, date, parameter, val) |> 
+    filter(!is.na(val))
 
   dat <- dplyr::left_join(dat, stas, by = c('waterbody', 'station')) |> 
     sf::st_as_sf()
   
   if (summarize1 == "WBID") {
-    
+
     out <- dat |>  
       sf::st_drop_geometry() |> 
       dplyr::summarise(

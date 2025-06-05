@@ -14,6 +14,7 @@ prms <- meta |>
   dplyr::arrange(parameter)
 prms <- setNames(prms$parameter, prms$label)
 dtrng <- range(alldat$date)
+locs <- list('Surface' = 'surf', 'Bottom' = 'bott')
 
 # value boxes
 nsmp <- format(nrow(alldat), big.mark = ",", scientific = FALSE)
