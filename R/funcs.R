@@ -134,26 +134,27 @@ byareamap_fun <- function(mapin, alldat, cbawbid, stas, summarize1, summstat1, l
       leaflet::clearMarkers() |> 
       leaflet::clearShapes() |> 
       leaflet::clearControls()
-    
+
     if(summarize1 == 'WBID')
       out <- out |> 
-      leaflet::addPolygons(
-        data = byareadat,
-        fillColor = ~pal(val),
-        fillOpacity = 0.7,
-        color = "#666",
-        weight = 1,
-        highlightOptions = leaflet::highlightOptions(
-          weight = 3,
-          color = "#666",
+        leaflet::addPolygons(
+          data = byareadat,
+          fillColor = ~pal(val),
           fillOpacity = 0.7,
-          bringToFront = TRUE
-        ),
-        label = ~paste0(WBID, ", Value: ", round(val, 2)),
-        labelOptions = leaflet::labelOptions(
-          style = list("font-size" = "16px")
+          color = "#666",
+          weight = 1,
+          highlightOptions = leaflet::highlightOptions(
+            weight = 3,
+            color = "#666",
+            fillOpacity = 0.7,
+            bringToFront = TRUE
+          ),
+          label = ~paste0(WBID, ", Value: ", round(val, 2)),
+          labelOptions = leaflet::labelOptions(
+            style = list("font-size" = "16px")
+          ), 
+          layerId = ~WBID
         )
-      )
     
     if(summarize1 == 'Station')
       out <- out |> 
@@ -164,10 +165,11 @@ byareamap_fun <- function(mapin, alldat, cbawbid, stas, summarize1, summstat1, l
           fillOpacity = 0.7,
           color = "black",
           weight = 1,
-          label = ~paste0(waterbody, ": ", station, ", Value: ", round(val, 2)),
+          label = ~paste0(waterbody, " ", station, ", Value: ", round(val, 2)),
           labelOptions = leaflet::labelOptions(
             style = list("font-size" = "16px")
-          )
+          ), 
+          layerId = ~paste0(waterbody, "_", station)
         )
     
     # add legend
@@ -199,7 +201,7 @@ byareamap_fun <- function(mapin, alldat, cbawbid, stas, summarize1, summstat1, l
 #' @param parameter1 Character string indicating the parameter to filter by
 #' @param daterange1 Date range to filter the data
 byareadat_fun <- function(alldat, cbawbid, stas, summarize1, summstat1, location1, parameter1, daterange1){
-  
+
   dat <- alldat |> 
     dplyr::filter(
       parameter == parameter1 &
@@ -208,7 +210,7 @@ byareadat_fun <- function(alldat, cbawbid, stas, summarize1, summstat1, location
       location == location1
     ) |> 
     dplyr::select(waterbody, station, date, parameter, val) |> 
-    filter(!is.na(val))
+    dplyr::filter(!is.na(val))
 
   dat <- dplyr::left_join(dat, stas, by = c('waterbody', 'station')) |> 
     sf::st_as_sf()
@@ -237,6 +239,77 @@ byareadat_fun <- function(alldat, cbawbid, stas, summarize1, summstat1, location
       dplyr::filter(!is.na(val))
     
   }
+  
+  return(out)
+  
+}
+
+byareaplo_fun <- function(shape_click, marker_click, alldat, stas, summarize1, summstat1, location1, parameter1, daterange1){
+  
+  toplo <- alldat |> 
+    dplyr::filter(
+      parameter == parameter1 &
+        date >= as.Date(daterange1[1]) & 
+        date <= as.Date(daterange1[2]) & 
+        location == location1
+    )
+  
+  if(!is.null(shape_click)){
+    
+    id <- shape_click$id
+    ttl <- paste('WBID', id)
+    
+    toplo <- toplo |> 
+      dplyr::inner_join(stas, by = c('waterbody', 'station')) |> 
+      dplyr::filter(WBID %in% id) |> 
+      dplyr::select(date, val) |> 
+      dplyr::summarise(
+        val = match.fun(tolower(summstat1))(val, na.rm = TRUE),
+        .by = date
+      )
+    
+  }
+  
+  if(!is.null(marker_click)){
+ 
+    id <- marker_click$id
+    waterbody <- sub("_(.*)", "", id)
+    station <- sub(".*_(.*)", "\\1", id)
+    ttl <- paste(waterbody, station)
+    
+    toplo <- toplo |> 
+      dplyr::filter(waterbody == !!waterbody & station == !!station) |> 
+      dplyr::select(date, val) |> 
+      dplyr::summarise(
+        val = match.fun(tolower(summstat1))(val, na.rm = TRUE),
+        .by = date
+      )
+      
+  }
+
+  ylab <- meta |> 
+    dplyr::filter(parameter == parameter1) |> 
+    dplyr::pull(label) |> 
+    unique()
+  
+  out <- plotly::plot_ly(
+      data = toplo,
+      x = ~date,
+      y = ~val,
+      type = 'scatter',
+      mode = 'lines+markers',
+      line = list(color = 'blue'),
+      marker = list(size = 5),
+      hoverinfo = 'text',
+      text = ~paste("Date:", date, "<br>Value:", round(val, 2))
+    ) |> 
+    plotly::layout(
+      title = ttl,
+      xaxis = list(title = "Date", 
+                   range = c(as.Date(daterange1[1]), as.Date(daterange1[2]))
+                   ),
+      yaxis = list(title = paste(summstat1, ylab))
+    )
   
   return(out)
   

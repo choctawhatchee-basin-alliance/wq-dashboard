@@ -75,7 +75,8 @@ ui <- page_navbar(
           # Main content area with side-by-side visualizations
           layout_sidebar(
             sidebar = sidebar(
-              "right content",
+              id = "byareasidebar",
+              plotly::plotlyOutput('byareaplo', height = "calc(100vh - 300px)"),
               width = "50%",
               position = "right",
               open = FALSE
@@ -239,35 +240,114 @@ server <- function(input, output, session) {
   # byareamap update
   
   # reactive value to prevent double firing
-  values <- reactiveValues(
+  values1 <- reactiveValues(
+    updating = FALSE
+  )
+  
+  values2 <- reactiveValues(
     updating = FALSE
   )
   
   # Single observer for all inputs
   observeEvent(list(input$summarize1, input$parameter1, input$location1, input$summstat1, input$daterange1, input$`main-nav`), {
     
-    if(input$`main-nav` == 'byarea' && !values$updating){
+    if(input$`main-nav` == 'byarea' && !values1$updating){
       
       req(input$location1)
       req(input$daterange1)
       
       # Set flag to prevent concurrent updates
-      values$updating <- TRUE
+      values1$updating <- TRUE
       
       byareamap_fun(byareamap_proxy, alldat, cbawbid, stas, input$summarize1, input$summstat1, 
                     input$location1, input$parameter1, input$daterange1)
       
       # reset flag after brief delay
       later::later(function() {
-        values$updating <- FALSE
+        values1$updating <- FALSE
       }, 0.1)  # 100ms delay
       
     }
     
   }, ignoreInit = FALSE) 
   
+  # for map clicks
+  map_sel1 <- reactiveVal(NULL)
+  
+  # handle shape clicks
+  observeEvent(input$byareamap_shape_click, {
+    if (!is.null(input$byareamap_shape_click)) {
+      map_sel1(list(type = "shape", data = input$byareamap_shape_click))
+    }
+  })
+  
+  # handle marker clicks  
+  observeEvent(input$byareamap_marker_click, {
+    if (!is.null(input$byareamap_marker_click)) {
+      map_sel1(list(type = "marker", data = input$byareamap_marker_click))
+    }
+  })
+  
+  # by area plot
+  byareaplo <- reactive({
+    
+    req(map_sel1())
+    
+    sel <- map_sel1()
+    
+    if (sel$type == "shape") {
+      shape_click <- sel$data
+      marker_click <- NULL
+    } else {
+      shape_click <- NULL
+      marker_click <- sel$data
+    }
+    
+    # Set flag to prevent concurrent updates
+    values2$updating <- TRUE
+    
+    out <- byareaplo_fun(shape_click, marker_click, alldat, stas, 
+              input$summarize1, input$summstat1, input$location1, input$parameter1,
+              input$daterange1)
+    
+    # reset flag after brief delay
+    later::later(function() {
+      values2$updating <- FALSE
+    }, 0.1)  # 100ms delay
+    
+    return(out)    
+    
+  })
+  
+  # toggle open sidebar, polygon or maker
+  observeEvent(input$byareamap_shape_click, {
+    sidebar_toggle("byareasidebar", open = TRUE)
+  })
+  observeEvent(input$byareamap_marker_click, {
+    sidebar_toggle("byareasidebar", open = TRUE)
+  })
+  
   #####
   # output
+  
+  output$daterange1 <- renderUI({
+    
+    req(input$location1)
+    
+    # inputs
+    location1 <- input$location1 
+    parameter1 <- input$parameter1
+    
+    dtrng <- meta |> 
+      dplyr::filter(location == location1 & parameter == parameter1) |> 
+      dplyr::select(datestr, dateend)
+    dtrng <- range(c(dtrng$datestr, dtrng$dateend))
+    
+    sliderInput("daterange1", "Select Date Range:", 
+                min = dtrng[1], max = dtrng[2], 
+                value = dtrng, timeFormat = "%Y-%m-%d")
+    
+  })
   
   output$location1 <- renderUI({
     
@@ -284,28 +364,11 @@ server <- function(input, output, session) {
     
   })
   
-  output$daterange1 <- renderUI({
-    
-    req(input$location1)
-    
-    # inputs
-    location1 <- input$location1 
-    parameter1 <- input$parameter1
-
-    dtrng <- meta |> 
-      dplyr::filter(location == location1 & parameter == parameter1) |> 
-      dplyr::select(datestr, dateend)
-    dtrng <- range(c(dtrng$datestr, dtrng$dateend))
-    
-    sliderInput("daterange1", "Select Date Range:", 
-                min = dtrng[1], max = dtrng[2], 
-                value = dtrng, timeFormat = "%Y-%m-%d")
-    
-  })
-  
   output$byareamap <- leaflet::renderLeaflet(bsmap(stas))
   byareamap_proxy <- leaflet::leafletProxy("byareamap")
 
+  output$byareaplo <- plotly::renderPlotly(byareaplo())
+  
 }
 
 shinyApp(ui, server)
