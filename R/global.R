@@ -13,7 +13,7 @@ prms <- meta |>
   dplyr::distinct() |> 
   dplyr::arrange(parameter)
 prms <- setNames(prms$parameter, prms$label)
-dtrng <- range(alldat$date)
+dtrng <- c(min(meta$datestr), max(meta$dateend))
 locs <- list('Surface' = 'surf', 'Bottom' = 'bott')
 
 # value boxes
@@ -21,7 +21,7 @@ nsmp <- format(nrow(alldat), big.mark = ",", scientific = FALSE)
 nprm <- length(unique(alldat$parameter))
 nsta <- nrow(stas)
 nwbd <- length(unique(alldat$waterbody))
-dtrg <- paste(lubridate::year(range(alldat$date)), collapse = ' to ')
+dtrg <- paste(lubridate::year(dtrng), collapse = ' to ')
 valbx <- list(
   bslib::value_box(
     title = "Number of samples", value = nsmp,

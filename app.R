@@ -108,28 +108,21 @@ ui <- page_navbar(
         class = 'card-scroll',
         layout_sidebar(
           sidebar = sidebar(
-            title = "Controls",
             border_radius = FALSE, 
             fillable = TRUE,
-            width = "400px",
+            width = "50%",
             open = "desktop",
             
-            selectInput("variable2", "Select Variable:", choices = c("Option 1", "Option 2", "Option 3"))
+            sliderInput("daterange2", "Select Date Range:", 
+                        min = dtrng[1], max = dtrng[2], 
+                        value = dtrng, timeFormat = "%Y-%m-%d"),
+            leaflet::leafletOutput('bystationmap', height = "calc(100vh - 370px)")
             
           ),
-          
-        # Main content area with side-by-side visualizations
-        layout_sidebar(
-          sidebar = sidebar(
-            "right content",
-            width = "50%",
-            position = "right",
-            open = FALSE
-          ),
-          border = FALSE,
-          "middle content"
-          
-          )
+        border = FALSE,
+        "middle content",
+        width = '50%', 
+        open = FALSE
         )
       ), 
       nav_panel(
@@ -248,7 +241,7 @@ server <- function(input, output, session) {
     updating = FALSE
   )
   
-  # Single observer for all inputs
+  # by area map initialize
   observeEvent(list(input$summarize1, input$parameter1, input$location1, input$summstat1, input$daterange1, input$`main-nav`), {
     
     if(input$`main-nav` == 'byarea' && !values1$updating){
@@ -327,6 +320,19 @@ server <- function(input, output, session) {
     sidebar_toggle("byareasidebar", open = TRUE)
   })
   
+  # station map
+  
+  # by station map initialize
+  observeEvent(list(input$daterange2, input$`main-nav`), {
+    
+    if(input$`main-nav` == 'bystation'){
+      
+      bystationmap_fun(bystationmap_proxy, stas, input$daterange2)
+      
+    }
+    
+  }, ignoreInit = FALSE)
+  
   #####
   # output
   
@@ -368,6 +374,9 @@ server <- function(input, output, session) {
   byareamap_proxy <- leaflet::leafletProxy("byareamap")
 
   output$byareaplo <- plotly::renderPlotly(byareaplo())
+  
+  output$bystationmap <- leaflet::renderLeaflet(bsmap(stas))
+  bystationmap_proxy <- leaflet::leafletProxy("bystationmap")
   
 }
 

@@ -187,7 +187,6 @@ byareamap_fun <- function(mapin, alldat, cbawbid, stas, summarize1, summstat1, l
   
   return(out)
   
-  
 }
 
 #' Function to summarize data by waterbody or station
@@ -244,6 +243,17 @@ byareadat_fun <- function(alldat, cbawbid, stas, summarize1, summstat1, location
   
 }
 
+#' Function to create a time series plot for a selected area or station
+#' 
+#' @param shape_click Shape click event data from leaflet
+#' @param marker_click Marker click event data from leaflet
+#' @param alldat Data frame containing the water quality data to plo
+#' @param stas sf object containing station geometries
+#' @param summarize1 Character string indicating how to summarize the data ('WBID' or 'Station')
+#' @param summstat1 Character string indicating the summary statistic to calculate (e.g., 'Mean', 'Median', 'Max', 'Min')
+#' @param location1 Character string indicating the sample location (e.g., 'surface', 'bottom')
+#' @param parameter1 Character string indicating the parameter to filter by
+#' @param daterange1 Date range to filter the data
 byareaplo_fun <- function(shape_click, marker_click, alldat, stas, summarize1, summstat1, location1, parameter1, daterange1){
   
   toplo <- alldat |> 
@@ -310,6 +320,49 @@ byareaplo_fun <- function(shape_click, marker_click, alldat, stas, summarize1, s
                    ),
       yaxis = list(title = paste(summstat1, ylab))
     )
+  
+  return(out)
+  
+}
+
+#' Function to update the map with summarized data by area
+#' 
+#' @param mapin Leaflet map object to update
+#' @param alldat Data frame containing the data to summarize
+#' @param stas sf object containing station geometries
+#' @param daterange2 Date range to filter the data
+bystationmap_fun <- function(mapin, stas, daterange2){
+
+  tomap <- stas |>
+    dplyr::filter(datestr <= daterange2[2] & dateend >= daterange2[1])
+  
+  # create map
+  if(nrow(tomap) == 0){
+    
+    out <- mapin %>%
+      leaflet::clearMarkers() 
+  
+  }
+  
+  if(nrow(tomap) != 0) {
+  
+    out <- mapin %>%
+      leaflet::clearMarkers() |> 
+      leaflet::addCircleMarkers(
+        data = tomap,
+        radius = 7,
+        fillColor = '#007BC2',
+        fillOpacity = 0.7,
+        color = "black",
+        weight = 1,
+        label = ~paste0(waterbody, " ", station, ": start ", datestr, ", end ", dateend),
+        labelOptions = leaflet::labelOptions(
+          style = list("font-size" = "16px")
+        ), 
+        layerId = ~paste0(waterbody, "_", station)
+      )
+    
+  }
   
   return(out)
   
