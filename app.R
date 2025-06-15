@@ -63,26 +63,22 @@ ui <- page_navbar(
             fillable = TRUE,
             width = "400px",
             open = "desktop",
-            
-              radioButtons("summarize1", "Summarize By:", choices = c("WBID", "Station"), selected = "WBID"), 
-              selectInput("parameter1", "Select Parameter:", choices = prms), 
-              uiOutput("location1"),
-              selectInput('summstat1', "Summarize as:", choices = c("Mean", "Median", "Max", "Min")),
-              uiOutput("daterange1")
-              
+            radioButtons("summarize1", "Summarize By:", choices = c("WBID", "Station"), selected = "WBID"), 
+            selectInput("parameter1", "Select Parameter:", choices = prms), 
+            uiOutput("location1"),
+            selectInput('summstat1', "Summarize as:", choices = c("Mean", "Median", "Max", "Min")),
+            uiOutput("daterange1")
           ),
-            
-          # Main content area with side-by-side visualizations
           layout_sidebar(
+            border = FALSE,
+            leaflet::leafletOutput('byareamap', height = "100%"),
             sidebar = sidebar(
               id = "byareasidebar",
               plotly::plotlyOutput('byareaplo', height = "calc(100vh - 300px)"),
               width = "50%",
               position = "right",
               open = FALSE
-            ),
-            border = FALSE,
-            leaflet::leafletOutput('byareamap', height = "100%")
+            )
           )
         )
       ), 
@@ -107,22 +103,29 @@ ui <- page_navbar(
         title = "DATA",
         class = 'card-scroll',
         layout_sidebar(
+          border = FALSE,
+          sliderInput("daterange2", "Select Date Range:", 
+                      min = dtrng[1], max = dtrng[2], 
+                      value = dtrng, timeFormat = "%Y-%m-%d", width = '50%'),
+          leaflet::leafletOutput('bystationmap', height = "calc(100vh - 370px)"),
+          width = '50%', 
+          position = 'left',
+          open = TRUE,
           sidebar = sidebar(
+            id = "bystationsidebar",
+            div(
+              style = "display: flex; align-items: center; gap: 1rem;",
+              uiOutput('parameter2a'),
+              uiOutput('parameter2b'),
+              uiOutput('summarize2'),
+            ),
+            plotly::plotlyOutput('bystationplo', height = "calc(100vh - 300px)"),
             border_radius = FALSE, 
             fillable = TRUE,
             width = "50%",
-            open = "desktop",
-            
-            sliderInput("daterange2", "Select Date Range:", 
-                        min = dtrng[1], max = dtrng[2], 
-                        value = dtrng, timeFormat = "%Y-%m-%d"),
-            leaflet::leafletOutput('bystationmap', height = "calc(100vh - 370px)")
-            
+            open = FALSE,
+            position = 'right'
           ),
-        border = FALSE,
-        "middle content",
-        width = '50%', 
-        open = FALSE
         )
       ), 
       nav_panel(
@@ -152,22 +155,17 @@ ui <- page_navbar(
             fillable = TRUE,
             width = "400px",
             open = "desktop",
-            
             selectInput("variable3", "Select Variable:", choices = c("Option 1", "Option 2", "Option 3"))
-            
           ),
-          
-          # Main content area with side-by-side visualizations
           layout_sidebar(
+            border = FALSE,
+            "middle content",
             sidebar = sidebar(
               "right content",
               width = "50%",
               position = "right",
               open = FALSE
-            ),
-            border = FALSE,
-            "middle content"
-            
+            )
           )
         )
       ), 
@@ -192,22 +190,17 @@ ui <- page_navbar(
         fillable = TRUE,
         width = "400px",
         open = "desktop",
-        
         selectInput("variable4", "Select Variable:", choices = c("Option 1", "Option 2", "Option 3"))
-        
       ),
-      
-      # Main content area with side-by-side visualizations
       layout_sidebar(
+        border = FALSE,
+        "middle content",
         sidebar = sidebar(
           "right content",
           width = "50%",
           position = "right",
           open = FALSE
-        ),
-        border = FALSE,
-        "middle content"
-        
+        )
       )
     )
     
@@ -264,7 +257,7 @@ server <- function(input, output, session) {
     
   }, ignoreInit = FALSE) 
   
-  # for map clicks
+  # for area map clicks
   map_sel1 <- reactiveVal(NULL)
   
   # handle shape clicks
@@ -312,7 +305,7 @@ server <- function(input, output, session) {
     
   })
   
-  # toggle open sidebar, polygon or maker
+  # toggle areamap open sidebar, polygon or marker
   observeEvent(input$byareamap_shape_click, {
     sidebar_toggle("byareasidebar", open = TRUE)
   })
@@ -332,6 +325,71 @@ server <- function(input, output, session) {
     }
     
   }, ignoreInit = FALSE)
+  
+  # for station map clicks
+  map_sel2 <- reactiveVal(NULL)
+  
+  # handle shape clicks
+  observeEvent(input$bystationmap_marker_click, {
+    if (!is.null(input$bystationmap_marker_click)) {
+      map_sel2(list(type = "marker", data = input$bystationmap_marker_click))
+    }
+  })
+  
+  # reactive for parameter station selections
+  stationprmsel <- reactive({
+    
+    req(map_sel2())
+
+    # inputs
+    mapsel2 <- map_sel2()$data
+    
+    waterbody <- gsub("(^.*)\\_.*$", "\\1", mapsel2$id)
+    station <- gsub(".*\\_(.*)$", "\\1", mapsel2$id)
+
+    out <- alldat |> 
+      dplyr::filter(waterbody == waterbody & station == station) |>
+      dplyr::select(parameter, location) |> 
+      dplyr::distinct() |> 
+      dplyr::left_join(prmsdf, by = "parameter", relationship = 'many-to-many') |>
+      dplyr::mutate(
+        location2 = dplyr::case_when(
+          location == 'surf' ~ 'Surface',
+          location == 'bott' ~ 'Bottom',
+          TRUE ~ location
+        )
+      ) |> 
+      tidyr::unite(label, c(label, location2), sep = ": ") |>
+      tidyr::unite(parameter, c(parameter, location), sep = "_") |>
+      dplyr::arrange(label)
+    
+    out <- setNames(out$parameter, out$label)
+    
+    return(out)
+    
+  })
+  
+  # by station plot
+  bystationplo <- reactive({
+    
+    req(map_sel2())
+    req(input$parameter2a)
+    req(input$parameter2b)
+    
+    sel <- map_sel2()$data
+
+    out <- bystationplo_fun(sel, alldat, stas, 
+                         input$summarize2, input$parameter2a,
+                         input$parameter2b, input$daterange2)
+    
+    return(out)    
+    
+  })
+  
+  # toggle stationmap open sidebar, marker
+  observeEvent(input$bystationmap_marker_click, {
+    sidebar_toggle("bystationsidebar", open = TRUE)
+  })
   
   #####
   # output
@@ -370,13 +428,39 @@ server <- function(input, output, session) {
     
   })
   
+  output$parameter2a <- renderUI({
+    
+    req(stationprmsel())
+    
+    selectInput('parameter2a', "Parameter 1:", choices = stationprmsel())
+    
+  })
+  
+  output$parameter2b <- renderUI({
+    
+    req(stationprmsel())
+    
+    selectInput('parameter2b', "Parameter 2:", choices = stationprmsel())
+    
+  })
+  
+  output$summarize2 <- renderUI({
+    
+    req(map_sel2())
+    
+    selectInput("summarize2", "Summarize By:", 
+                choices = c("day", "week", "month", "year"), 
+                selected = "day")
+    
+  })
+  
   output$byareamap <- leaflet::renderLeaflet(bsmap(stas))
   byareamap_proxy <- leaflet::leafletProxy("byareamap")
-
   output$byareaplo <- plotly::renderPlotly(byareaplo())
   
   output$bystationmap <- leaflet::renderLeaflet(bsmap(stas))
   bystationmap_proxy <- leaflet::leafletProxy("bystationmap")
+  output$bystationplo <- plotly::renderPlotly(bystationplo())
   
 }
 

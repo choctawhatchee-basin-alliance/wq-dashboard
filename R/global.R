@@ -8,11 +8,11 @@ load(file = here::here('data/stas.RData'))
 load(file = here::here('data/cbawbid.RData'))
 
 # selections
-prms <- meta |> 
+prmsdf <- meta |> 
   dplyr::select(parameter, label) |> 
   dplyr::distinct() |> 
   dplyr::arrange(parameter)
-prms <- setNames(prms$parameter, prms$label)
+prms <- setNames(prmsdf$parameter, prmsdf$label)
 dtrng <- c(min(meta$datestr), max(meta$dateend))
 locs <- list('Surface' = 'surf', 'Bottom' = 'bott')
 

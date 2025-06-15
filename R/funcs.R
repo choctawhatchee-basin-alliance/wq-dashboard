@@ -367,3 +367,135 @@ bystationmap_fun <- function(mapin, stas, daterange2){
   return(out)
   
 }
+
+bystationplo_fun <- function(sel, alldat, stas, summarize2, parameter2a,
+                             parameter2b, daterange2){
+
+  waterbody <- gsub("(^.*)\\_.*$", "\\1", sel$id)
+  station <- gsub(".*\\_(.*)$", "\\1", sel$id)
+  prm2a <- gsub("(^.*)\\_.*$", "\\1", parameter2a)
+  prm2b <- gsub("(^.*)\\_.*$", "\\1", parameter2b)
+  loca <- gsub(".*\\_(.*)$", "\\1", parameter2a)
+  locb <- gsub(".*\\_(.*)$", "\\1", parameter2b)
+  localb <- ifelse(loca == 'surf', 'Surface', 'Bottom')
+  locblb <- ifelse(locb == 'surb', 'Surface', 'Bottom')
+  
+  ylab1 <- meta |> 
+    dplyr::filter(parameter == prm2a) |> 
+    dplyr::pull(label) |> 
+    unique() |> 
+    paste0(": ", localb)
+  ylab2 <- meta |>
+    dplyr::filter(parameter == prm2b) |> 
+    dplyr::pull(label) |> 
+    unique() |> 
+    paste0(": ", locblb)
+  
+  toplo <- alldat |> 
+    dplyr::filter(
+      waterbody == waterbody & 
+      station == station & 
+      date >= as.Date(daterange2[1]) & 
+      date <= as.Date(daterange2[2])
+    ) |> 
+    dplyr::filter((parameter == prm2a & location == loca) | 
+                  (parameter == prm2b & location == locb)
+                  ) |> 
+    dplyr::rename(avev = val) |> 
+    dplyr::mutate(
+      date = lubridate::floor_date(date, summarize2),
+    ) |> 
+    dplyr::summarise(
+      hivl = tryCatch(t.test(avev, conf.level = 0.95)$conf.int[2], silent = TRUE, error = function(e) NA),
+      lovl = tryCatch(t.test(avev, conf.level = 0.95)$conf.int[1], silent = TRUE, error = function(e) NA),
+      avev = mean(avev, na.rm = TRUE),
+      .by = c(date, parameter)
+    )
+  
+  toplo1 <- toplo |> 
+      dplyr::filter(parameter == prm2a)
+  toplo2 <- toplo |>
+      dplyr::filter(parameter == prm2b)
+  
+  if(summarize2 != 'day'){
+    
+    p1 <- plotly::plot_ly(
+        data = toplo1,
+        x = ~date,
+        y = ~avev,
+        error_y = list(
+          array = ~hivl - avev,
+          color = 'blue'
+        ),
+        type = 'scatter',
+        mode = 'lines+markers',
+        line = list(color = 'blue'),
+        marker = list(size = 5),
+        hoverinfo = 'text',
+        text = ~paste("Date:", date, "<br>Value:", round(avev, 2))
+      ) 
+      
+    p2 <- plotly::plot_ly(
+        data = toplo2,
+        x = ~date,
+        y = ~avev,
+        error_y = list(
+          array = ~hivl - lovl,
+          color = 'red'
+        ),
+        type = 'scatter',
+        mode = 'lines+markers',
+        line = list(color = 'red'),
+        marker = list(size = 5),
+        hoverinfo = 'text',
+        text = ~paste("Date:", date, "<br>Value:", round(avev, 2))
+      ) 
+    
+  }
+  
+  if(summarize2 == 'day'){
+    
+    p1 <- plotly::plot_ly(
+      data = toplo1,
+      x = ~date,
+      y = ~avev,
+      type = 'scatter',
+      mode = 'lines+markers',
+      line = list(color = 'blue'),
+      marker = list(size = 5),
+      hoverinfo = 'text',
+      text = ~paste("Date:", date, "<br>Value:", round(avev, 2))
+    ) 
+    
+    p2 <- plotly::plot_ly(
+      data = toplo2,
+      x = ~date,
+      y = ~avev,
+      type = 'scatter',
+      mode = 'lines+markers',
+      line = list(color = 'red'),
+      marker = list(size = 5),
+      hoverinfo = 'text',
+      text = ~paste("Date:", date, "<br>Value:", round(avev, 2))
+    ) 
+    
+  }
+  
+  p1 <- p1 |> 
+    plotly::layout(
+      xaxis = list(title = ""),
+      yaxis = list(title = ylab1), 
+      showlegend = F
+    )
+  p2 <- p2 |> 
+    plotly::layout(
+      xaxis = list(title = ""),
+      yaxis = list(title = ylab2),
+      showlegend = F
+    )
+  
+  out <- plotly::subplot(p1, p2, nrows = 2, shareX = TRUE, titleY = TRUE)
+  
+  return(out)
+  
+}
