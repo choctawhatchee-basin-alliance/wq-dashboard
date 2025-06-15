@@ -368,7 +368,16 @@ bystationmap_fun <- function(mapin, stas, daterange2){
   
 }
 
-bystationplo_fun <- function(sel, alldat, stas, summarize2, parameter2a,
+#' Function to create a time series plot for a selected station
+#' 
+#' @param sel Selected station data from the input
+#' @param alldat Data frame containing the water quality data to plot
+#' @param stas sf object containing station geometries
+#' @param summarize2 Character string indicating how to summarize the data ('day', 'week', 'month', 'year')
+#' @param parameter2a Character string indicating the first parameter to filter by
+#' @param parameter2b Character string indicating the second parameter to filter by
+#' @param daterange2 Date range to filter the data
+bystationplo_fun <- function(sel, alldat, summarize2, parameter2a,
                              parameter2b, daterange2){
 
   waterbody <- gsub("(^.*)\\_.*$", "\\1", sel$id)
@@ -497,5 +506,53 @@ bystationplo_fun <- function(sel, alldat, stas, summarize2, parameter2a,
   out <- plotly::subplot(p1, p2, nrows = 2, shareX = TRUE, titleY = TRUE)
   
   return(out)
+  
+}
+
+#' Add marker or shape highlight to area map selection
+#'
+#' @param mapsel1 Data frame containing the selected area or station's ID
+#' @param cbawbid sf object containing waterbody IDs
+addselareamap_fun <- function(mapsel1, cbawbid){
+
+  if (!is.null(mapsel1)) {
+    
+    if(mapsel1$id%in% cbawbid$WBID){
+      # highlight area
+      leaflet::leafletProxy("byareamap") |>
+        leaflet::clearGroup("highlight") |>
+        leaflet::addPolygons(
+          data = cbawbid |> dplyr::filter(WBID == mapsel1$id), opacity = 1,
+          group = "highlight", color = "black", weight = 6, fillOpacity = 0
+        )
+    } else {
+      
+    leaflet::leafletProxy("byareamap") |>
+      leaflet::clearGroup("highlight") |>
+      leaflet::addCircleMarkers(
+        lng = mapsel1$lng, lat = mapsel1$lat,
+        group = "highlight", radius = 8, color = "black",
+        fillColor = '#007BC2', fillOpacity = 0, opacity = 1, weight = 6
+      )
+    }
+    
+  }
+  
+}
+
+#' Add marker highlight to station map selection
+#'
+#' @param mapsel2 Data frame containing the selected station's longitude and latitude
+addselstationmap_fun <- function(mapsel2){
+
+  if (!is.null(mapsel2)) {
+    leaflet::leafletProxy("bystationmap") |>
+      leaflet::clearGroup("highlight") |>
+      leaflet::addCircleMarkers(
+        lng = mapsel2$lng, lat = mapsel2$lat,
+        group = "highlight", radius = 8, color = "black",
+        fillColor = '#007BC2', fillOpacity = 0, opacity = 1, weight = 6
+      )
+  }
   
 }

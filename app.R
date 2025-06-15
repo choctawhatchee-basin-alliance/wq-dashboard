@@ -274,6 +274,16 @@ server <- function(input, output, session) {
     }
   })
   
+  # add highlight of shape to byareamap if map_sel1
+  observe({
+    
+    req(map_sel1())
+    mapsel1 <- map_sel1()
+
+    addselareamap_fun(mapsel1$data, cbawbid)
+ 
+  })
+  
   # by area plot
   byareaplo <- reactive({
     
@@ -336,6 +346,16 @@ server <- function(input, output, session) {
     }
   })
   
+  # add highlight of marker to bystationmap if map_sel2
+  observe({
+    
+    req(map_sel2())
+    mapsel2 <- map_sel2()$data
+    
+    addselstationmap_fun(mapsel2)
+    
+  })
+  
   # reactive for parameter station selections
   stationprmsel <- reactive({
     
@@ -378,7 +398,7 @@ server <- function(input, output, session) {
     
     sel <- map_sel2()$data
 
-    out <- bystationplo_fun(sel, alldat, stas, 
+    out <- bystationplo_fun(sel, alldat,
                          input$summarize2, input$parameter2a,
                          input$parameter2b, input$daterange2)
     
