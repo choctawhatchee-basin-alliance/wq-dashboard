@@ -190,18 +190,13 @@ ui <- page_navbar(
         fillable = TRUE,
         width = "400px",
         open = "desktop",
-        selectInput("variable4", "Select Variable:", choices = c("Option 1", "Option 2", "Option 3"))
+        selectInput("parameter4", "Select Parameter:", choices = prms),  
+        uiOutput("location4"),
+        uiOutput("daterange4")
       ),
-      layout_sidebar(
-        border = FALSE,
-        "middle content",
-        sidebar = sidebar(
-          "right content",
-          width = "50%",
-          position = "right",
-          open = FALSE
-        )
-      )
+      border = FALSE,
+      shinyWidgets::downloadBttn('dwnld', 'Download data', style = 'simple', block = T, color = 'success'),
+      reactable::reactableOutput('dltabout')
     )
     
   ),
@@ -393,6 +388,37 @@ server <- function(input, output, session) {
     sidebar_toggle("bystationsidebar", open = TRUE)
   })
   
+  # data to download
+  dldat <- reactive({
+    
+    req(input$daterange4)
+    req(input$location4)
+    
+    paramater4 <- input$parameter4
+    location4 <- input$location4
+    daterange4 <- input$daterange4
+    
+    out <- alldat |> 
+      dplyr::filter(parameter == paramater4 & 
+                    location == location4 & 
+                    date >= daterange4[1] & 
+                    date <= daterange4[2])
+    
+    return(out)
+    
+  })
+  
+  # reactable table
+  dltab <- reactive({
+    
+    dldat <- dldat()
+    
+    out <- dldattab_fun(dldat)
+    
+    return(out)
+    
+  })
+  
   #####
   # output
   
@@ -456,6 +482,37 @@ server <- function(input, output, session) {
     
   })
   
+  output$daterange4 <- renderUI({
+
+    # inputs
+    parameter4 <- input$parameter4
+    
+    dtrng <- meta |> 
+      dplyr::filter(parameter == parameter4) |> 
+      dplyr::select(datestr, dateend)
+    dtrng <- range(c(dtrng$datestr, dtrng$dateend))
+    
+    sliderInput("daterange4", "Select Date Range:", 
+                min = dtrng[1], max = dtrng[2], 
+                value = dtrng, timeFormat = "%Y-%m-%d")
+    
+  })
+  
+  output$location4 <- renderUI({
+    
+    parameter4 <- input$parameter4
+    
+    locsin <- meta |> 
+      dplyr::filter(parameter == parameter4) |>
+      dplyr::pull(location) |> 
+      unique()
+    
+    locsel <- locs[locs %in% locsin] 
+    
+    selectInput('location4', "Sample location:", choices = locsel)
+    
+  })
+  
   output$byareamap <- leaflet::renderLeaflet(bsmap(stas))
   byareamap_proxy <- leaflet::leafletProxy("byareamap")
   output$byareaplo <- plotly::renderPlotly(byareaplo())
@@ -463,6 +520,22 @@ server <- function(input, output, session) {
   output$bystationmap <- leaflet::renderLeaflet(bsmap(stas))
   bystationmap_proxy <- leaflet::leafletProxy("bystationmap")
   output$bystationplo <- plotly::renderPlotly(bystationplo())
+  
+  # download fib table
+  output$dltabout <- reactable::renderReactable(dltab())
+  
+  # download fib handler
+  output$dwnld <- downloadHandler(
+    filename = function(){'downloaddata.csv'},
+    content = function(file){
+      
+      # inputs
+      dldat <- dldat()
+      
+      write.csv(dldat, file, quote = T, row.names = F)
+      
+    }
+  )
   
 }
 

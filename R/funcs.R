@@ -589,3 +589,23 @@ stationprmsel_fun <- function(mapsel2){
   return(out)
   
 }
+
+#' Function to create a reactable table for displaying data to download
+#' 
+#' @param dldat Data frame containing the data to display in the table
+dldattab_fun <- function(dldat){
+  
+  out <- reactable::reactable(dldat,
+                              defaultColDef = reactable::colDef(
+                                footerStyle = list(fontWeight = "bold"),
+                                format = reactable::colFormat(digits = 3, separators = F),
+                                resizable = TRUE, 
+                                align = 'left'
+                              ),
+                              filterable = T,
+                              defaultPageSize = 10
+  )
+  
+  return(out)
+  
+}
