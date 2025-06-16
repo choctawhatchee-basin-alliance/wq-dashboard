@@ -253,6 +253,10 @@ server <- function(input, output, session) {
         values1$updating <- FALSE
       }, 0.1)  # 100ms delay
       
+      req(map_sel1())
+      
+      addselareamap_fun(map_sel1()$data, cbawbid)
+      
     }
     
   }, ignoreInit = FALSE) 
@@ -278,9 +282,8 @@ server <- function(input, output, session) {
   observe({
     
     req(map_sel1())
-    mapsel1 <- map_sel1()
-
-    addselareamap_fun(mapsel1$data, cbawbid)
+    
+    addselareamap_fun(map_sel1()$data, cbawbid)
  
   })
   
@@ -332,6 +335,10 @@ server <- function(input, output, session) {
       
       bystationmap_fun(bystationmap_proxy, stas, input$daterange2)
       
+      req(map_sel2())
+      
+      addselstationmap_fun(map_sel2()$data)
+      
     }
     
   }, ignoreInit = FALSE)
@@ -350,9 +357,8 @@ server <- function(input, output, session) {
   observe({
     
     req(map_sel2())
-    mapsel2 <- map_sel2()$data
     
-    addselstationmap_fun(mapsel2)
+    addselstationmap_fun(map_sel2()$data)
     
   })
   
@@ -361,31 +367,7 @@ server <- function(input, output, session) {
     
     req(map_sel2())
 
-    # inputs
-    mapsel2 <- map_sel2()$data
-    
-    waterbody <- gsub("(^.*)\\_.*$", "\\1", mapsel2$id)
-    station <- gsub(".*\\_(.*)$", "\\1", mapsel2$id)
-
-    out <- alldat |> 
-      dplyr::filter(waterbody == waterbody & station == station) |>
-      dplyr::select(parameter, location) |> 
-      dplyr::distinct() |> 
-      dplyr::left_join(prmsdf, by = "parameter", relationship = 'many-to-many') |>
-      dplyr::mutate(
-        location2 = dplyr::case_when(
-          location == 'surf' ~ 'Surface',
-          location == 'bott' ~ 'Bottom',
-          TRUE ~ location
-        )
-      ) |> 
-      tidyr::unite(label, c(label, location2), sep = ": ") |>
-      tidyr::unite(parameter, c(parameter, location), sep = "_") |>
-      dplyr::arrange(label)
-    
-    out <- setNames(out$parameter, out$label)
-    
-    return(out)
+    stationprmsel_fun(map_sel2()$data)
     
   })
   

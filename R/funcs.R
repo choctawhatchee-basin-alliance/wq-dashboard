@@ -147,7 +147,7 @@ byareamap_fun <- function(mapin, alldat, cbawbid, stas, summarize1, summstat1, l
             weight = 3,
             color = "#666",
             fillOpacity = 0.7,
-            bringToFront = TRUE
+            bringToFront = FALSE
           ),
           label = ~paste0(WBID, ", Value: ", round(val, 2)),
           labelOptions = leaflet::labelOptions(
@@ -163,12 +163,12 @@ byareamap_fun <- function(mapin, alldat, cbawbid, stas, summarize1, summstat1, l
           radius = 7,
           fillColor = ~pal(val),
           fillOpacity = 0.7,
-          color = "black",
+          color = "#666",
           weight = 1,
           label = ~paste0(waterbody, " ", station, ", Value: ", round(val, 2)),
           labelOptions = leaflet::labelOptions(
             style = list("font-size" = "16px")
-          ), 
+          ),
           layerId = ~paste0(waterbody, "_", station)
         )
     
@@ -516,14 +516,15 @@ bystationplo_fun <- function(sel, alldat, summarize2, parameter2a,
 addselareamap_fun <- function(mapsel1, cbawbid){
 
   if (!is.null(mapsel1)) {
-    
-    if(mapsel1$id%in% cbawbid$WBID){
+
+    if(mapsel1$id %in% cbawbid$WBID){
       # highlight area
       leaflet::leafletProxy("byareamap") |>
         leaflet::clearGroup("highlight") |>
         leaflet::addPolygons(
           data = cbawbid |> dplyr::filter(WBID == mapsel1$id), opacity = 1,
-          group = "highlight", color = "black", weight = 6, fillOpacity = 0
+          group = "highlight", color = "black", weight = 6, fillOpacity = 0,
+          options = pathOptions(clickable = FALSE)
         )
     } else {
       
@@ -532,7 +533,8 @@ addselareamap_fun <- function(mapsel1, cbawbid){
       leaflet::addCircleMarkers(
         lng = mapsel1$lng, lat = mapsel1$lat,
         group = "highlight", radius = 8, color = "black",
-        fillColor = '#007BC2', fillOpacity = 0, opacity = 1, weight = 6
+        fillColor = '#007BC2', fillOpacity = 0, opacity = 1, weight = 6,
+        options = pathOptions(clickable = FALSE)
       )
     }
     
@@ -551,8 +553,39 @@ addselstationmap_fun <- function(mapsel2){
       leaflet::addCircleMarkers(
         lng = mapsel2$lng, lat = mapsel2$lat,
         group = "highlight", radius = 8, color = "black",
-        fillColor = '#007BC2', fillOpacity = 0, opacity = 1, weight = 6
+        fillColor = '#007BC2', fillOpacity = 0, opacity = 1, weight = 6,
+        options = pathOptions(clickable = FALSE)
       )
   }
+  
+}
+
+#' Function to get the list of parameters for a selected station
+#' 
+#' @param mapsel2 Data frame containing the selected station's ID
+stationprmsel_fun <- function(mapsel2){
+  
+  waterbody <- gsub("(^.*)\\_.*$", "\\1", mapsel2$id)
+  station <- gsub(".*\\_(.*)$", "\\1", mapsel2$id)
+  
+  out <- alldat |> 
+    dplyr::filter(waterbody == waterbody & station == station) |>
+    dplyr::select(parameter, location) |> 
+    dplyr::distinct() |> 
+    dplyr::left_join(prmsdf, by = "parameter", relationship = 'many-to-many') |>
+    dplyr::mutate(
+      location2 = dplyr::case_when(
+        location == 'surf' ~ 'Surface',
+        location == 'bott' ~ 'Bottom',
+        TRUE ~ location
+      )
+    ) |> 
+    tidyr::unite(label, c(label, location2), sep = ": ") |>
+    tidyr::unite(parameter, c(parameter, location), sep = "_") |>
+    dplyr::arrange(label)
+  
+  out <- setNames(out$parameter, out$label)
+  
+  return(out)
   
 }
