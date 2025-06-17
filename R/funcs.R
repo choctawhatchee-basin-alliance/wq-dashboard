@@ -524,7 +524,7 @@ addselareamap_fun <- function(mapsel1, cbawbid){
         leaflet::addPolygons(
           data = cbawbid |> dplyr::filter(WBID == mapsel1$id), opacity = 1,
           group = "highlight", color = "black", weight = 6, fillOpacity = 0,
-          options = pathOptions(clickable = FALSE)
+          options = leaflet::pathOptions(clickable = FALSE)
         )
     } else {
       
@@ -534,7 +534,7 @@ addselareamap_fun <- function(mapsel1, cbawbid){
         lng = mapsel1$lng, lat = mapsel1$lat,
         group = "highlight", radius = 8, color = "black",
         fillColor = '#007BC2', fillOpacity = 0, opacity = 1, weight = 6,
-        options = pathOptions(clickable = FALSE)
+        options = leaflet::pathOptions(clickable = FALSE)
       )
     }
     
@@ -554,7 +554,7 @@ addselstationmap_fun <- function(mapsel2){
         lng = mapsel2$lng, lat = mapsel2$lat,
         group = "highlight", radius = 8, color = "black",
         fillColor = '#007BC2', fillOpacity = 0, opacity = 1, weight = 6,
-        options = pathOptions(clickable = FALSE)
+        options = leaflet::pathOptions(clickable = FALSE)
       )
   }
   
