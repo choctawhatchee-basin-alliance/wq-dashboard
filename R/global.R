@@ -1,4 +1,5 @@
 library(sf)
+library(markdown)
 
 # data
 load(file = here::here('data/alldat.RData'))
