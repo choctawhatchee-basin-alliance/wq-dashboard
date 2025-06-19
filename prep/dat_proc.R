@@ -155,7 +155,8 @@ alldat <- list(
     discrete = lkwdatlng
   ) |> 
   enframe(name = 'type') |> 
-  unnest('value')
+  unnest('value') |> 
+  filter(!is.na(val))
 
 save(alldat, file = here('data', 'alldat.RData'))
 

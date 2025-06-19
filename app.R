@@ -60,12 +60,11 @@ ui <- page_navbar(
             title = "Controls",
             border_radius = FALSE, 
             fillable = TRUE,
-            width = "400px",
+            width = "600px",
             open = "desktop",
             radioButtons("summarize1", "Summarize By:", choices = c("WBID", "Station"), selected = "WBID"), 
             selectInput("parameter1", "Select Parameter:", choices = prms), 
             uiOutput("location1"),
-            selectInput('summstat1', "Summarize as:", choices = c("Mean", "Median", "Max", "Min")),
             uiOutput("daterange1")
           ),
           layout_sidebar(
@@ -151,7 +150,7 @@ ui <- page_navbar(
             title = "Controls",
             border_radius = FALSE, 
             fillable = TRUE,
-            width = "400px",
+            width = "600px",
             open = "desktop",
             selectInput("variable3", "Select Variable:", choices = c("Option 1", "Option 2", "Option 3"))
           ),
@@ -186,9 +185,13 @@ ui <- page_navbar(
         title = "Controls",
         border_radius = FALSE, 
         fillable = TRUE,
-        width = "400px",
+        width = "600px",
         open = "desktop",
-        selectInput("parameter4", "Select Parameter:", choices = prms),  
+        pickerInput("waterbody4", "Select Waterbody:", 
+          choices = wtbds, selected = wtbds, multiple = T,
+          options = list(`actions-box` = TRUE, style = "btn-outline-secondary btn-sm")),
+        pickerInput("parameter4", "Select Parameter:", choices = prms, selected = prms, multiple = T,
+                    options = list(`actions-box` = TRUE, style = "btn-outline-secondary btn-sm")),
         uiOutput("location4"),
         uiOutput("daterange4")
       ),
@@ -228,7 +231,7 @@ server <- function(input, output, session) {
   )
   
   # by area map initialize
-  observeEvent(list(input$summarize1, input$parameter1, input$location1, input$summstat1, input$daterange1, input$`main-nav`), {
+  observeEvent(list(input$summarize1, input$parameter1, input$location1, input$daterange1, input$`main-nav`), {
     
     if(input$`main-nav` == 'byarea' && !values1$updating){
       
@@ -238,7 +241,7 @@ server <- function(input, output, session) {
       # Set flag to prevent concurrent updates
       values1$updating <- TRUE
       
-      byareamap_fun(byareamap_proxy, alldat, cbawbid, stas, input$summarize1, input$summstat1, 
+      byareamap_fun(byareamap_proxy, alldat, cbawbid, stas, input$summarize1, 
                     input$location1, input$parameter1, input$daterange1)
       
       # reset flag after brief delay
@@ -299,7 +302,7 @@ server <- function(input, output, session) {
     values2$updating <- TRUE
     
     out <- byareaplo_fun(shape_click, marker_click, alldat, stas, 
-              input$summarize1, input$summstat1, input$location1, input$parameter1,
+              input$summarize1, input$location1, input$parameter1,
               input$daterange1)
     
     # reset flag after brief delay
@@ -390,17 +393,19 @@ server <- function(input, output, session) {
   dldat <- reactive({
     
     req(input$daterange4)
-    req(input$location4)
     
+    waterbody4 <- input$waterbody4
     paramater4 <- input$parameter4
-    location4 <- input$location4
     daterange4 <- input$daterange4
     
     out <- alldat |> 
-      dplyr::filter(parameter == paramater4 & 
-                    location == location4 & 
-                    date >= daterange4[1] & 
-                    date <= daterange4[2])
+      dplyr::filter(
+        waterbody %in% waterbody4 &
+        parameter %in% paramater4 & 
+        date >= daterange4[1] & 
+        date <= daterange4[2]
+        ) |> 
+      dplyr::select(-type)
     
     return(out)
     
@@ -428,7 +433,7 @@ server <- function(input, output, session) {
     location1 <- input$location1 
     parameter1 <- input$parameter1
     
-    dtchc <- datechoice_fun(meta, location1, parameter1)
+    dtchc <- datechoice_fun(alldat, location1, parameter1)
     
     sliderTextInput("daterange1", "Select Date Range:",
                 choices = dtchc, selected = range(dtchc))
@@ -485,27 +490,13 @@ server <- function(input, output, session) {
   output$daterange4 <- renderUI({
 
     # inputs
+    waterbody4 <- input$waterbody4
     parameter4 <- input$parameter4
     
-    dtchc <- datechoice_fun(meta, parameter = parameter4)
+    dtchc <- datechoice_fun(alldat, parameter = parameter4, waterbody = waterbody4)
     
     sliderTextInput("daterange4", "Select Date Range:", 
                 choices = dtchc, selected = range(dtchc))
-    
-  })
-  
-  output$location4 <- renderUI({
-    
-    parameter4 <- input$parameter4
-    
-    locsin <- meta |> 
-      dplyr::filter(parameter == parameter4) |>
-      dplyr::pull(location) |> 
-      unique()
-    
-    locsel <- locs[locs %in% locsin] 
-    
-    selectInput('location4', "Sample location:", choices = locsel)
     
   })
   

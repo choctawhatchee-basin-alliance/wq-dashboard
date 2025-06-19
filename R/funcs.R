@@ -98,15 +98,14 @@ bsmap <- function(bnds){
 #' @param cbawbid sf object containing wbids
 #' @param stas sf object containing station geometries
 #' @param summarize1 Character string indicating how to summarize the data ('WBID' or 'Station')
-#' @param summstat1 Character string indicating the summary statistic to calculate (e.g., 'Mean', 'Median', 'Max', 'Min')
 #' @param location1 Character string indicating the sample location (e.g., 'surface', 'bottom')
 #' @param parameter1 Character string indicating the parameter to filter by
 #' @param daterange1 Date range to filter the data
-byareamap_fun <- function(mapin, alldat, cbawbid, stas, summarize1, summstat1, location1, parameter1, daterange1){
+byareamap_fun <- function(mapin, alldat, cbawbid, stas, summarize1, location1, parameter1, daterange1){
   
   # summarize data
   byareadat <- try(
-    byareadat_fun(alldat, cbawbid, stas, summarize1, summstat1, location1, parameter1, daterange1),
+    byareadat_fun(alldat, cbawbid, stas, summarize1, location1, parameter1, daterange1),
     silent = T
   )
   
@@ -136,6 +135,7 @@ byareamap_fun <- function(mapin, alldat, cbawbid, stas, summarize1, summstat1, l
       leaflet::clearControls()
 
     if(summarize1 == 'WBID')
+
       out <- out |> 
         leaflet::addPolygons(
           data = byareadat,
@@ -149,7 +149,7 @@ byareamap_fun <- function(mapin, alldat, cbawbid, stas, summarize1, summstat1, l
             fillOpacity = 0.7,
             bringToFront = FALSE
           ),
-          label = ~paste0(WBID, ", Value: ", round(val, 2)),
+          label = ~paste0(WBID, " (", stas, "), Value: ", round(val, 2)),
           labelOptions = leaflet::labelOptions(
             style = list("font-size" = "16px")
           ), 
@@ -177,7 +177,7 @@ byareamap_fun <- function(mapin, alldat, cbawbid, stas, summarize1, summstat1, l
       leaflet::addLegend(
         pal = pal,
         values = byareadat$val,
-        title = paste(lab, "<br>", summstat1),  # Dynamic title based on inputs
+        title = paste("Mean", lab),
         position = "topright",
         opacity = 0.8,
         na.label = "No Data"
@@ -195,11 +195,10 @@ byareamap_fun <- function(mapin, alldat, cbawbid, stas, summarize1, summstat1, l
 #' @param cbawbid sf object containing wbids
 #' @param stas sf object containing station geometries
 #' @param summarize1 Character string indicating how to summarize the data ('WBID' or 'Station')
-#' @param summstat1 Character string indicating the summary statistic to calculate (e.g., 'Mean', 'Median', 'Max', 'Min')
 #' @param location1 Character string indicating the sample location (e.g., 'surface', 'bottom')
 #' @param parameter1 Character string indicating the parameter to filter by
 #' @param daterange1 Date range to filter the data
-byareadat_fun <- function(alldat, cbawbid, stas, summarize1, summstat1, location1, parameter1, daterange1){
+byareadat_fun <- function(alldat, cbawbid, stas, summarize1, location1, parameter1, daterange1){
 
   dat <- alldat |> 
     dplyr::filter(
@@ -218,9 +217,18 @@ byareadat_fun <- function(alldat, cbawbid, stas, summarize1, summstat1, location
 
     out <- dat |>  
       sf::st_drop_geometry() |> 
+      tidyr::unite('stas', waterbody, station) |> 
       dplyr::summarise(
-        val = match.fun(tolower(summstat1))(val, na.rm = TRUE),
+        val = mean(val, na.rm = TRUE),
+        stas = length(unique(stas)),
         .by = c(WBID)
+      ) |> 
+      dplyr::mutate(
+        stas = case_when(
+          stas == 1 ~ paste0(stas, " station"),
+          stas > 1 ~ paste0(stas, " stations"),
+          TRUE ~ "no stations"
+        )
       ) |> 
       dplyr::inner_join(cbawbid, by = 'WBID') |> 
       sf::st_as_sf() |> 
@@ -232,7 +240,7 @@ byareadat_fun <- function(alldat, cbawbid, stas, summarize1, summstat1, location
     
     out <- dat |> 
       dplyr::summarise(
-        val = match.fun(tolower(summstat1))(val, na.rm = TRUE),
+        val = mean(val, na.rm = TRUE),
         .by = c(waterbody, station, geometry)
       ) |> 
       dplyr::filter(!is.na(val))
@@ -250,11 +258,10 @@ byareadat_fun <- function(alldat, cbawbid, stas, summarize1, summstat1, location
 #' @param alldat Data frame containing the water quality data to plo
 #' @param stas sf object containing station geometries
 #' @param summarize1 Character string indicating how to summarize the data ('WBID' or 'Station')
-#' @param summstat1 Character string indicating the summary statistic to calculate (e.g., 'Mean', 'Median', 'Max', 'Min')
 #' @param location1 Character string indicating the sample location (e.g., 'surface', 'bottom')
 #' @param parameter1 Character string indicating the parameter to filter by
 #' @param daterange1 Date range to filter the data
-byareaplo_fun <- function(shape_click, marker_click, alldat, stas, summarize1, summstat1, location1, parameter1, daterange1){
+byareaplo_fun <- function(shape_click, marker_click, alldat, stas, summarize1, location1, parameter1, daterange1){
   
   toplo <- alldat |> 
     dplyr::filter(
@@ -263,6 +270,11 @@ byareaplo_fun <- function(shape_click, marker_click, alldat, stas, summarize1, s
         date <= as.Date(daterange1[2]) & 
         location == location1
     )
+  
+  ylab <- meta |> 
+    dplyr::filter(parameter == parameter1) |> 
+    dplyr::pull(label) |> 
+    unique()
   
   if(!is.null(shape_click)){
     
@@ -274,9 +286,11 @@ byareaplo_fun <- function(shape_click, marker_click, alldat, stas, summarize1, s
       dplyr::filter(WBID %in% id) |> 
       dplyr::select(date, val) |> 
       dplyr::summarise(
-        val = match.fun(tolower(summstat1))(val, na.rm = TRUE),
+        avev = mean(val, na.rm = TRUE),
         .by = date
       )
+    
+    ylab <- paste("Mean", ylab)
     
   }
   
@@ -291,34 +305,29 @@ byareaplo_fun <- function(shape_click, marker_click, alldat, stas, summarize1, s
       dplyr::filter(waterbody == !!waterbody & station == !!station) |> 
       dplyr::select(date, val) |> 
       dplyr::summarise(
-        val = match.fun(tolower(summstat1))(val, na.rm = TRUE),
+        avev = mean(val, na.rm = TRUE),
         .by = date
       )
       
   }
-
-  ylab <- meta |> 
-    dplyr::filter(parameter == parameter1) |> 
-    dplyr::pull(label) |> 
-    unique()
   
   out <- plotly::plot_ly(
       data = toplo,
       x = ~date,
-      y = ~val,
+      y = ~avev,
       type = 'scatter',
       mode = 'lines+markers',
       line = list(color = 'blue'),
       marker = list(size = 5),
       hoverinfo = 'text',
-      text = ~paste("Date:", date, "<br>Value:", round(val, 2))
-    ) |> 
+      text = ~paste("Date:", date, "<br>Value:", round(avev, 2))
+    )  |> 
     plotly::layout(
       title = ttl,
       xaxis = list(title = "Date", 
                    range = c(as.Date(daterange1[1]), as.Date(daterange1[2]))
                    ),
-      yaxis = list(title = paste(summstat1, ylab))
+      yaxis = list(title = ylab)
     )
   
   return(out)
@@ -610,8 +619,11 @@ dldattab_fun <- function(dldat){
                                 resizable = TRUE, 
                                 align = 'left'
                               ),
-                              filterable = T,
-                              defaultPageSize = 10
+                              columns = list(
+                                notes = reactable::colDef(show = F)
+                              ),
+                              filterable = F,
+                              defaultPageSize = 15
   )
   
   return(out)
@@ -623,35 +635,17 @@ dldattab_fun <- function(dldat){
 #' @param meta Data frame containing metadata with date ranges
 #' @param location Optional character string to filter by location
 #' @param parameter Optional character string to filter by parameter
-datechoice_fun <- function(meta, location = NULL, parameter = NULL){
-  
-  dtrng <- meta
-  
-  if(!is.null(location) & !is.null(parameter)){
-    
-    dtrng <- dtrng |> 
-      dplyr::filter(location == location & parameter == parameter)
-    
-  }
-  
-  if(!is.null(location) & is.null(parameter)){
-    
-    dtrng <- dtrng |> 
-      dplyr::filter(location == location)
-    
-  }
-  
-  if(is.null(location) & !is.null(parameter)){
-    
-    dtrng <- dtrng |> 
-      dplyr::filter(parameter == parameter)
-    
-  }
-  
-  dtrng <- dtrng |> 
-    dplyr::select(datestr, dateend)
-  
-  dtrng <- range(c(dtrng$datestr, dtrng$dateend))
+datechoice_fun <- function(alldat, location = unique(alldat$location), parameter = unique(alldat$parameter), 
+                           waterbody = unique(alldat$waterbody)){
+
+  dtrng <- alldat |> 
+    dplyr::filter(
+      parameter %in% !!parameter &
+      location %in% !!location &
+      waterbody %in% !!waterbody
+      ) |> 
+    dplyr::pull(date) |> 
+    range()
   
   dtchc <- seq.Date(from = lubridate::ceiling_date(dtrng[1], 'month'), 
                     to = lubridate::floor_date(dtrng[2], 'month'), by = "month")
