@@ -206,6 +206,20 @@ dts <- alldat |>
   )
 stas <- left_join(stas, dts, by = c('waterbody', 'station'))
 
+# get huc12
+# https://prd-tnm.s3.amazonaws.com/index.html?prefix=StagedProducts/Hydrography/NHD/State/Shape/
+hucall <- st_read('~/Desktop/NHD_H_Florida_State_Shape/Shape/WBDHU12.shp')
+cbahuc <- hucall |> 
+  st_transform(crs = st_crs(stas))
+cbahuc <- cbahuc[stas,] |> 
+  dplyr::select(huc12)
+
+save(cbahuc, file = here('data', 'cbahuc.RData'))
+
+# add huc12 to stas
+stas <- st_join(stas, cbahuc, join = st_intersects, left = TRUE) |> 
+  mutate(huc12 = ifelse(is.na(huc12), NA, huc12))
+
 save(stas, file = here('data', 'stas.RData'))
 
 # metadata file -------------------------------------------------------------------------------

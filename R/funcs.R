@@ -135,7 +135,6 @@ byareamap_fun <- function(mapin, alldat, cbawbid, stas, summarize1, location1, p
       leaflet::clearControls()
 
     if(summarize1 == 'WBID')
-
       out <- out |> 
         leaflet::addPolygons(
           data = byareadat,
@@ -154,6 +153,27 @@ byareamap_fun <- function(mapin, alldat, cbawbid, stas, summarize1, location1, p
             style = list("font-size" = "16px")
           ), 
           layerId = ~WBID
+        )
+    
+    if(summarize1 == 'HUC12')
+      out <- out |> 
+        leaflet::addPolygons(
+          data = byareadat,
+          fillColor = ~pal(val),
+          fillOpacity = 0.7,
+          color = "#666",
+          weight = 1,
+          highlightOptions = leaflet::highlightOptions(
+            weight = 3,
+            color = "#666",
+            fillOpacity = 0.7,
+            bringToFront = FALSE
+          ),
+          label = ~paste0(huc12, " (", stas, "), Value: ", round(val, 2)),
+          labelOptions = leaflet::labelOptions(
+            style = list("font-size" = "16px")
+          ), 
+          layerId = ~huc12
         )
     
     if(summarize1 == 'Station')
@@ -236,6 +256,29 @@ byareadat_fun <- function(alldat, cbawbid, stas, summarize1, location1, paramete
     
   }
   
+  if (summarize1 == "HUC12") {
+    
+    out <- dat |>  
+      sf::st_drop_geometry() |> 
+      tidyr::unite('stas', waterbody, station) |> 
+      dplyr::summarise(
+        val = mean(val, na.rm = TRUE),
+        stas = length(unique(stas)),
+        .by = c(huc12)
+      ) |> 
+      dplyr::mutate(
+        stas = case_when(
+          stas == 1 ~ paste0(stas, " station"),
+          stas > 1 ~ paste0(stas, " stations"),
+          TRUE ~ "no stations"
+        )
+      ) |> 
+      dplyr::inner_join(cbahuc, by = 'huc12') |> 
+      sf::st_as_sf() |> 
+      dplyr::filter(!is.na(val))
+    
+  }
+  
   if(summarize1 == 'Station'){
     
     out <- dat |> 
@@ -275,20 +318,39 @@ byareaplo_fun <- function(shape_click, marker_click, alldat, stas, summarize1, l
     dplyr::filter(parameter == parameter1) |> 
     dplyr::pull(label) |> 
     unique()
-  
+
   if(!is.null(shape_click)){
     
     id <- shape_click$id
-    ttl <- paste('WBID', id)
     
-    toplo <- toplo |> 
-      dplyr::inner_join(stas, by = c('waterbody', 'station')) |> 
-      dplyr::filter(WBID %in% id) |> 
-      dplyr::select(date, val) |> 
-      dplyr::summarise(
-        avev = mean(val, na.rm = TRUE),
-        .by = date
-      )
+    if(id %in% stas$WBID){
+      ttl <- paste('WBID', id)
+      
+      toplo <- toplo |> 
+        dplyr::inner_join(stas, by = c('waterbody', 'station')) |> 
+        dplyr::filter(WBID %in% id) |> 
+        dplyr::select(date, val) |> 
+        dplyr::summarise(
+          avev = mean(val, na.rm = TRUE),
+          .by = date
+        )
+      
+    }
+    
+    if(id %in% cbahuc$huc12){
+      
+      ttl <- paste('HUC12', id)
+      
+      toplo <- toplo |> 
+        dplyr::inner_join(stas, by = c('waterbody', 'station')) |> 
+        dplyr::filter(huc12 %in% id) |> 
+        dplyr::select(date, val) |> 
+        dplyr::summarise(
+          avev = mean(val, na.rm = TRUE),
+          .by = date
+        )
+      
+    }
     
     ylab <- paste("Mean", ylab)
     
@@ -526,8 +588,8 @@ addselareamap_fun <- function(mapsel1, cbawbid){
 
   if (!is.null(mapsel1)) {
 
-    if(mapsel1$id %in% cbawbid$WBID){
-      # highlight area
+    # wbid
+    if(mapsel1$id %in% cbawbid$WBID)
       leaflet::leafletProxy("byareamap") |>
         leaflet::clearGroup("highlight") |>
         leaflet::addPolygons(
@@ -535,17 +597,28 @@ addselareamap_fun <- function(mapsel1, cbawbid){
           group = "highlight", color = "black", weight = 6, fillOpacity = 0,
           options = leaflet::pathOptions(clickable = FALSE)
         )
-    } else {
+
+    # huc12      
+    if(mapsel1$id %in% cbahuc$huc12)
+      leaflet::leafletProxy("byareamap") |>
+        leaflet::clearGroup("highlight") |>
+        leaflet::addPolygons(
+          data = cbahuc |> dplyr::filter(huc12 == mapsel1$id), opacity = 1,
+          group = "highlight", color = "black", weight = 6, fillOpacity = 0,
+          options = leaflet::pathOptions(clickable = FALSE)
+        )
+    
+    # station
+    if(!mapsel1$id %in% cbawbid$WBID & !mapsel1$id %in% cbahuc$huc12)
+      leaflet::leafletProxy("byareamap") |>
+        leaflet::clearGroup("highlight") |>
+        leaflet::addCircleMarkers(
+          lng = mapsel1$lng, lat = mapsel1$lat,
+          group = "highlight", radius = 8, color = "black",
+          fillColor = '#007BC2', fillOpacity = 0, opacity = 1, weight = 6,
+          options = leaflet::pathOptions(clickable = FALSE)
+        )
       
-    leaflet::leafletProxy("byareamap") |>
-      leaflet::clearGroup("highlight") |>
-      leaflet::addCircleMarkers(
-        lng = mapsel1$lng, lat = mapsel1$lat,
-        group = "highlight", radius = 8, color = "black",
-        fillColor = '#007BC2', fillOpacity = 0, opacity = 1, weight = 6,
-        options = leaflet::pathOptions(clickable = FALSE)
-      )
-    }
     
   }
   

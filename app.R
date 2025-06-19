@@ -62,7 +62,7 @@ ui <- page_navbar(
             fillable = TRUE,
             width = "600px",
             open = "desktop",
-            radioButtons("summarize1", "Summarize By:", choices = c("WBID", "Station"), selected = "WBID"), 
+            radioButtons("summarize1", "Summarize By:", choices = c("WBID", "HUC12", "Station"), selected = "WBID"), 
             selectInput("parameter1", "Select Parameter:", choices = prms), 
             uiOutput("location1"),
             uiOutput("daterange1")
