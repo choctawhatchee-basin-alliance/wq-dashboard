@@ -178,7 +178,7 @@ ui <- page_navbar(
   #####
   # Fifth nav item - download
   nav_panel(
-    title = "DOWNLOAD",
+    title = "4 DOWNLOAD",
     value = 'download',
     layout_sidebar(
       sidebar = sidebar(
@@ -200,6 +200,23 @@ ui <- page_navbar(
       reactable::reactableOutput('dltabout')
     )
     
+  ),
+  
+  #####
+  # Sixth nav item - oyster map
+  nav_panel(
+    title = "5 OYSTER HABITAT SUITABILITY", 
+    value = 'oyster',
+    div(
+      style = "height: 80vh;", # Use viewport height for responsive sizing
+      tags$iframe(
+        src = "https://experience.arcgis.com/experience/5c8a799166174fcb9c4d17b7d6132b1d/",
+        width = "100%",
+        height = "100%",
+        frameborder = "0",
+        scrolling = "auto"
+      )
+    )
   ),
   
   # Navbar configuration
