@@ -1,9 +1,8 @@
 library(shiny)
 library(bslib)
 
-# Source required files (commented out as we don't have access to them)
-source(here::here('R/global.R'))
 source(here::here('R/funcs.R'))
+source(here::here('R/global.R'))
 
 ui <- page_navbar(
   title = "CBA WATER QUALITY DASHBOARD",
@@ -94,7 +93,7 @@ ui <- page_navbar(
   #####
   # Third nav item - by station
   nav_panel(
-    title = "2 BY STATION",
+    title = "2 PARAMETER COMPARISON",
     value = 'bystation',
     navset_card_underline(
       full_screen = TRUE,
@@ -104,9 +103,8 @@ ui <- page_navbar(
         class = 'card-scroll',
         layout_sidebar(
           border = FALSE,
-          sliderInput("daterange2", "Select Date Range:", 
-                      min = dtrng[1], max = dtrng[2], 
-                      value = dtrng, timeFormat = "%Y-%m-%d", width = '50%'),
+          sliderTextInput("daterange2", "Select Date Range:", 
+                      choices = dtchc, selected = range(dtchc), width = '50%'),
           leaflet::leafletOutput('bystationmap', height = "calc(100vh - 370px)"),
           width = '50%', 
           position = 'left',
@@ -430,14 +428,10 @@ server <- function(input, output, session) {
     location1 <- input$location1 
     parameter1 <- input$parameter1
     
-    dtrng <- meta |> 
-      dplyr::filter(location == location1 & parameter == parameter1) |> 
-      dplyr::select(datestr, dateend)
-    dtrng <- range(c(dtrng$datestr, dtrng$dateend))
+    dtchc <- datechoice_fun(meta, location1, parameter1)
     
-    sliderInput("daterange1", "Select Date Range:", 
-                min = dtrng[1], max = dtrng[2], 
-                value = dtrng, timeFormat = "%Y-%m-%d")
+    sliderTextInput("daterange1", "Select Date Range:",
+                choices = dtchc, selected = range(dtchc))
     
   })
   
@@ -452,7 +446,13 @@ server <- function(input, output, session) {
 
     locsel <- locs[locs %in% locsin] 
 
-    selectInput('location1', "Sample location:", choices = locsel)
+    out <- selectInput('location1', "Sample location:", choices = locsel)
+    
+    if(length(locsel) > 1) {
+      out
+    } else {
+      div(style = "display: none;", out)
+    }
     
   })
   
@@ -487,14 +487,10 @@ server <- function(input, output, session) {
     # inputs
     parameter4 <- input$parameter4
     
-    dtrng <- meta |> 
-      dplyr::filter(parameter == parameter4) |> 
-      dplyr::select(datestr, dateend)
-    dtrng <- range(c(dtrng$datestr, dtrng$dateend))
+    dtchc <- datechoice_fun(meta, parameter = parameter4)
     
-    sliderInput("daterange4", "Select Date Range:", 
-                min = dtrng[1], max = dtrng[2], 
-                value = dtrng, timeFormat = "%Y-%m-%d")
+    sliderTextInput("daterange4", "Select Date Range:", 
+                choices = dtchc, selected = range(dtchc))
     
   })
   

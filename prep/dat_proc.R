@@ -27,8 +27,8 @@ dat1 <- rawdat1 |>
     time = time_24hr,
     temp_surf_f = temperature_surface_f,
     temp_bott_f = temperature_bottom_f,
-    do_surf_psat = dissolved_oxygen_percent_surface_percent_sat,
-    do_bott_psat = dissolved_oxygen_percent_bottom_percent_sat,
+    dosat_surf_psat = dissolved_oxygen_percent_surface_percent_sat,
+    dosat_bott_psat = dissolved_oxygen_percent_bottom_percent_sat,
     do_surf_mgl = dissolved_oxygen_surface_mg_l,
     do_bott_mgl = dissolved_oxygen_bottom_mg_l,
     cond_surf_mscm = specific_conductivity_m_s_cm_surface, 
@@ -224,7 +224,7 @@ meta <- alldat |>
   mutate(
     label = case_when(
       parameter == 'temp' ~ 'Temperature (F)',
-      parameter == 'do' & units == 'psat' ~ 'Dissolved Oxygen (% Sat)',
+      parameter == 'dosat' ~ 'Dissolved Oxygen (% Sat)',
       parameter == 'do' & units == 'mgl' ~ 'Dissolved Oxygen (mg/L)',
       parameter == 'cond' ~ 'Conductivity (mS/cm)',
       parameter == 'sal' ~ 'Salinity (ppt)',

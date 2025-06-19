@@ -567,22 +567,30 @@ stationprmsel_fun <- function(mapsel2){
   
   waterbody <- gsub("(^.*)\\_.*$", "\\1", mapsel2$id)
   station <- gsub(".*\\_(.*)$", "\\1", mapsel2$id)
-  
+
   out <- alldat |> 
     dplyr::filter(waterbody == waterbody & station == station) |>
     dplyr::select(parameter, location) |> 
     dplyr::distinct() |> 
     dplyr::left_join(prmsdf, by = "parameter", relationship = 'many-to-many') |>
     dplyr::mutate(
+      cnt = dplyr::n(), 
+      .by = parameter
+    ) |> 
+    dplyr::mutate(
       location2 = dplyr::case_when(
-        location == 'surf' ~ 'Surface',
+        location == 'surf' & cnt == 2 ~ 'Surface',
         location == 'bott' ~ 'Bottom',
+        location == 'surf' & cnt == 1 ~ '',
         TRUE ~ location
       )
-    ) |> 
+    ) |>
     tidyr::unite(label, c(label, location2), sep = ": ") |>
     tidyr::unite(parameter, c(parameter, location), sep = "_") |>
-    dplyr::arrange(label)
+    dplyr::mutate(
+      label = gsub('\\:\\s$', '', label)
+    ) |> 
+    dplyr::arrange(label, .locale = 'en')
   
   out <- setNames(out$parameter, out$label)
   
@@ -607,5 +615,49 @@ dldattab_fun <- function(dldat){
   )
   
   return(out)
+  
+}
+
+#' Function to generate a list of available dates for selection
+#' 
+#' @param meta Data frame containing metadata with date ranges
+#' @param location Optional character string to filter by location
+#' @param parameter Optional character string to filter by parameter
+datechoice_fun <- function(meta, location = NULL, parameter = NULL){
+  
+  dtrng <- meta
+  
+  if(!is.null(location) & !is.null(parameter)){
+    
+    dtrng <- dtrng |> 
+      dplyr::filter(location == location & parameter == parameter)
+    
+  }
+  
+  if(!is.null(location) & is.null(parameter)){
+    
+    dtrng <- dtrng |> 
+      dplyr::filter(location == location)
+    
+  }
+  
+  if(is.null(location) & !is.null(parameter)){
+    
+    dtrng <- dtrng |> 
+      dplyr::filter(parameter == parameter)
+    
+  }
+  
+  dtrng <- dtrng |> 
+    dplyr::select(datestr, dateend)
+  
+  dtrng <- range(c(dtrng$datestr, dtrng$dateend))
+  
+  dtchc <- seq.Date(from = lubridate::ceiling_date(dtrng[1], 'month'), 
+                    to = lubridate::floor_date(dtrng[2], 'month'), by = "month")
+  
+  dtchc <- unique(c(dtrng[1], dtchc, dtrng[2]))
+  
+  return(dtchc)
   
 }
