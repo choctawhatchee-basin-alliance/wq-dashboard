@@ -108,7 +108,7 @@ byareamap_fun <- function(mapin, alldat, cbawbid, stas, summarize1, location1, p
     byareadat_fun(alldat, cbawbid, stas, summarize1, location1, parameter1, daterange1),
     silent = T
   )
-  
+
   # create map
   if(inherits(byareadat, 'try-error'))
     out <- mapin %>%
@@ -244,7 +244,7 @@ byareadat_fun <- function(alldat, cbawbid, stas, summarize1, location1, paramete
         .by = c(WBID)
       ) |> 
       dplyr::mutate(
-        stas = case_when(
+        stas = dplyr::case_when(
           stas == 1 ~ paste0(stas, " station"),
           stas > 1 ~ paste0(stas, " stations"),
           TRUE ~ "no stations"
@@ -267,7 +267,7 @@ byareadat_fun <- function(alldat, cbawbid, stas, summarize1, location1, paramete
         .by = c(huc12)
       ) |> 
       dplyr::mutate(
-        stas = case_when(
+        stas = dplyr::case_when(
           stas == 1 ~ paste0(stas, " station"),
           stas > 1 ~ paste0(stas, " stations"),
           TRUE ~ "no stations"

@@ -7,10 +7,23 @@ source(here::here('R/global.R'))
 ui <- page_navbar(
   title = "CBA WATER QUALITY DASHBOARD",
   id = "main-nav",
-
+  
   # Add logo
   nav_item(
     tags$img(src = "logo.png", height = "30px", style = "margin-right: 10px;")
+  ),
+
+  # download spinner
+  tags$head(
+    tags$script(HTML("
+    $(document).on('click', '#dwnld', function() {
+      $(this).prop('disabled', true).html('<span class=\"spinner-border spinner-border-sm\" role=\"status\"></span> Downloading...');
+    });
+    
+    Shiny.addCustomMessageHandler('reset_download_button', function(message) {
+      $('#dwnld').prop('disabled', false).html('<i class=\"fa fa-download\"></i> Download data');
+    });
+  "))
   ),
   
   # First nav item - Overview
@@ -196,8 +209,8 @@ ui <- page_navbar(
         uiOutput("daterange4")
       ),
       border = FALSE,
-      shinyWidgets::downloadBttn('dwnld', 'Download data', style = 'simple', block = T, color = 'success'),
-      reactable::reactableOutput('dltabout')
+      downloadButton('dwnld', 'Download data', class = "btn-primary"),
+      shinyWidgets::addSpinner(reactable::reactableOutput('dltabout'), spin = "circle", color = "#007bff")
     )
     
   ),
@@ -525,10 +538,10 @@ server <- function(input, output, session) {
   bystationmap_proxy <- leaflet::leafletProxy("bystationmap")
   output$bystationplo <- plotly::renderPlotly(bystationplo())
   
-  # download fib table
+  # download table
   output$dltabout <- reactable::renderReactable(dltab())
   
-  # download fib handler
+  # download handler
   output$dwnld <- downloadHandler(
     filename = function(){'downloaddata.csv'},
     content = function(file){
@@ -537,6 +550,8 @@ server <- function(input, output, session) {
       dldat <- dldat()
       
       write.csv(dldat, file, quote = T, row.names = F)
+      
+      session$sendCustomMessage("reset_download_button", "")
       
     }
   )
