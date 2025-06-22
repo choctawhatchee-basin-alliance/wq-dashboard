@@ -13,17 +13,20 @@ ui <- page_navbar(
     tags$img(src = "logo.png", height = "30px", style = "margin-right: 10px;")
   ),
 
-  # download spinner
-  tags$head(
-    tags$script(HTML("
-    $(document).on('click', '#dwnld', function() {
-      $(this).prop('disabled', true).html('<span class=\"spinner-border spinner-border-sm\" role=\"status\"></span> Downloading...');
-    });
+  # styles and download spinner
+  header = tagList(
+    tags$head(
+      tags$link(rel = "stylesheet", type = "text/css", href = "styles.css"),
+      tags$script(HTML("
+      $(document).on('click', '#dwnld', function() {
+        $(this).prop('disabled', true).html('<span class=\"spinner-border spinner-border-sm\" role=\"status\"></span> Downloading...');
+      });
     
-    Shiny.addCustomMessageHandler('reset_download_button', function(message) {
-      $('#dwnld').prop('disabled', false).html('<i class=\"fa fa-download\"></i> Download data');
-    });
-  "))
+      Shiny.addCustomMessageHandler('reset_download_button', function(message) {
+        $('#dwnld').prop('disabled', false).html('<i class=\"fa fa-download\"></i> Download data');
+      });
+      "))
+    )
   ),
   
   # First nav item - Overview
