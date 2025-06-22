@@ -473,8 +473,8 @@ bystationplo_fun <- function(sel, alldat, summarize2, parameter2a,
   
   toplo <- alldat |> 
     dplyr::filter(
-      waterbody == waterbody & 
-      station == station & 
+      waterbody == !!waterbody & 
+      station == !!station & 
       date >= as.Date(daterange2[1]) & 
       date <= as.Date(daterange2[2])
     ) |> 
@@ -630,7 +630,17 @@ addselareamap_fun <- function(mapsel1, cbawbid){
 addselstationmap_fun <- function(mapsel2){
 
   if (!is.null(mapsel2)) {
-    leaflet::leafletProxy("bystationmap") |>
+    
+    leaflet::leafletProxy("bystationmap1") |>
+      leaflet::clearGroup("highlight") |>
+      leaflet::addCircleMarkers(
+        lng = mapsel2$lng, lat = mapsel2$lat,
+        group = "highlight", radius = 8, color = "black",
+        fillColor = '#007BC2', fillOpacity = 0, opacity = 1, weight = 6,
+        options = leaflet::pathOptions(clickable = FALSE)
+      )
+    
+    leaflet::leafletProxy("bystationmap2") |>
       leaflet::clearGroup("highlight") |>
       leaflet::addCircleMarkers(
         lng = mapsel2$lng, lat = mapsel2$lat,
@@ -642,16 +652,13 @@ addselstationmap_fun <- function(mapsel2){
   
 }
 
-#' Function to get the list of parameters for a selected station
+#' Function to get the list of parameters for given dates
 #' 
 #' @param mapsel2 Data frame containing the selected station's ID
-stationprmsel_fun <- function(mapsel2){
-  
-  waterbody <- gsub("(^.*)\\_.*$", "\\1", mapsel2$id)
-  station <- gsub(".*\\_(.*)$", "\\1", mapsel2$id)
+stationprmsel_fun <- function(daterange2){
 
   out <- alldat |> 
-    dplyr::filter(waterbody == waterbody & station == station) |>
+    dplyr::filter(date >= daterange2[1] & date <= daterange2[2]) |>
     dplyr::select(parameter, location) |> 
     dplyr::distinct() |> 
     dplyr::left_join(prmsdf, by = "parameter", relationship = 'many-to-many') |>

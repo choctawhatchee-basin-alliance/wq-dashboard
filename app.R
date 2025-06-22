@@ -103,7 +103,7 @@ ui <- page_navbar(
   ),
   
   #####
-  # Third nav item - by station
+  # Third nav item - by station with dual maps
   nav_panel(
     title = "2 PARAMETER COMPARISON",
     value = 'bystation',
@@ -116,23 +116,33 @@ ui <- page_navbar(
         layout_sidebar(
           border = FALSE,
           sliderTextInput("daterange2", "Select Date Range:", 
-                      choices = dtchc, selected = range(dtchc), width = '50%'),
-          leaflet::leafletOutput('bystationmap', height = "calc(100vh - 370px)"),
-          width = '50%', 
+                          choices = dtchc, selected = range(dtchc), width = '100%'),
+          div(
+            style = "height: calc(100vh - 400px); display: flex; flex-direction: column;",
+            div(
+              style = "flex: 1; display: flex; gap: 10px; margin-bottom: 10px;",
+              div(
+                style = "flex: 1;",
+                uiOutput('parameter2a'),
+                leaflet::leafletOutput('bystationmap1', height = "100%")
+              ),
+              div(
+                style = "flex: 1;",
+                uiOutput('parameter2b'),
+                leaflet::leafletOutput('bystationmap2', height = "100%")
+              )
+            )
+          ),
+          width = '60%', 
           position = 'left',
           open = TRUE,
           sidebar = sidebar(
             id = "bystationsidebar",
-            div(
-              style = "display: flex; align-items: center; gap: 1rem;",
-              uiOutput('parameter2a'),
-              uiOutput('parameter2b'),
-              uiOutput('summarize2'),
-            ),
+            uiOutput('summarize2'),
             plotly::plotlyOutput('bystationplo', height = "calc(100vh - 300px)"),
             border_radius = FALSE, 
             fillable = TRUE,
-            width = "50%",
+            width = "40%",
             open = FALSE,
             position = 'right'
           ),
@@ -354,68 +364,121 @@ server <- function(input, output, session) {
   
   # station map
   
-  # by station map initialize
+  # shared reactive values for map synchronization
+  last_sync_time <- reactiveVal(Sys.time())
+  sync_in_progress <- reactiveVal(FALSE)
+  
+  # Initialize both maps
   observeEvent(list(input$daterange2, input$`main-nav`), {
     
     if(input$`main-nav` == 'bystation'){
       
-      bystationmap_fun(bystationmap_proxy, stas, input$daterange2)
+      # Initialize both maps with the same data
+      bystationmap_fun(bystationmap1_proxy, stas, input$daterange2)
+      bystationmap_fun(bystationmap2_proxy, stas, input$daterange2)
       
       req(map_sel2())
       
+      # Highlight selected station on both maps
       addselstationmap_fun(map_sel2()$data)
       
     }
     
   }, ignoreInit = FALSE)
   
-  # for station map clicks
+  # Station selection reactive
   map_sel2 <- reactiveVal(NULL)
   
-  # handle shape clicks
-  observeEvent(input$bystationmap_marker_click, {
-    if (!is.null(input$bystationmap_marker_click)) {
-      map_sel2(list(type = "marker", data = input$bystationmap_marker_click))
+  # Handle marker clicks from map 1
+  observeEvent(input$bystationmap1_marker_click, {
+    if (!is.null(input$bystationmap1_marker_click)) {
+      map_sel2(list(type = "marker", data = input$bystationmap1_marker_click))
     }
   })
   
-  # add highlight of marker to bystationmap if map_sel2
+  # Handle marker clicks from map 2
+  observeEvent(input$bystationmap2_marker_click, {
+    if (!is.null(input$bystationmap2_marker_click)) {
+      map_sel2(list(type = "marker", data = input$bystationmap2_marker_click))
+    }
+  })
+  
+  # Synchronize map view when map 1 center/zoom changes
+  observeEvent(list(input$bystationmap1_center, input$bystationmap1_zoom), {
+    # Add time-based throttling to prevent loops
+    current_time <- Sys.time()
+    if (!sync_in_progress() && 
+        !is.null(input$bystationmap1_center) && 
+        !is.null(input$bystationmap1_zoom) &&
+        as.numeric(current_time - last_sync_time()) > 0.5) {  # 0.5 second throttle
+      
+      sync_in_progress(TRUE)
+      last_sync_time(current_time)
+      
+      leaflet::leafletProxy("bystationmap2") %>%
+        leaflet::setView(
+          lng = input$bystationmap1_center$lng, 
+          lat = input$bystationmap1_center$lat, 
+          zoom = input$bystationmap1_zoom
+        )
+      
+      # Use reactive timer to reset sync flag
+      invalidateLater(200)
+      sync_in_progress(FALSE)
+    }
+  }, ignoreInit = TRUE)
+  
+  # Synchronize map view when map 2 center/zoom changes
+  observeEvent(list(input$bystationmap2_center, input$bystationmap2_zoom), {
+    # Add time-based throttling to prevent loops
+    current_time <- Sys.time()
+    if (!sync_in_progress() && 
+        !is.null(input$bystationmap2_center) && 
+        !is.null(input$bystationmap2_zoom) &&
+        as.numeric(current_time - last_sync_time()) > 0.5) {  # 0.5 second throttle
+      
+      sync_in_progress(TRUE)
+      last_sync_time(current_time)
+      
+      leaflet::leafletProxy("bystationmap1") %>%
+        leaflet::setView(
+          lng = input$bystationmap2_center$lng, 
+          lat = input$bystationmap2_center$lat, 
+          zoom = input$bystationmap2_zoom
+        )
+      
+      # Use reactive timer to reset sync flag
+      invalidateLater(200)
+      sync_in_progress(FALSE)
+    }
+  }, ignoreInit = TRUE)
+  
+  # Highlight selected station on both maps
   observe({
-    
     req(map_sel2())
-    
     addselstationmap_fun(map_sel2()$data)
-    
   })
   
-  # reactive for parameter station selections
+  # Reactive for parameter station selections
   stationprmsel <- reactive({
-    
-    req(map_sel2())
-
-    stationprmsel_fun(map_sel2()$data)
-    
+    stationprmsel_fun(input$daterange2)
   })
   
-  # by station plot
+  # Plot for parameter 1
   bystationplo <- reactive({
-    
     req(map_sel2())
     req(input$parameter2a)
     req(input$parameter2b)
     
     sel <- map_sel2()$data
-
-    out <- bystationplo_fun(sel, alldat,
-                         input$summarize2, input$parameter2a,
-                         input$parameter2b, input$daterange2)
+    
+    out <- bystationplo_fun(sel, alldat, input$summarize2, input$parameter2a, input$parameter2b, input$daterange2)  
     
     return(out)    
-    
   })
   
-  # toggle stationmap open sidebar, marker
-  observeEvent(input$bystationmap_marker_click, {
+  # Toggle sidebar when marker is clicked
+  observeEvent(map_sel2(), {
     sidebar_toggle("bystationsidebar", open = TRUE)
   })
   
@@ -495,7 +558,7 @@ server <- function(input, output, session) {
     
     req(stationprmsel())
     
-    selectInput('parameter2a', "Parameter 1:", choices = stationprmsel())
+    selectInput('parameter2a', "Select Parameter One:", choices = stationprmsel())
     
   })
   
@@ -503,7 +566,7 @@ server <- function(input, output, session) {
     
     req(stationprmsel())
     
-    selectInput('parameter2b', "Parameter 2:", choices = stationprmsel())
+    selectInput('parameter2b', "Select Parameter Two:", choices = stationprmsel())
     
   })
   
@@ -534,10 +597,14 @@ server <- function(input, output, session) {
   byareamap_proxy <- leaflet::leafletProxy("byareamap")
   output$byareaplo <- plotly::renderPlotly(byareaplo())
   
-  output$bystationmap <- leaflet::renderLeaflet(bsmap(stas))
-  bystationmap_proxy <- leaflet::leafletProxy("bystationmap")
-  output$bystationplo <- plotly::renderPlotly(bystationplo())
+  output$bystationmap1 <- leaflet::renderLeaflet(bsmap(stas))
+  output$bystationmap2 <- leaflet::renderLeaflet(bsmap(stas))
   
+  bystationmap1_proxy <- leaflet::leafletProxy("bystationmap1")
+  bystationmap2_proxy <- leaflet::leafletProxy("bystationmap2")
+  
+  output$bystationplo <- plotly::renderPlotly(bystationplo())
+
   # download table
   output$dltabout <- reactable::renderReactable(dltab())
   
