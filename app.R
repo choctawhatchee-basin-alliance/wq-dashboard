@@ -78,7 +78,7 @@ ui <- page_navbar(
             fillable = TRUE,
             width = "600px",
             open = "desktop",
-            radioButtons("summarize1", "Summarize By:", choices = c("WBID", "HUC12", "Station"), selected = "WBID"), 
+            radioButtons("summarize1", "Summarize By:", choices = c("WBID", "HUC12"), selected = "WBID"), 
             selectInput("parameter1", "Select Parameter:", choices = prms), 
             uiOutput("location1"),
             uiOutput("daterange1")
@@ -126,12 +126,12 @@ ui <- page_navbar(
               style = "flex: 1; display: flex; gap: 10px; margin-bottom: 10px;",
               div(
                 style = "flex: 1;",
-                uiOutput('parameter2a'),
+                selectInput('parameter2a', "Select Parameter One:", choices = stationprmsel),
                 leaflet::leafletOutput('bystationmap1', height = "100%")
               ),
               div(
                 style = "flex: 1;",
-                uiOutput('parameter2b'),
+                selectInput('parameter2b', "Select Parameter Two:", choices = stationprmsel),
                 leaflet::leafletOutput('bystationmap2', height = "100%")
               )
             )
@@ -141,7 +141,9 @@ ui <- page_navbar(
           open = TRUE,
           sidebar = sidebar(
             id = "bystationsidebar",
-            uiOutput('summarize2'),
+            selectInput("summarize2", "Summarize By:", 
+                        choices = c("day", "week", "month", "year"), 
+                        selected = "day"),
             plotly::plotlyOutput('bystationplo', height = "calc(100vh - 300px)"),
             border_radius = FALSE, 
             fillable = TRUE,
@@ -284,7 +286,7 @@ server <- function(input, output, session) {
       # Set flag to prevent concurrent updates
       values1$updating <- TRUE
       
-      byareamap_fun(byareamap_proxy, alldat, cbawbid, stas, input$summarize1, 
+      byareamap_fun(byareamap_proxy, alldat, stas, input$summarize1, 
                     input$location1, input$parameter1, input$daterange1)
       
       # reset flag after brief delay
@@ -294,7 +296,7 @@ server <- function(input, output, session) {
       
       req(map_sel1())
       
-      addselareamap_fun(map_sel1()$data, cbawbid)
+      addselareamap_fun(map_sel1()$data)
       
     }
     
@@ -303,18 +305,9 @@ server <- function(input, output, session) {
   # for area map clicks
   map_sel1 <- reactiveVal(NULL)
   
-  # handle shape clicks
-  observeEvent(input$byareamap_shape_click, {
-    if (!is.null(input$byareamap_shape_click)) {
-      map_sel1(list(type = "shape", data = input$byareamap_shape_click))
-    }
-  })
-  
   # handle marker clicks  
-  observeEvent(input$byareamap_marker_click, {
-    if (!is.null(input$byareamap_marker_click)) {
-      map_sel1(list(type = "marker", data = input$byareamap_marker_click))
-    }
+  observeEvent(input$byareamap_shape_click, {
+    map_sel1(list(type = "marker", data = input$byareamap_shape_click))
   })
   
   # add highlight of shape to byareamap if map_sel1
@@ -322,7 +315,7 @@ server <- function(input, output, session) {
     
     req(map_sel1())
     
-    addselareamap_fun(map_sel1()$data, cbawbid)
+    addselareamap_fun(map_sel1()$data)
  
   })
   
@@ -333,18 +326,10 @@ server <- function(input, output, session) {
     
     sel <- map_sel1()
     
-    if (sel$type == "shape") {
-      shape_click <- sel$data
-      marker_click <- NULL
-    } else {
-      shape_click <- NULL
-      marker_click <- sel$data
-    }
-    
     # Set flag to prevent concurrent updates
     values2$updating <- TRUE
     
-    out <- byareaplo_fun(shape_click, marker_click, alldat, stas, 
+    out <- byareaplo_fun(sel, alldat, stas, 
               input$summarize1, input$location1, input$parameter1,
               input$daterange1)
     
@@ -367,18 +352,27 @@ server <- function(input, output, session) {
   
   # station map
   
+  # station data
+  bystationdat <- reactive({
+  
+    out <- bystationdat_fun(alldat, input$parameter2a, input$parameter2b)
+
+    return(out)
+    
+  })
+  
   # shared reactive values for map synchronization
   last_sync_time <- reactiveVal(Sys.time())
   sync_in_progress <- reactiveVal(FALSE)
   
   # Initialize both maps
-  observeEvent(list(input$daterange2, input$`main-nav`), {
+  observeEvent(list(input$daterange2, input$parameter2a, input$parameter2b, input$`main-nav`), {
     
     if(input$`main-nav` == 'bystation'){
       
       # Initialize both maps with the same data
-      bystationmap_fun(bystationmap1_proxy, stas, input$daterange2)
-      bystationmap_fun(bystationmap2_proxy, stas, input$daterange2)
+      bystationmap_fun(bystationmap1_proxy, bystationdat(), stas, input$parameter2a, input$daterange2)
+      bystationmap_fun(bystationmap2_proxy, bystationdat(), stas, input$parameter2b, input$daterange2)
       
       req(map_sel2())
       
@@ -462,22 +456,17 @@ server <- function(input, output, session) {
     addselstationmap_fun(map_sel2()$data)
   })
   
-  # Reactive for parameter station selections
-  stationprmsel <- reactive({
-    stationprmsel_fun(input$daterange2)
-  })
-  
   # Plot for parameter 1
   bystationplo <- reactive({
+    
     req(map_sel2())
-    req(input$parameter2a)
-    req(input$parameter2b)
-    
+    req(bystationdat())
     sel <- map_sel2()$data
+
+    out <- bystationplo_fun(sel, bystationdat(), input$summarize2, input$parameter2a, input$parameter2b, input$daterange2)  
     
-    out <- bystationplo_fun(sel, alldat, input$summarize2, input$parameter2a, input$parameter2b, input$daterange2)  
+    return(out)
     
-    return(out)    
   })
   
   # Toggle sidebar when marker is clicked
@@ -554,32 +543,6 @@ server <- function(input, output, session) {
     } else {
       div(style = "display: none;", out)
     }
-    
-  })
-  
-  output$parameter2a <- renderUI({
-    
-    req(stationprmsel())
-    
-    selectInput('parameter2a', "Select Parameter One:", choices = stationprmsel())
-    
-  })
-  
-  output$parameter2b <- renderUI({
-    
-    req(stationprmsel())
-    
-    selectInput('parameter2b', "Select Parameter Two:", choices = stationprmsel())
-    
-  })
-  
-  output$summarize2 <- renderUI({
-    
-    req(map_sel2())
-    
-    selectInput("summarize2", "Summarize By:", 
-                choices = c("day", "week", "month", "year"), 
-                selected = "day")
     
   })
   

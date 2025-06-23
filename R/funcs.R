@@ -95,24 +95,22 @@ bsmap <- function(bnds){
 #' 
 #' @param mapin Leaflet map object to update
 #' @param alldat Data frame containing the data to summarize
-#' @param cbawbid sf object containing wbids
 #' @param stas sf object containing station geometries
 #' @param summarize1 Character string indicating how to summarize the data ('WBID' or 'Station')
 #' @param location1 Character string indicating the sample location (e.g., 'surface', 'bottom')
 #' @param parameter1 Character string indicating the parameter to filter by
 #' @param daterange1 Date range to filter the data
-byareamap_fun <- function(mapin, alldat, cbawbid, stas, summarize1, location1, parameter1, daterange1){
+byareamap_fun <- function(mapin, alldat, stas, summarize1, location1, parameter1, daterange1){
   
   # summarize data
   byareadat <- try(
-    byareadat_fun(alldat, cbawbid, stas, summarize1, location1, parameter1, daterange1),
+    byareadat_fun(alldat, stas, summarize1, location1, parameter1, daterange1),
     silent = T
   )
 
   # create map
   if(inherits(byareadat, 'try-error'))
     out <- mapin %>%
-      leaflet::clearMarkers() |> 
       leaflet::clearShapes() |> 
       leaflet::clearControls()
   
@@ -130,7 +128,6 @@ byareamap_fun <- function(mapin, alldat, cbawbid, stas, summarize1, location1, p
       unique()
     
     out <- mapin %>%
-      leaflet::clearMarkers() |> 
       leaflet::clearShapes() |> 
       leaflet::clearControls()
 
@@ -176,22 +173,6 @@ byareamap_fun <- function(mapin, alldat, cbawbid, stas, summarize1, location1, p
           layerId = ~huc12
         )
     
-    if(summarize1 == 'Station')
-      out <- out |> 
-        leaflet::addCircleMarkers(
-          data = byareadat,
-          radius = 7,
-          fillColor = ~pal(val),
-          fillOpacity = 0.7,
-          color = "#666",
-          weight = 1,
-          label = ~paste0(waterbody, " ", station, ", Value: ", round(val, 2)),
-          labelOptions = leaflet::labelOptions(
-            style = list("font-size" = "16px")
-          ),
-          layerId = ~paste0(waterbody, "_", station)
-        )
-    
     # add legend
     out <- out |>
       leaflet::addLegend(
@@ -209,16 +190,15 @@ byareamap_fun <- function(mapin, alldat, cbawbid, stas, summarize1, location1, p
   
 }
 
-#' Function to summarize data by waterbody or station
+#' Function to summarize data by WBID or HUC12
 #' 
 #' @param alldat Data frame containing the data to summarize
-#' @param cbawbid sf object containing wbids
 #' @param stas sf object containing station geometries
-#' @param summarize1 Character string indicating how to summarize the data ('WBID' or 'Station')
+#' @param summarize1 Character string indicating how to summarize the data ('WBID' or 'HUC12')
 #' @param location1 Character string indicating the sample location (e.g., 'surface', 'bottom')
 #' @param parameter1 Character string indicating the parameter to filter by
 #' @param daterange1 Date range to filter the data
-byareadat_fun <- function(alldat, cbawbid, stas, summarize1, location1, parameter1, daterange1){
+byareadat_fun <- function(alldat, stas, summarize1, location1, parameter1, daterange1){
 
   dat <- alldat |> 
     dplyr::filter(
@@ -229,14 +209,13 @@ byareadat_fun <- function(alldat, cbawbid, stas, summarize1, location1, paramete
     ) |> 
     dplyr::select(waterbody, station, date, parameter, val) |> 
     dplyr::filter(!is.na(val))
-
-  dat <- dplyr::left_join(dat, stas, by = c('waterbody', 'station')) |> 
-    sf::st_as_sf()
-  
+  dat <- dplyr::inner_join(stas, dat, by = c("waterbody", "station")) |> 
+    dplyr::select(waterbody, station, date, parameter, val, WBID, huc12) |>  
+    sf::st_set_geometry(NULL)
+    
   if (summarize1 == "WBID") {
 
-    out <- dat |>  
-      sf::st_drop_geometry() |> 
+    out <- dat |> 
       tidyr::unite('stas', waterbody, station) |> 
       dplyr::summarise(
         val = mean(val, na.rm = TRUE),
@@ -279,100 +258,68 @@ byareadat_fun <- function(alldat, cbawbid, stas, summarize1, location1, paramete
     
   }
   
-  if(summarize1 == 'Station'){
-    
-    out <- dat |> 
-      dplyr::summarise(
-        val = mean(val, na.rm = TRUE),
-        .by = c(waterbody, station, geometry)
-      ) |> 
-      dplyr::filter(!is.na(val))
-    
-  }
-  
   return(out)
   
 }
 
 #' Function to create a time series plot for a selected area or station
 #' 
-#' @param shape_click Shape click event data from leaflet
-#' @param marker_click Marker click event data from leaflet
+#' @param sel Shape click event data from leaflet
 #' @param alldat Data frame containing the water quality data to plo
 #' @param stas sf object containing station geometries
 #' @param summarize1 Character string indicating how to summarize the data ('WBID' or 'Station')
 #' @param location1 Character string indicating the sample location (e.g., 'surface', 'bottom')
 #' @param parameter1 Character string indicating the parameter to filter by
 #' @param daterange1 Date range to filter the data
-byareaplo_fun <- function(shape_click, marker_click, alldat, stas, summarize1, location1, parameter1, daterange1){
-  
+byareaplo_fun <- function(sel, alldat, stas, summarize1, location1, parameter1, daterange1){
+
   toplo <- alldat |> 
     dplyr::filter(
       parameter == parameter1 &
         date >= as.Date(daterange1[1]) & 
         date <= as.Date(daterange1[2]) & 
         location == location1
-    )
+    ) |> 
+    dplyr::arrange(date)
   
   ylab <- meta |> 
     dplyr::filter(parameter == parameter1) |> 
     dplyr::pull(label) |> 
     unique()
-
-  if(!is.null(shape_click)){
-    
-    id <- shape_click$id
-    
-    if(id %in% stas$WBID){
-      ttl <- paste('WBID', id)
-      
-      toplo <- toplo |> 
-        dplyr::inner_join(stas, by = c('waterbody', 'station')) |> 
-        dplyr::filter(WBID %in% id) |> 
-        dplyr::select(date, val) |> 
-        dplyr::summarise(
-          avev = mean(val, na.rm = TRUE),
-          .by = date
-        )
-      
-    }
-    
-    if(id %in% cbahuc$huc12){
-      
-      ttl <- paste('HUC12', id)
-      
-      toplo <- toplo |> 
-        dplyr::inner_join(stas, by = c('waterbody', 'station')) |> 
-        dplyr::filter(huc12 %in% id) |> 
-        dplyr::select(date, val) |> 
-        dplyr::summarise(
-          avev = mean(val, na.rm = TRUE),
-          .by = date
-        )
-      
-    }
-    
-    ylab <- paste("Mean", ylab)
-    
-  }
+  ylab <- paste("Mean", ylab)
   
-  if(!is.null(marker_click)){
- 
-    id <- marker_click$id
-    waterbody <- sub("_(.*)", "", id)
-    station <- sub(".*_(.*)", "\\1", id)
-    ttl <- paste(waterbody, station)
+  id <- sel$data$id
+  
+  if(id %in% stas$WBID){
+    
+    ttl <- paste('WBID', id)
     
     toplo <- toplo |> 
-      dplyr::filter(waterbody == !!waterbody & station == !!station) |> 
+      dplyr::inner_join(stas, by = c('waterbody', 'station')) |> 
+      dplyr::filter(WBID %in% id) |> 
       dplyr::select(date, val) |> 
       dplyr::summarise(
         avev = mean(val, na.rm = TRUE),
         .by = date
       )
-      
+    
   }
   
+  if(id %in% cbahuc$huc12){
+    
+    ttl <- paste('HUC12', id)
+    
+    toplo <- toplo |> 
+      dplyr::inner_join(stas, by = c('waterbody', 'station')) |> 
+      dplyr::filter(huc12 %in% id) |> 
+      dplyr::select(date, val) |> 
+      dplyr::summarise(
+        avev = mean(val, na.rm = TRUE),
+        .by = date
+      )
+    
+  }
+
   out <- plotly::plot_ly(
       data = toplo,
       x = ~date,
@@ -397,44 +344,107 @@ byareaplo_fun <- function(shape_click, marker_click, alldat, stas, summarize1, l
 }
 
 #' Function to update the map with summarized data by area
-#' 
-#' @param mapin Leaflet map object to update
-#' @param alldat Data frame containing the data to summarize
+#'
+#' @param mapin Leaflet map object to update 
 #' @param stas sf object containing station geometries
+#' @param bystationdat Data frame containing the data to summarize and map
+#' @param parameter Character string indicating the parameter to filter by
 #' @param daterange2 Date range to filter the data
-bystationmap_fun <- function(mapin, stas, daterange2){
+bystationmap_fun <- function(mapin, bystationdat, stas, parameter, daterange2){
+  
+  prm <- gsub("(^.*)\\_.*$", "\\1", parameter)
+  loc <- gsub(".*\\_(.*)$", "\\1", parameter)
+  
+  tomap <- bystationdat |> 
+    dplyr::filter(parameter == !!prm & location == !!loc) |> 
+    dplyr::filter(
+      date >= as.Date(daterange2[1]) & 
+      date <= as.Date(daterange2[2])
+    ) |>
+    dplyr::summarise(
+      val = mean(val, na.rm = T), 
+      .by = c(waterbody, station, parameter, location)
+    ) 
+  
+  out <- mapin
 
-  tomap <- stas |>
-    dplyr::filter(datestr <= daterange2[2] & dateend >= daterange2[1])
+  pal <- leaflet::colorNumeric(
+    palette = "YlGnBu",
+    domain = tomap$val,
+    na.color = "transparent"
+  )
+  
+  lab <- meta |> 
+    dplyr::filter(parameter == !!prm) |>
+    dplyr::filter(location == !!loc) |> 
+    dplyr::pull(label) |> 
+    unique()
   
   # create map
   if(nrow(tomap) == 0){
     
-    out <- mapin %>%
-      leaflet::clearMarkers() 
+    out <- out %>%
+      leaflet::clearMarkers() |> 
+      leaflet::clearControls()
   
   }
   
   if(nrow(tomap) != 0) {
-  
-    out <- mapin %>%
+
+    tomap <- dplyr::inner_join(stas, tomap, by = c('waterbody', 'station'))
+      
+    out <- out |> 
       leaflet::clearMarkers() |> 
+      leaflet::clearControls() |> 
       leaflet::addCircleMarkers(
         data = tomap,
         radius = 7,
-        fillColor = '#007BC2',
+        fillColor = ~pal(val),
         fillOpacity = 0.7,
-        color = "black",
+        color = "#666",
         weight = 1,
-        label = ~paste0(waterbody, " ", station, ": start ", datestr, ", end ", dateend),
+        label = ~paste0(waterbody, " ", station, ", Mean Value: ", round(val, 2)),
         labelOptions = leaflet::labelOptions(
           style = list("font-size" = "16px")
-        ), 
+        ),
         layerId = ~paste0(waterbody, "_", station)
       )
     
   }
   
+  # add legend
+  out <- out |>
+    leaflet::addLegend(
+      pal = pal,
+      values = tomap$val,
+      title = paste("Mean", lab),
+      position = "topright",
+      opacity = 0.8,
+      na.label = "No Data"
+    )
+  
+  return(out)
+  
+}
+
+#' Function to filter data by selected parameters and date range
+#' 
+#' @param alldat Data frame containing the water quality data to filter
+#' @param parameter2a Character string indicating the first parameter to filter by
+#' @param parameter2b Character string indicating the second parameter to filter by
+bystationdat_fun <- function(alldat, parameter2a, parameter2b){
+  
+  prm2a <- gsub("(^.*)\\_.*$", "\\1", parameter2a)
+  prm2b <- gsub("(^.*)\\_.*$", "\\1", parameter2b)
+  loca <- gsub(".*\\_(.*)$", "\\1", parameter2a)
+  locb <- gsub(".*\\_(.*)$", "\\1", parameter2b)
+  
+  out <- alldat |> 
+    dplyr::filter((parameter == prm2a & location == loca) | 
+                  (parameter == prm2b & location == locb)
+                  ) |>
+    dplyr::filter(!is.na(val))
+    
   return(out)
   
 }
@@ -442,13 +452,12 @@ bystationmap_fun <- function(mapin, stas, daterange2){
 #' Function to create a time series plot for a selected station
 #' 
 #' @param sel Selected station data from the input
-#' @param alldat Data frame containing the water quality data to plot
-#' @param stas sf object containing station geometries
+#' @param bystationdat Data frame containing the water quality data to plot
 #' @param summarize2 Character string indicating how to summarize the data ('day', 'week', 'month', 'year')
 #' @param parameter2a Character string indicating the first parameter to filter by
 #' @param parameter2b Character string indicating the second parameter to filter by
 #' @param daterange2 Date range to filter the data
-bystationplo_fun <- function(sel, alldat, summarize2, parameter2a,
+bystationplo_fun <- function(sel, bystationdat, summarize2, parameter2a,
                              parameter2b, daterange2){
 
   waterbody <- gsub("(^.*)\\_.*$", "\\1", sel$id)
@@ -458,29 +467,17 @@ bystationplo_fun <- function(sel, alldat, summarize2, parameter2a,
   loca <- gsub(".*\\_(.*)$", "\\1", parameter2a)
   locb <- gsub(".*\\_(.*)$", "\\1", parameter2b)
   localb <- ifelse(loca == 'surf', 'Surface', 'Bottom')
-  locblb <- ifelse(locb == 'surb', 'Surface', 'Bottom')
+  locblb <- ifelse(locb == 'surf', 'Surface', 'Bottom')
   
-  ylab1 <- meta |> 
-    dplyr::filter(parameter == prm2a) |> 
-    dplyr::pull(label) |> 
-    unique() |> 
-    paste0(": ", localb)
-  ylab2 <- meta |>
-    dplyr::filter(parameter == prm2b) |> 
-    dplyr::pull(label) |> 
-    unique() |> 
-    paste0(": ", locblb)
-  
-  toplo <- alldat |> 
+  ylab1 <- names(stationprmsel)[which(stationprmsel == parameter2a)]
+  ylab2 <- names(stationprmsel)[which(stationprmsel == parameter2b)]
+
+  toplo <- bystationdat |> 
     dplyr::filter(
-      waterbody == !!waterbody & 
-      station == !!station & 
       date >= as.Date(daterange2[1]) & 
       date <= as.Date(daterange2[2])
-    ) |> 
-    dplyr::filter((parameter == prm2a & location == loca) | 
-                  (parameter == prm2b & location == locb)
-                  ) |> 
+    ) |>
+    dplyr::filter(waterbody == !!waterbody & station == !!station) |> 
     dplyr::rename(avev = val) |> 
     dplyr::mutate(
       date = lubridate::floor_date(date, summarize2),
@@ -489,13 +486,15 @@ bystationplo_fun <- function(sel, alldat, summarize2, parameter2a,
       hivl = tryCatch(t.test(avev, conf.level = 0.95)$conf.int[2], silent = TRUE, error = function(e) NA),
       lovl = tryCatch(t.test(avev, conf.level = 0.95)$conf.int[1], silent = TRUE, error = function(e) NA),
       avev = mean(avev, na.rm = TRUE),
-      .by = c(date, parameter)
+      .by = c(date, parameter, location)
     )
-  
+
   toplo1 <- toplo |> 
-      dplyr::filter(parameter == prm2a)
+    dplyr::filter(parameter == prm2a & location == loca) |> 
+    dplyr::arrange(date)
   toplo2 <- toplo |>
-      dplyr::filter(parameter == prm2b)
+    dplyr::filter(parameter == prm2b & location == locb) |> 
+    dplyr::arrange(date)
   
   if(summarize2 != 'day'){
     
@@ -563,13 +562,18 @@ bystationplo_fun <- function(sel, alldat, summarize2, parameter2a,
   
   p1 <- p1 |> 
     plotly::layout(
-      xaxis = list(title = ""),
+      title = paste(waterbody, station),
+      xaxis = list(title = "", 
+                   range = c(as.Date(daterange2[1]), as.Date(daterange2[2]))
+                   ),
       yaxis = list(title = ylab1), 
       showlegend = F
     )
   p2 <- p2 |> 
     plotly::layout(
-      xaxis = list(title = ""),
+      xaxis = list(title = "", 
+                   range = c(as.Date(daterange2[1]), as.Date(daterange2[2]))
+                   ),
       yaxis = list(title = ylab2),
       showlegend = F
     )
@@ -583,8 +587,7 @@ bystationplo_fun <- function(sel, alldat, summarize2, parameter2a,
 #' Add marker or shape highlight to area map selection
 #'
 #' @param mapsel1 Data frame containing the selected area or station's ID
-#' @param cbawbid sf object containing waterbody IDs
-addselareamap_fun <- function(mapsel1, cbawbid){
+addselareamap_fun <- function(mapsel1){
 
   if (!is.null(mapsel1)) {
 

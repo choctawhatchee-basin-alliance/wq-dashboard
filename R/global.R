@@ -20,6 +20,7 @@ dtrng <- c(min(meta$datestr), max(meta$dateend))
 locs <- list('Surface' = 'surf', 'Bottom' = 'bott')
 dtchc <- datechoice_fun(alldat)
 wtbds <- sort(unique(alldat$waterbody))
+stationprmsel <- stationprmsel_fun(dtrng)
 
 # value boxes
 nsmp <- format(nrow(alldat), big.mark = ",", scientific = FALSE)
