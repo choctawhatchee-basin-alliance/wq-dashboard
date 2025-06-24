@@ -256,6 +256,29 @@ meta <- alldat |>
   )
   
 save(meta, file = here('data', 'meta.RData'))
+
+# nnc references ------------------------------------------------------------------------------
+
+nncraw <- read_sheet('1VQWzS-GMOzc-Xs0XoTa8Ifz8QyG_6WhU8THJPjRqWBs', 
+                     col_types = 'cccccddd')  
+
+nncdat <- nncraw |> 
+  select(
+    waterbody = `CBA Waterbody Name`, 
+    station = `CBA Station #`, 
+    WBID, 
+    tp = `Total Phosphorus (mg/L)`,
+    tn = `Total Nitrogen (mg/L)`,
+    chl = `Chlorophyll a (μg/L)` # needs to apply to both corr and uncorr
+  ) |> 
+  pivot_longer(
+    cols = c(tp, tn, chl), 
+    names_to = 'parameter', 
+    values_to = 'value'
+  ) |> 
+  filter(!is.na(value))
+
+save(nncdat, file = here('data', 'nncdat.RData'))
   
 # create dummy file for continuous data -------------------------------------------------------
 

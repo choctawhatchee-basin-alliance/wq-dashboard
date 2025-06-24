@@ -56,7 +56,7 @@ ui <- page_navbar(
       nav_panel(
         title = 'METHODS', 
         class = 'card-scroll',
-        shiny::includeMarkdown('www/methods.md')
+        shiny::includeMarkdown('doc/methods.md')
       )
     )
   ),
@@ -203,7 +203,7 @@ ui <- page_navbar(
     
   ),
   
-  #####
+  ####### fifth nav item
   # Fifth nav item - download
   nav_panel(
     title = "4 DOWNLOAD",
@@ -329,7 +329,7 @@ server <- function(input, output, session) {
     # Set flag to prevent concurrent updates
     values2$updating <- TRUE
     
-    out <- byareaplo_fun(sel, alldat, stas, 
+    out <- byareaplo_fun(sel, alldat, stas, nncdat,
               input$summarize1, input$location1, input$parameter1,
               input$daterange1)
     
@@ -463,7 +463,7 @@ server <- function(input, output, session) {
     req(bystationdat())
     sel <- map_sel2()$data
 
-    out <- bystationplo_fun(sel, bystationdat(), input$summarize2, input$parameter2a, input$parameter2b, input$daterange2)  
+    out <- bystationplo_fun(sel, bystationdat(), nncdat, input$summarize2, input$parameter2a, input$parameter2b, input$daterange2)  
     
     return(out)
     

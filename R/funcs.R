@@ -267,11 +267,12 @@ byareadat_fun <- function(alldat, stas, summarize1, location1, parameter1, dater
 #' @param sel Shape click event data from leaflet
 #' @param alldat Data frame containing the water quality data to plo
 #' @param stas sf object containing station geometries
+#' @param nncdat Data frame containing the NNC data
 #' @param summarize1 Character string indicating how to summarize the data ('WBID' or 'Station')
 #' @param location1 Character string indicating the sample location (e.g., 'surface', 'bottom')
 #' @param parameter1 Character string indicating the parameter to filter by
 #' @param daterange1 Date range to filter the data
-byareaplo_fun <- function(sel, alldat, stas, summarize1, location1, parameter1, daterange1){
+byareaplo_fun <- function(sel, alldat, stas, nncdat, summarize1, location1, parameter1, daterange1){
 
   toplo <- alldat |> 
     dplyr::filter(
@@ -303,6 +304,12 @@ byareaplo_fun <- function(sel, alldat, stas, summarize1, location1, parameter1, 
         .by = date
       )
     
+    # get nnc line 
+    chknnc <- nncdat |> 
+      dplyr::filter(WBID %in% id & parameter %in% substr(parameter1, 1, 3)) |> 
+      dplyr::select(WBID, parameter, value) |> 
+      dplyr::distinct()
+    
   }
   
   if(id %in% cbahuc$huc12){
@@ -333,11 +340,26 @@ byareaplo_fun <- function(sel, alldat, stas, summarize1, location1, parameter1, 
     )  |> 
     plotly::layout(
       title = ttl,
-      xaxis = list(title = "Date", 
+      xaxis = list(title = "", 
                    range = c(as.Date(daterange1[1]), as.Date(daterange1[2]))
                    ),
       yaxis = list(title = ylab)
     )
+
+  if(summarize1 == 'WBID' & nrow(chknnc) == 1)
+    out <- out |> 
+      plotly::add_trace(
+        x = c(as.Date(daterange1[1]), as.Date(daterange1[2])),
+        y = chknnc$value,
+        type = 'scatter',
+        mode = 'lines',
+        line = list(color = 'black', dash = 'dash'),
+        name = 'NNC Threshold',
+        hoverinfo = 'text',
+        showlegend = FALSE,
+        text = paste("NNC Threshold:", chknnc$value),
+        inherit = F
+      )
   
   return(out)
   
@@ -453,11 +475,12 @@ bystationdat_fun <- function(alldat, parameter2a, parameter2b){
 #' 
 #' @param sel Selected station data from the input
 #' @param bystationdat Data frame containing the water quality data to plot
+#' @param nncdat Data frame containing the NNC data
 #' @param summarize2 Character string indicating how to summarize the data ('day', 'week', 'month', 'year')
 #' @param parameter2a Character string indicating the first parameter to filter by
 #' @param parameter2b Character string indicating the second parameter to filter by
 #' @param daterange2 Date range to filter the data
-bystationplo_fun <- function(sel, bystationdat, summarize2, parameter2a,
+bystationplo_fun <- function(sel, bystationdat, nncdat, summarize2, parameter2a,
                              parameter2b, daterange2){
 
   waterbody <- gsub("(^.*)\\_.*$", "\\1", sel$id)
@@ -509,7 +532,7 @@ bystationplo_fun <- function(sel, bystationdat, summarize2, parameter2a,
         type = 'scatter',
         mode = 'lines+markers',
         line = list(color = 'blue'),
-        marker = list(size = 5),
+        marker = list(size = 5, color = "cornflowerblue"),
         hoverinfo = 'text',
         text = ~paste("Date:", date, "<br>Value:", round(avev, 2))
       ) 
@@ -525,7 +548,7 @@ bystationplo_fun <- function(sel, bystationdat, summarize2, parameter2a,
         type = 'scatter',
         mode = 'lines+markers',
         line = list(color = 'red'),
-        marker = list(size = 5),
+        marker = list(size = 5, color = 'coral'),
         hoverinfo = 'text',
         text = ~paste("Date:", date, "<br>Value:", round(avev, 2))
       ) 
@@ -541,7 +564,7 @@ bystationplo_fun <- function(sel, bystationdat, summarize2, parameter2a,
       type = 'scatter',
       mode = 'lines+markers',
       line = list(color = 'blue'),
-      marker = list(size = 5),
+      marker = list(size = 5, color = "cornflowerblue"),
       hoverinfo = 'text',
       text = ~paste("Date:", date, "<br>Value:", round(avev, 2))
     ) 
@@ -553,7 +576,7 @@ bystationplo_fun <- function(sel, bystationdat, summarize2, parameter2a,
       type = 'scatter',
       mode = 'lines+markers',
       line = list(color = 'red'),
-      marker = list(size = 5),
+      marker = list(size = 5, color = 'coral'),
       hoverinfo = 'text',
       text = ~paste("Date:", date, "<br>Value:", round(avev, 2))
     ) 
@@ -577,6 +600,54 @@ bystationplo_fun <- function(sel, bystationdat, summarize2, parameter2a,
       yaxis = list(title = ylab2),
       showlegend = F
     )
+  
+  # chk nnc p1
+  nncchk1 <- nncdat |> 
+    dplyr::filter(
+      waterbody %in% !!waterbody & 
+      station %in% !!station & 
+      parameter %in% substr(prm2a, 1, 3)
+    ) |> 
+    dplyr::select(parameter, value) |> 
+    dplyr::distinct()
+  if(nrow(nncchk1) == 1)
+    p1 <- p1 |> 
+      plotly::add_trace(
+        x = c(as.Date(daterange2[1]), as.Date(daterange2[2])),
+        y = nncchk1$value,
+        type = 'scatter',
+        mode = 'lines',
+        line = list(color = 'black', dash = 'dash'),
+        name = 'NNC Threshold',
+        hoverinfo = 'text',
+        showlegend = FALSE,
+        text = paste("NNC Threshold:", nncchk1$value),
+        inherit = F
+      )
+    
+  # chk nnc p2
+  nncchk2 <- nncdat |> 
+    dplyr::filter(
+      waterbody %in% !!waterbody & 
+      station %in% !!station & 
+      parameter %in% substr(prm2b, 1, 3)
+    ) |> 
+    dplyr::select(parameter, value) |> 
+    dplyr::distinct()
+  if(nrow(nncchk2) == 1)
+    p2 <- p2 |> 
+      plotly::add_trace(
+        x = c(as.Date(daterange2[1]), as.Date(daterange2[2])),
+        y = nncchk2$value,
+        type = 'scatter',
+        mode = 'lines',
+        line = list(color = 'black', dash = 'dash'),
+        name = 'NNC Threshold',
+        hoverinfo = 'text',
+        showlegend = FALSE,
+        text = paste("NNC Threshold:", nncchk2$value),
+        inherit = F
+      )
   
   out <- plotly::subplot(p1, p2, nrows = 2, shareX = TRUE, titleY = TRUE)
   
