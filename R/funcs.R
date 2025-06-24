@@ -268,11 +268,10 @@ byareadat_fun <- function(alldat, stas, summarize1, location1, parameter1, dater
 #' @param alldat Data frame containing the water quality data to plo
 #' @param stas sf object containing station geometries
 #' @param nncdat Data frame containing the NNC data
-#' @param summarize1 Character string indicating how to summarize the data ('WBID' or 'Station')
 #' @param location1 Character string indicating the sample location (e.g., 'surface', 'bottom')
 #' @param parameter1 Character string indicating the parameter to filter by
 #' @param daterange1 Date range to filter the data
-byareaplo_fun <- function(sel, alldat, stas, nncdat, summarize1, location1, parameter1, daterange1){
+byareaplo_fun <- function(sel, alldat, stas, nncdat, location1, parameter1, daterange1){
 
   toplo <- alldat |> 
     dplyr::filter(
@@ -291,6 +290,12 @@ byareaplo_fun <- function(sel, alldat, stas, nncdat, summarize1, location1, para
   
   id <- sel$data$id
   
+  # get nnc line if present
+  chknnc <- nncdat |> 
+    dplyr::filter(WBID %in% id & parameter %in% substr(parameter1, 1, 3)) |> 
+    dplyr::select(WBID, parameter, value) |> 
+    dplyr::distinct()
+  
   if(id %in% stas$WBID){
     
     ttl <- paste('WBID', id)
@@ -303,12 +308,6 @@ byareaplo_fun <- function(sel, alldat, stas, nncdat, summarize1, location1, para
         avev = mean(val, na.rm = TRUE),
         .by = date
       )
-    
-    # get nnc line 
-    chknnc <- nncdat |> 
-      dplyr::filter(WBID %in% id & parameter %in% substr(parameter1, 1, 3)) |> 
-      dplyr::select(WBID, parameter, value) |> 
-      dplyr::distinct()
     
   }
   
@@ -346,7 +345,8 @@ byareaplo_fun <- function(sel, alldat, stas, nncdat, summarize1, location1, para
       yaxis = list(title = ylab)
     )
 
-  if(summarize1 == 'WBID' & nrow(chknnc) == 1)
+
+  if(nrow(chknnc) == 1)
     out <- out |> 
       plotly::add_trace(
         x = c(as.Date(daterange1[1]), as.Date(daterange1[2])),

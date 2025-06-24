@@ -328,9 +328,9 @@ server <- function(input, output, session) {
     
     # Set flag to prevent concurrent updates
     values2$updating <- TRUE
-    
+
     out <- byareaplo_fun(sel, alldat, stas, nncdat,
-              input$summarize1, input$location1, input$parameter1,
+              input$location1, input$parameter1,
               input$daterange1)
     
     # reset flag after brief delay
