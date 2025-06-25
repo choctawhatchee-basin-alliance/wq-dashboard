@@ -144,9 +144,9 @@ ui <- page_navbar(
             selectInput("summarize2", "Summarize By:", 
                         choices = c("day", "week", "month", "year"), 
                         selected = "day"),
-            plotly::plotlyOutput('bystationplo', height = "calc(100vh - 300px)"),
+            uiOutput('bystationplo'),
             border_radius = FALSE, 
-            fillable = TRUE,
+            fillable = FALSE,
             width = "40%",
             open = FALSE,
             position = 'right'
@@ -569,7 +569,7 @@ server <- function(input, output, session) {
   bystationmap1_proxy <- leaflet::leafletProxy("bystationmap1")
   bystationmap2_proxy <- leaflet::leafletProxy("bystationmap2")
   
-  output$bystationplo <- plotly::renderPlotly(bystationplo())
+  output$bystationplo <- renderUI(bystationplo())
 
   # download table
   output$dltabout <- reactable::renderReactable(dltab())

@@ -482,7 +482,7 @@ bystationdat_fun <- function(alldat, parameter2a, parameter2b){
 #' @param daterange2 Date range to filter the data
 bystationplo_fun <- function(sel, bystationdat, nncdat, summarize2, parameter2a,
                              parameter2b, daterange2){
-
+  
   waterbody <- gsub("(^.*)\\_.*$", "\\1", sel$id)
   station <- gsub(".*\\_(.*)$", "\\1", sel$id)
   prm2a <- gsub("(^.*)\\_.*$", "\\1", parameter2a)
@@ -494,11 +494,11 @@ bystationplo_fun <- function(sel, bystationdat, nncdat, summarize2, parameter2a,
   
   ylab1 <- names(stationprmsel)[which(stationprmsel == parameter2a)]
   ylab2 <- names(stationprmsel)[which(stationprmsel == parameter2b)]
-
+  
   toplo <- bystationdat |> 
     dplyr::filter(
       date >= as.Date(daterange2[1]) & 
-      date <= as.Date(daterange2[2])
+        date <= as.Date(daterange2[2])
     ) |>
     dplyr::filter(waterbody == !!waterbody & station == !!station) |> 
     dplyr::rename(avev = val) |> 
@@ -511,7 +511,7 @@ bystationplo_fun <- function(sel, bystationdat, nncdat, summarize2, parameter2a,
       avev = mean(avev, na.rm = TRUE),
       .by = c(date, parameter, location)
     )
-
+  
   toplo1 <- toplo |> 
     dplyr::filter(parameter == prm2a & location == loca) |> 
     dplyr::arrange(date)
@@ -519,137 +519,183 @@ bystationplo_fun <- function(sel, bystationdat, nncdat, summarize2, parameter2a,
     dplyr::filter(parameter == prm2b & location == locb) |> 
     dplyr::arrange(date)
   
-  if(summarize2 != 'day'){
-    
-    p1 <- plotly::plot_ly(
-        data = toplo1,
-        x = ~date,
-        y = ~avev,
-        error_y = list(
-          array = ~hivl - avev,
-          color = 'blue'
-        ),
-        type = 'scatter',
-        mode = 'lines+markers',
-        line = list(color = 'blue'),
-        marker = list(size = 5, color = "cornflowerblue"),
-        hoverinfo = 'text',
-        text = ~paste("Date:", date, "<br>Value:", round(avev, 2))
-      ) 
-      
-    p2 <- plotly::plot_ly(
-        data = toplo2,
-        x = ~date,
-        y = ~avev,
-        error_y = list(
-          array = ~hivl - lovl,
-          color = 'red'
-        ),
-        type = 'scatter',
-        mode = 'lines+markers',
-        line = list(color = 'red'),
-        marker = list(size = 5, color = 'coral'),
-        hoverinfo = 'text',
-        text = ~paste("Date:", date, "<br>Value:", round(avev, 2))
-      ) 
-    
-  }
-  
-  if(summarize2 == 'day'){
-    
-    p1 <- plotly::plot_ly(
-      data = toplo1,
-      x = ~date,
-      y = ~avev,
-      type = 'scatter',
-      mode = 'lines+markers',
-      line = list(color = 'blue'),
-      marker = list(size = 5, color = "cornflowerblue"),
-      hoverinfo = 'text',
-      text = ~paste("Date:", date, "<br>Value:", round(avev, 2))
-    ) 
-    
-    p2 <- plotly::plot_ly(
-      data = toplo2,
-      x = ~date,
-      y = ~avev,
-      type = 'scatter',
-      mode = 'lines+markers',
-      line = list(color = 'red'),
-      marker = list(size = 5, color = 'coral'),
-      hoverinfo = 'text',
-      text = ~paste("Date:", date, "<br>Value:", round(avev, 2))
-    ) 
-    
-  }
-  
-  p1 <- p1 |> 
-    plotly::layout(
-      title = paste(waterbody, station),
-      xaxis = list(title = "", 
-                   range = c(as.Date(daterange2[1]), as.Date(daterange2[2]))
-                   ),
-      yaxis = list(title = ylab1), 
-      showlegend = F
-    )
-  p2 <- p2 |> 
-    plotly::layout(
-      xaxis = list(title = "", 
-                   range = c(as.Date(daterange2[1]), as.Date(daterange2[2]))
-                   ),
-      yaxis = list(title = ylab2),
-      showlegend = F
-    )
-  
-  # chk nnc p1
+  # Check for NNC thresholds
   nncchk1 <- nncdat |> 
     dplyr::filter(
       waterbody %in% !!waterbody & 
-      station %in% !!station & 
-      parameter %in% substr(prm2a, 1, 3)
+        station %in% !!station & 
+        parameter %in% substr(prm2a, 1, 3)
     ) |> 
     dplyr::select(parameter, value) |> 
     dplyr::distinct()
-  if(nrow(nncchk1) == 1)
-    p1 <- p1 |> 
-      plotly::add_trace(
-        x = c(as.Date(daterange2[1]), as.Date(daterange2[2])),
-        y = nncchk1$value,
-        type = 'scatter',
-        mode = 'lines',
-        line = list(color = 'black', dash = 'dash'),
-        name = 'NNC Threshold',
-        hoverinfo = 'text',
-        showlegend = FALSE,
-        text = paste("NNC Threshold:", nncchk1$value),
-        inherit = F
-      )
-    
-  # chk nnc p2
+  
   nncchk2 <- nncdat |> 
     dplyr::filter(
       waterbody %in% !!waterbody & 
-      station %in% !!station & 
-      parameter %in% substr(prm2b, 1, 3)
+        station %in% !!station & 
+        parameter %in% substr(prm2b, 1, 3)
     ) |> 
     dplyr::select(parameter, value) |> 
     dplyr::distinct()
-  if(nrow(nncchk2) == 1)
-    p2 <- p2 |> 
-      plotly::add_trace(
-        x = c(as.Date(daterange2[1]), as.Date(daterange2[2])),
-        y = nncchk2$value,
-        type = 'scatter',
-        mode = 'lines',
-        line = list(color = 'black', dash = 'dash'),
-        name = 'NNC Threshold',
-        hoverinfo = 'text',
-        showlegend = FALSE,
-        text = paste("NNC Threshold:", nncchk2$value),
-        inherit = F
-      )
   
-  out <- plotly::subplot(p1, p2, nrows = 2, shareX = TRUE, titleY = TRUE)
+  # Convert dates to milliseconds for Highcharts
+  date_range_ms <- c(as.numeric(as.POSIXct(daterange2[1])) * 1000,
+                     as.numeric(as.POSIXct(daterange2[2])) * 1000)
+
+  # Create first chart
+  hc1 <- highcharter::highchart() |>
+    highcharter::hc_chart(type = "line") |>
+    highcharter::hc_title(text = paste(waterbody, station)) |>
+    highcharter::hc_xAxis(
+      type = "datetime",
+      min = date_range_ms[1],
+      max = date_range_ms[2],
+      title = list(text = "")
+    ) |>
+    highcharter::hc_yAxis(title = list(text = ylab1)) |>
+    highcharter::hc_legend(enabled = FALSE)
+  
+  # Add data series for first chart
+  if(nrow(toplo1) > 0) {
+    if(summarize2 != 'day') {
+      # Add series with error bars
+      hc1 <- hc1 |>
+        highcharter::hc_add_series(
+          data = toplo1,
+          type = "line",
+          highcharter::hcaes(x = date, y = avev),
+          color = "blue",
+          marker = list(radius = 3, fillColor = "cornflowerblue"),
+          tooltip = list(
+            pointFormatter = highcharter::JS("function() { return 'Date: ' + Highcharts.dateFormat('%Y-%m-%d', this.x) + '<br>Value: ' + this.y.toFixed(2); }")
+          )
+        ) |>
+        highcharter::hc_add_series(
+          data = toplo1,
+          type = "errorbar",
+          highcharter::hcaes(x = date, low = lovl, high = hivl),
+          color = "blue",
+          showInLegend = FALSE,
+          tooltip = list(enabled = FALSE)
+        )
+    } else {
+      # Add series without error bars
+      hc1 <- hc1 |>
+        highcharter::hc_add_series(
+          data = toplo1,
+          type = "line",
+          highcharter::hcaes(x = date, y = avev),
+          color = "blue",
+          marker = list(radius = 3, fillColor = "cornflowerblue"),
+          tooltip = list(
+            pointFormatter = highcharter::JS("function() { return 'Date: ' + Highcharts.dateFormat('%Y-%m-%d', this.x) + '<br>Value: ' + this.y.toFixed(2); }")
+          )
+        )
+    }
+  }
+  
+  # Add NNC threshold line for first chart
+  if(nrow(nncchk1) == 1) {
+    hc1 <- hc1 |>
+      highcharter::hc_add_series(
+        data = list(
+          list(x = date_range_ms[1], y = nncchk1$value),
+          list(x = date_range_ms[2], y = nncchk1$value)
+        ),
+        type = "line",
+        color = "black",
+        dashStyle = "Dash",
+        showInLegend = FALSE,
+        tooltip = list(
+          pointFormatter = highcharter::JS(paste0("function() { return 'NNC Threshold: ", nncchk1$value, "'; }"))
+        )
+      )
+  }
+  
+  # Create second chart
+  hc2 <- highcharter::highchart() |>
+    highcharter::hc_chart(type = "line") |>
+    highcharter::hc_xAxis(
+      type = "datetime",
+      min = date_range_ms[1],
+      max = date_range_ms[2],
+      title = list(text = "")
+    ) |>
+    highcharter::hc_yAxis(title = list(text = ylab2)) |>
+    highcharter::hc_legend(enabled = FALSE)
+  
+  # Add data series for second chart
+  if(nrow(toplo2) > 0) {
+    if(summarize2 != 'day') {
+      # Add series with error bars
+      hc2 <- hc2 |>
+        highcharter::hc_add_series(
+          data = toplo2,
+          type = "line",
+          highcharter::hcaes(x = date, y = avev),
+          color = "red",
+          marker = list(radius = 3, fillColor = "coral"),
+          tooltip = list(
+            pointFormatter = highcharter::JS("function() { return 'Date: ' + Highcharts.dateFormat('%Y-%m-%d', this.x) + '<br>Value: ' + this.y.toFixed(2); }")
+          )
+        ) |>
+        highcharter::hc_add_series(
+          data = toplo2,
+          type = "errorbar",
+          highcharter::hcaes(x = date, low = lovl, high = hivl),
+          color = "red",
+          showInLegend = FALSE,
+          tooltip = list(enabled = FALSE)
+        )
+    } else {
+      # Add series without error bars
+      hc2 <- hc2 |>
+        highcharter::hc_add_series(
+          data = toplo2,
+          type = "line",
+          highcharter::hcaes(x = date, y = avev),
+          color = "red",
+          marker = list(radius = 3, fillColor = "coral"),
+          tooltip = list(
+            pointFormatter = highcharter::JS("function() { return 'Date: ' + Highcharts.dateFormat('%Y-%m-%d', this.x) + '<br>Value: ' + this.y.toFixed(2); }")
+          )
+        )
+    }
+  }
+  
+  # Add NNC threshold line for second chart
+  if(nrow(nncchk2) == 1) {
+    hc2 <- hc2 |>
+      highcharter::hc_add_series(
+        data = list(
+          list(x = date_range_ms[1], y = nncchk2$value),
+          list(x = date_range_ms[2], y = nncchk2$value)
+        ),
+        type = "line",
+        color = "black",
+        dashStyle = "Dash",
+        showInLegend = FALSE,
+        tooltip = list(
+          pointFormatter = highcharter::JS(paste0("function() { return 'NNC Threshold: ", nncchk2$value, "'; }"))
+        )
+      )
+  }
+  
+  # Create combined chart using htmltools
+  hc1 <- hc1 |> highcharter::hc_chart(height = 275) |> highcharter::hc_chart(reflow = FALSE) 
+  hc2 <- hc2 |> highcharter::hc_chart(height = 275) |> highcharter::hc_chart(reflow = FALSE) 
+  
+  out <- htmltools::div(
+    style = "height: 550px; overflow: hidden;",
+    htmltools::div(
+      style = "height: 275px; margin-bottom: 10px; overflow: hidden;",
+      hc1
+    ),
+    htmltools::div(
+      style = "height: 275px; overflow: hidden;",
+      hc2
+    )
+  )
   
   return(out)
   
