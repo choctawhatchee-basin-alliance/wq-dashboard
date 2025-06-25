@@ -342,7 +342,12 @@ byareaplo_fun <- function(sel, alldat, stas, nncdat, location1, parameter1, date
       xaxis = list(title = "", 
                    range = c(as.Date(daterange1[1]), as.Date(daterange1[2]))
                    ),
-      yaxis = list(title = ylab)
+      yaxis = list(title = ylab),
+      showlegend = F,
+      transition = list(
+        duration = 500,
+        easing = "cubic-in-out"
+      )
     )
 
 
@@ -360,7 +365,7 @@ byareaplo_fun <- function(sel, alldat, stas, nncdat, location1, parameter1, date
         text = paste("NNC Threshold:", chknnc$value),
         inherit = F
       )
-  
+ 
   return(out)
   
 }
