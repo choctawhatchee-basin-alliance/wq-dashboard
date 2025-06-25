@@ -278,6 +278,16 @@ nncdat <- nncraw |>
   ) |> 
   filter(!is.na(value))
 
+# correct those in differing WBIDs based on manual check (959F and 46 not in cbawbid)
+nncdat <- nncdat |> 
+  mutate(
+    WBID = case_when(
+      WBID == '959F' ~ '959C', # Oyster 4, 959F and 959C has same NNC for TP, TN, Chl-a
+      WBID == '46' ~ '49F', # CBA Pea River-1 1, CBA River-9 1, 46 and 49F has same NNC for TP, TN
+      T ~ WBID
+    )
+  )
+
 save(nncdat, file = here('data', 'nncdat.RData'))
   
 # create dummy file for continuous data -------------------------------------------------------
