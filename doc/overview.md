@@ -2,9 +2,13 @@
 <div class = 'col-md-2'></div>
 <div class = 'col-md-8'>
 
-<h2 style = 'text-align: center;'>WELCOME TO THE CHOCTAWHATCHEE BASIN ALLIANCE WATER QUALITY DASHBOARD!</h2>
+<div style="display: flex; align-items: center; width: 100%; gap: 10px;">
+  <img src='logo.png' style='width: 20%; height: auto;'>
+  <h2 style='margin: 0; flex: 1; text-align: center;'>WELCOME TO THE CHOCTAWHATCHEE BASIN ALLIANCE WATER QUALITY DASHBOARD!</h2>
+</div>
+<br>
 
-<img src='banner.png' style='width: 80%; display: block; margin: 0 auto;'>  
+<img src='banner.jpg' style='width: 100%; display: block; margin: 0 auto;'>  
 <br>
            
 <p>The Choctawhatchee Basin Alliance (CBA) of Northwest Florida State College has been monitoring local waterways since its inception in 1996. Partnering with the University of Florida’s Florida LAKEWATCH program, CBA conducts monthly water quality monitoring at 140+ stations throughout the watershed, including Choctawhatchee Bay, the Choctawhatchee River, and Walton County coastal dune lakes. A dedicated team of citizen scientist volunteers - CBA’s Water Science Crew - assists CBA staff in data collection efforts.</p>

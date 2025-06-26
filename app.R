@@ -10,7 +10,7 @@ ui <- page_navbar(
   
   # Add logo
   nav_item(
-    tags$img(src = "logo.png", height = "30px", style = "margin-right: 10px;")
+    tags$img(src = "heron.png", height = "30px", style = "margin-right: 10px;")
   ),
 
   # styles and download spinner
@@ -21,9 +21,17 @@ ui <- page_navbar(
       $(document).on('click', '#dwnld', function() {
         $(this).prop('disabled', true).html('<span class=\"spinner-border spinner-border-sm\" role=\"status\"></span> Downloading...');
       });
-    
       Shiny.addCustomMessageHandler('reset_download_button', function(message) {
         $('#dwnld').prop('disabled', false).html('<i class=\"fa fa-download\"></i> Download data');
+      });
+      $(document).ready(function() {
+        $('.navbar-brand').css('cursor', 'pointer').on('click', function() {
+          $('a[data-value=\"overview\"]').tab('show');
+          Shiny.setInputValue('main-nav', 'overview');
+          setTimeout(function() {
+            $('a[data-value=\"about\"]').tab('show');
+          }, 100);
+        });
       });
       "))
     )
@@ -38,6 +46,7 @@ ui <- page_navbar(
       height = '100%',
       nav_panel(
         title = "ABOUT",
+        value = 'about',
         class = 'card-scroll',
         layout_sidebar(
           shiny::includeMarkdown('doc/overview.md'),

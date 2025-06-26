@@ -246,12 +246,28 @@ meta <- alldat |>
       parameter == 'ph' ~ 'pH (su)',
       parameter == 'turb' ~ 'Turbidity (NTU)',
       parameter == 'secchi' ~ 'Secchi Depth (ft)',
-      parameter == 'chlcorr' ~ 'Chl-a (ug/L, corrected)',
-      parameter == 'chluncorr' ~ 'Chl-a (ug/L, uncorrected)',
+      parameter == 'chlcorr' ~ 'Chl-a Corrected (ug/L)',
+      parameter == 'chluncorr' ~ 'Chl-a Uncorrected (ug/L)',
       parameter == 'tp' ~ 'Total Phosphorus (mg/L)',
       parameter == 'tn' ~ 'Total Nitrogen (mg/L)',
       parameter == 'color' ~ 'Color (pt-co)',
       parameter == 'depth' ~ 'Depth (ft)'
+    ), 
+    labelnouni = case_when(
+      parameter == 'temp' ~ 'Temperature',
+      parameter == 'dosat' ~ 'Dissolved Oxygen (%)',
+      parameter == 'do' & units == 'mgl' ~ 'Dissolved Oxygen',
+      parameter == 'cond' ~ 'Conductivity',
+      parameter == 'sal' ~ 'Salinity',
+      parameter == 'ph' ~ 'pH',
+      parameter == 'turb' ~ 'Turbidity',
+      parameter == 'secchi' ~ 'Secchi Depth',
+      parameter == 'chlcorr' ~ 'Chl-a Corrected',
+      parameter == 'chluncorr' ~ 'Chl-a Uncorrected',
+      parameter == 'tp' ~ 'Total Phosphorus',
+      parameter == 'tn' ~ 'Total Nitrogen',
+      parameter == 'color' ~ 'Color',
+      parameter == 'depth' ~ 'Depth'
     )
   )
   

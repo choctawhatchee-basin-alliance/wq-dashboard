@@ -282,11 +282,12 @@ byareaplo_fun <- function(sel, alldat, stas, nncdat, location1, parameter1, date
     ) |> 
     dplyr::arrange(date)
   
+  loclb <- ifelse(location1 == 'surf', 'Surface', 'Bottom')
   ylab <- meta |> 
     dplyr::filter(parameter == parameter1) |> 
     dplyr::pull(label) |> 
     unique()
-  ylab <- paste("Mean", ylab)
+  ylab <- paste0("Mean ", ylab, ': ', loclb)
   
   id <- sel$data$id
   
@@ -401,11 +402,13 @@ bystationmap_fun <- function(mapin, bystationdat, stas, parameter, daterange2){
     na.color = "transparent"
   )
   
+  loclb <- ifelse(loc == 'surf', 'Surface', 'Bottom')
   lab <- meta |> 
-    dplyr::filter(parameter == !!prm) |>
+    dplyr::filter(parameter == !!prm) |> 
     dplyr::filter(location == !!loc) |> 
     dplyr::pull(label) |> 
     unique()
+  lab <- paste0(lab, ': ', loclb)
   
   # create map
   if(nrow(tomap) == 0){
@@ -497,8 +500,16 @@ bystationplo_fun <- function(sel, bystationdat, nncdat, summarize2, parameter2a,
   localb <- ifelse(loca == 'surf', 'Surface', 'Bottom')
   locblb <- ifelse(locb == 'surf', 'Surface', 'Bottom')
   
-  ylab1 <- names(stationprmsel)[which(stationprmsel == parameter2a)]
-  ylab2 <- names(stationprmsel)[which(stationprmsel == parameter2b)]
+  ylab1 <- meta |> 
+    dplyr::filter(parameter == parameter2a) |> 
+    dplyr::pull(label) |> 
+    unique()
+  ylab1 <- paste0(ylab1, ': ', localb)
+  ylab2 <- meta |> 
+    dplyr::filter(parameter == parameter2b) |> 
+    dplyr::pull(label) |> 
+    unique()
+  ylab2 <- paste0(ylab2, ': ', locblb)
   
   toplo <- bystationdat |> 
     dplyr::filter(
@@ -799,14 +810,14 @@ stationprmsel_fun <- function(daterange2){
         TRUE ~ location
       )
     ) |>
-    tidyr::unite(label, c(label, location2), sep = ": ") |>
+    tidyr::unite(labelnouni, c(labelnouni, location2), sep = ": ") |>
     tidyr::unite(parameter, c(parameter, location), sep = "_") |>
     dplyr::mutate(
-      label = gsub('\\:\\s$', '', label)
+      labelnouni = gsub('\\:\\s$', '', labelnouni)
     ) |> 
-    dplyr::arrange(label, .locale = 'en')
+    dplyr::arrange(labelnouni, .locale = 'en')
   
-  out <- setNames(out$parameter, out$label)
+  out <- setNames(out$parameter, out$labelnouni)
   
   return(out)
   

@@ -13,10 +13,10 @@ load(file = here::here('data/cbahuc.RData'))
 
 # selections
 prmsdf <- meta |> 
-  dplyr::select(parameter, label) |> 
+  dplyr::select(parameter, labelnouni) |> 
   dplyr::distinct() |> 
   dplyr::arrange(parameter)
-prms <- setNames(prmsdf$parameter, prmsdf$label)
+prms <- setNames(prmsdf$parameter, prmsdf$labelnouni)
 dtrng <- c(min(meta$datestr), max(meta$dateend))
 locs <- list('Surface' = 'surf', 'Bottom' = 'bott')
 dtchc <- datechoice_fun(alldat)
