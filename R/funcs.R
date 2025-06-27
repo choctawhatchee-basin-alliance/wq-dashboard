@@ -122,10 +122,7 @@ byareamap_fun <- function(mapin, alldat, stas, summarize1, location1, parameter1
       na.color = "transparent"
     )
     
-    lab <- meta |> 
-      dplyr::filter(parameter == parameter1) |> 
-      dplyr::pull(label) |> 
-      unique()
+    lab <- ylab_fun(parameter1, location1)
     
     out <- mapin %>%
       leaflet::clearShapes() |> 
@@ -178,7 +175,7 @@ byareamap_fun <- function(mapin, alldat, stas, summarize1, location1, parameter1
       leaflet::addLegend(
         pal = pal,
         values = byareadat$val,
-        title = paste("Mean", lab),
+        title = lab,
         position = "topright",
         opacity = 0.8,
         na.label = "No Data"
@@ -282,12 +279,7 @@ byareaplo_fun <- function(sel, alldat, stas, nncdat, location1, parameter1, date
     ) |> 
     dplyr::arrange(date)
   
-  loclb <- ifelse(location1 == 'surf', 'Surface', 'Bottom')
-  ylab <- meta |> 
-    dplyr::filter(parameter == parameter1) |> 
-    dplyr::pull(label) |> 
-    unique()
-  ylab <- paste0("Mean ", ylab, ': ', loclb)
+  ylab <- ylab_fun(parameter1, location1)
   
   id <- sel$data$id
   
@@ -402,13 +394,7 @@ bystationmap_fun <- function(mapin, bystationdat, stas, parameter, daterange2){
     na.color = "transparent"
   )
   
-  loclb <- ifelse(loc == 'surf', 'Surface', 'Bottom')
-  lab <- meta |> 
-    dplyr::filter(parameter == !!prm) |> 
-    dplyr::filter(location == !!loc) |> 
-    dplyr::pull(label) |> 
-    unique()
-  lab <- paste0(lab, ': ', loclb)
+  lab <- ylab_fun(prm, loc)
   
   # create map
   if(nrow(tomap) == 0){
@@ -447,7 +433,7 @@ bystationmap_fun <- function(mapin, bystationdat, stas, parameter, daterange2){
     leaflet::addLegend(
       pal = pal,
       values = tomap$val,
-      title = paste("Mean", lab),
+      title = lab,
       position = "topright",
       opacity = 0.8,
       na.label = "No Data"
@@ -497,19 +483,15 @@ bystationplo_fun <- function(sel, bystationdat, nncdat, summarize2, parameter2a,
   prm2b <- gsub("(^.*)\\_.*$", "\\1", parameter2b)
   loca <- gsub(".*\\_(.*)$", "\\1", parameter2a)
   locb <- gsub(".*\\_(.*)$", "\\1", parameter2b)
-  localb <- ifelse(loca == 'surf', 'Surface', 'Bottom')
-  locblb <- ifelse(locb == 'surf', 'Surface', 'Bottom')
   
-  ylab1 <- meta |> 
-    dplyr::filter(parameter == parameter2a) |> 
-    dplyr::pull(label) |> 
-    unique()
-  ylab1 <- paste0(ylab1, ': ', localb)
-  ylab2 <- meta |> 
-    dplyr::filter(parameter == parameter2b) |> 
-    dplyr::pull(label) |> 
-    unique()
-  ylab2 <- paste0(ylab2, ': ', locblb)
+  if(summarize2 != 'day'){
+    ylab1 <- ylab_fun(prm2a, loca)
+    ylab2 <- ylab_fun(prm2b, locb)
+  }
+  if(summarize2 == 'day'){
+    ylab1 <- ylab_fun(prm2a, loca, addmean = F)
+    ylab2 <- ylab_fun(prm2b, locb, addmean = F)
+  }
   
   toplo <- bystationdat |> 
     dplyr::filter(
@@ -869,5 +851,40 @@ datechoice_fun <- function(alldat, location = unique(alldat$location), parameter
   dtchc <- unique(c(dtrng[1], dtchc, dtrng[2]))
   
   return(dtchc)
+  
+}
+
+#' Function to generate a y-axis label based on parameter and location
+#' 
+#' @param prm Character string indicating the parameter to filter by
+#' @param loc Character string indicating the sample location (e.g., 'surf', 'bott')
+#' 
+#' @details Will return the parameter name, units, and location.  Location will only be included if parameter has both surface and bottom measurements.
+ylab_fun <- function(prm, loc, addmean = TRUE){
+
+  ymeta <- meta |> 
+    dplyr::filter(parameter == !!prm) 
+  
+  chklocs <- ymeta |>
+    dplyr::pull(location) |> 
+    unique()
+  
+  loclb <- ifelse(
+    length(chklocs) == 1, '', 
+    ifelse(
+      loc == 'surf', ': Surface', ': Bottom'
+    )
+  )
+  
+  meanlb <- ''
+  if(addmean)
+    meanlb <- 'Mean '
+  
+  out <- ymeta |> 
+    dplyr::pull(label) |> 
+    unique()
+  out <- paste0(meanlb, out, loclb)
+  
+  return(out)
   
 }
