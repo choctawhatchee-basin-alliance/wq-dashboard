@@ -97,7 +97,7 @@ ui <- page_navbar(
             leaflet::leafletOutput('byareamap', height = "100%"),
             sidebar = sidebar(
               id = "byareasidebar",
-              plotly::plotlyOutput('byareaplo', height = "calc(100vh - 300px)"),
+              highcharter::highchartOutput('byareaplo', height = "calc(100vh - 300px)"),
               width = "50%",
               position = "right",
               open = FALSE
@@ -570,7 +570,7 @@ server <- function(input, output, session) {
   
   output$byareamap <- leaflet::renderLeaflet(bsmap(stas))
   byareamap_proxy <- leaflet::leafletProxy("byareamap")
-  output$byareaplo <- plotly::renderPlotly(byareaplo())
+  output$byareaplo <- highcharter::renderHighchart(byareaplo())
   
   output$bystationmap1 <- leaflet::renderLeaflet(bsmap(stas))
   output$bystationmap2 <- leaflet::renderLeaflet(bsmap(stas))

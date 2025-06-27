@@ -269,7 +269,7 @@ byareadat_fun <- function(alldat, stas, summarize1, location1, parameter1, dater
 #' @param parameter1 Character string indicating the parameter to filter by
 #' @param daterange1 Date range to filter the data
 byareaplo_fun <- function(sel, alldat, stas, nncdat, location1, parameter1, daterange1){
-
+  
   toplo <- alldat |> 
     dplyr::filter(
       parameter == parameter1 &
@@ -318,48 +318,71 @@ byareaplo_fun <- function(sel, alldat, stas, nncdat, location1, parameter1, date
       )
     
   }
-
-  out <- plotly::plot_ly(
-      data = toplo,
-      x = ~date,
-      y = ~avev,
-      type = 'scatter',
-      mode = 'lines+markers',
-      line = list(color = 'blue'),
-      marker = list(size = 5),
-      hoverinfo = 'text',
-      text = ~paste("Date:", date, "<br>Value:", round(avev, 2))
-    )  |> 
-    plotly::layout(
-      title = ttl,
-      xaxis = list(title = "", 
-                   range = c(as.Date(daterange1[1]), as.Date(daterange1[2]))
-                   ),
-      yaxis = list(title = ylab),
-      showlegend = F,
-      transition = list(
-        duration = 500,
-        easing = "cubic-in-out"
+  # Convert dates to milliseconds for Highcharts
+  date_range_ms <- c(as.numeric(as.POSIXct(daterange1[1])) * 1000,
+                     as.numeric(as.POSIXct(daterange1[2])) * 1000)
+  
+  # Create chart
+  hc <- highcharter::highchart() |>
+    highcharter::hc_chart(type = "line") |>
+    highcharter::hc_title(text = ttl) |>
+    highcharter::hc_xAxis(
+      type = "datetime",
+      min = date_range_ms[1],
+      max = date_range_ms[2],
+      title = list(text = "")
+    ) |>
+    highcharter::hc_yAxis(title = list(text = ylab)) |>
+    highcharter::hc_legend(enabled = FALSE)
+  
+  # Add data series
+  if(nrow(toplo) > 0) {
+    hc <- hc |>
+      highcharter::hc_add_series(
+        data = toplo,
+        type = "line",
+        highcharter::hcaes(x = date, y = avev),
+        color = "blue",
+        marker = list(radius = 3, fillColor = "lightblue"),
+        tooltip = list(
+          pointFormatter = highcharter::JS("function() { return 'Value: ' + this.y.toFixed(2); }")
+        )
       )
-    )
-
-
-  if(nrow(chknnc) == 1)
-    out <- out |> 
-      plotly::add_trace(
-        x = c(as.Date(daterange1[1]), as.Date(daterange1[2])),
-        y = chknnc$value,
-        type = 'scatter',
-        mode = 'lines',
-        line = list(color = 'black', dash = 'dash'),
-        name = 'NNC Threshold',
-        hoverinfo = 'text',
-        showlegend = FALSE,
-        text = paste("NNC Threshold:", chknnc$value),
-        inherit = F
+  }
+  
+  # Add NNC threshold line if present
+  if(nrow(chknnc) == 1) {
+    hc <- hc |>
+      highcharter::hc_add_series(
+        data = list(
+          list(x = date_range_ms[1], y = chknnc$value),
+          list(x = date_range_ms[2], y = chknnc$value)
+        ),
+        type = "line",
+        color = "red",
+        dashStyle = "Dash",
+        showInLegend = FALSE,
+        tooltip = list(
+          pointFormatter = highcharter::JS(paste0("function() { return 'NNC Threshold: ", chknnc$value, "'; }"))
+        )
       )
- 
+  }
+  
+  # # Set chart height and disable reflow (consistent with your first function)
+  # hc <- hc |> 
+  #   highcharter::hc_chart(height = 275) |> 
+  #   highcharter::hc_chart(reflow = FALSE)
+  # 
+  # # Return as HTML div (consistent with your first function format)
+  # out <- htmltools::div(
+  #   style = "height: 275px; overflow: hidden;",
+  #   hc
+  # )
+  # 
+  out <- hc
+  
   return(out)
+  
   
 }
 
@@ -563,9 +586,9 @@ bystationplo_fun <- function(sel, bystationdat, nncdat, summarize2, parameter2a,
           type = "line",
           highcharter::hcaes(x = date, y = avev),
           color = "blue",
-          marker = list(radius = 3, fillColor = "cornflowerblue"),
+          marker = list(radius = 3, fillColor = "lightblue"),
           tooltip = list(
-            pointFormatter = highcharter::JS("function() { return 'Date: ' + Highcharts.dateFormat('%Y-%m-%d', this.x) + '<br>Value: ' + this.y.toFixed(2); }")
+            pointFormatter = highcharter::JS("function() { return 'Value: ' + this.y.toFixed(2); }")
           )
         ) |>
         highcharter::hc_add_series(
@@ -584,9 +607,9 @@ bystationplo_fun <- function(sel, bystationdat, nncdat, summarize2, parameter2a,
           type = "line",
           highcharter::hcaes(x = date, y = avev),
           color = "blue",
-          marker = list(radius = 3, fillColor = "cornflowerblue"),
+          marker = list(radius = 3, fillColor = "lightblue"),
           tooltip = list(
-            pointFormatter = highcharter::JS("function() { return 'Date: ' + Highcharts.dateFormat('%Y-%m-%d', this.x) + '<br>Value: ' + this.y.toFixed(2); }")
+            pointFormatter = highcharter::JS("function() { return 'Value: ' + this.y.toFixed(2); }")
           )
         )
     }
@@ -601,7 +624,7 @@ bystationplo_fun <- function(sel, bystationdat, nncdat, summarize2, parameter2a,
           list(x = date_range_ms[2], y = nncchk1$value)
         ),
         type = "line",
-        color = "black",
+        color = "red",
         dashStyle = "Dash",
         showInLegend = FALSE,
         tooltip = list(
@@ -631,17 +654,17 @@ bystationplo_fun <- function(sel, bystationdat, nncdat, summarize2, parameter2a,
           data = toplo2,
           type = "line",
           highcharter::hcaes(x = date, y = avev),
-          color = "red",
-          marker = list(radius = 3, fillColor = "coral"),
+          color = "darkgreen",
+          marker = list(radius = 3, fillColor = "lightgreen"),
           tooltip = list(
-            pointFormatter = highcharter::JS("function() { return 'Date: ' + Highcharts.dateFormat('%Y-%m-%d', this.x) + '<br>Value: ' + this.y.toFixed(2); }")
+            pointFormatter = highcharter::JS("function() { return 'Value: ' + this.y.toFixed(2); }")
           )
         ) |>
         highcharter::hc_add_series(
           data = toplo2,
           type = "errorbar",
           highcharter::hcaes(x = date, low = lovl, high = hivl),
-          color = "red",
+          color = "darkgreen",
           showInLegend = FALSE,
           tooltip = list(enabled = FALSE)
         )
@@ -652,10 +675,10 @@ bystationplo_fun <- function(sel, bystationdat, nncdat, summarize2, parameter2a,
           data = toplo2,
           type = "line",
           highcharter::hcaes(x = date, y = avev),
-          color = "red",
-          marker = list(radius = 3, fillColor = "coral"),
+          color = "darkgreen",
+          marker = list(radius = 3, fillColor = "lightgreen"),
           tooltip = list(
-            pointFormatter = highcharter::JS("function() { return 'Date: ' + Highcharts.dateFormat('%Y-%m-%d', this.x) + '<br>Value: ' + this.y.toFixed(2); }")
+            pointFormatter = highcharter::JS("function() { return 'Value: ' + this.y.toFixed(2); }")
           )
         )
     }
@@ -670,7 +693,7 @@ bystationplo_fun <- function(sel, bystationdat, nncdat, summarize2, parameter2a,
           list(x = date_range_ms[2], y = nncchk2$value)
         ),
         type = "line",
-        color = "black",
+        color = "red",
         dashStyle = "Dash",
         showInLegend = FALSE,
         tooltip = list(
