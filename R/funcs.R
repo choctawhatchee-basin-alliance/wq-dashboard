@@ -363,7 +363,8 @@ byareaplo_fun <- function(sel, alldat, stas, nncdat, location1, parameter1, date
         dashStyle = "Dash",
         showInLegend = FALSE,
         tooltip = list(
-          pointFormatter = highcharter::JS(paste0("function() { return 'NNC Threshold: ", chknnc$value, "'; }"))
+          headerFormat = '',
+          pointFormatter = highcharter::JS("function() { return 'NNC Threshold: ' + this.y; }")
         )
       )
   }
@@ -628,7 +629,8 @@ bystationplo_fun <- function(sel, bystationdat, nncdat, summarize2, parameter2a,
         dashStyle = "Dash",
         showInLegend = FALSE,
         tooltip = list(
-          pointFormatter = highcharter::JS(paste0("function() { return 'NNC Threshold: ", nncchk1$value, "'; }"))
+          headerFormat = '',
+          pointFormatter = highcharter::JS("function() { return 'NNC Threshold: ' + this.y; }")
         )
       )
   }
@@ -697,7 +699,8 @@ bystationplo_fun <- function(sel, bystationdat, nncdat, summarize2, parameter2a,
         dashStyle = "Dash",
         showInLegend = FALSE,
         tooltip = list(
-          pointFormatter = highcharter::JS(paste0("function() { return 'NNC Threshold: ", nncchk2$value, "'; }"))
+          headerFormat = '',
+          pointFormatter = highcharter::JS("function() { return 'NNC Threshold: ' + this.y; }")
         )
       )
   }
