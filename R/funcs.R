@@ -94,20 +94,12 @@ bsmap <- function(bnds){
 #' Function to update the map with summarized data by area
 #' 
 #' @param mapin Leaflet map object to update
-#' @param alldat Data frame containing the data to summarize
-#' @param stas sf object containing station geometries
-#' @param summarize1 Character string indicating how to summarize the data ('WBID' or 'Station')
-#' @param location1 Character string indicating the sample location (e.g., 'surface', 'bottom')
+#' @param byareadat Data frame returned by byareadat_fun
+#' @param summarize1 Character string indicating how to summarize the data ('WBID' or 'HUC12')
 #' @param parameter1 Character string indicating the parameter to filter by
-#' @param daterange1 Date range to filter the data
-byareamap_fun <- function(mapin, alldat, stas, summarize1, location1, parameter1, daterange1){
+#' @param location1 Character string indicating the sample location (e.g., 'surface', 'bottom')
+byareamap_fun <- function(mapin, byareadat, summarize1, parameter1, location1){
   
-  # summarize data
-  byareadat <- try(
-    byareadat_fun(alldat, stas, summarize1, location1, parameter1, daterange1),
-    silent = T
-  )
-
   # create map
   if(inherits(byareadat, 'try-error'))
     out <- mapin %>%
@@ -380,10 +372,133 @@ byareaplo_fun <- function(sel, alldat, stas, nncdat, location1, parameter1, date
   #   hc
   # )
   # 
-  out <- hc
+  out <- hc |> highcharter::hc_chart(height = 325) |> highcharter::hc_chart(reflow = FALSE)
   
   return(out)
   
+  
+}
+
+#' Function to create a gauge chart for a selected area
+#' 
+#' @param sel Shape click event data from leaflet
+#' @param byareadat Data frame containing the summarized data by area
+#' @param nncdat Data frame containing the NNC data
+#' @param parameter1 Character string indicating the parameter to filter by
+byareagauge_fun <- function(sel, byareadat, nncdat, parameter1){
+ 
+  id <- sel$data$id
+
+  if('WBID' %in% names(byareadat))
+    curval<- byareadat |> 
+      dplyr::filter(WBID %in% id)
+      
+  if('huc12' %in% names(byareadat))
+    curval<- byareadat |> 
+      dplyr::filter(huc12 %in% id) 
+
+  curval <- curval |> 
+    dplyr::pull(val) |> 
+    round(2)
+  
+  minv <- min(byareadat$val, na.rm = T)
+  maxv <- max(byareadat$val, na.rm = T)
+  
+  thrshval <- NULL
+
+  chknnc <- nncdat |> 
+    dplyr::filter(WBID %in% id & parameter %in% substr(parameter1, 1, 3)) |> 
+    dplyr::select(WBID, parameter, value) |> 
+    dplyr::distinct()
+  if(nrow(chknnc) == 1)
+    thrshval <- chknnc$value
+
+  units <- meta |>
+    dplyr::filter(parameter %in% parameter1) |> 
+    dplyr::pull(label) |> 
+    unique()
+  units <- gsub('^.*\\((.*)\\)$', '\\1', units)
+  
+  # Create color stops for gradient
+  vals <- seq(0, 1, by = 0.1)
+  pal <- leaflet::colorNumeric(
+    palette = "YlGnBu",
+    domain = vals,
+    na.color = "transparent"
+  )
+  cols <- pal(vals)
+  color_stops <- lapply(seq_along(cols), function(i) {
+    list(vals[i], cols[i])
+  })
+
+  out <- highcharter::highchart() |>
+    highcharter::hc_chart(type = "solidgauge") |>
+    highcharter::hc_pane(
+      center = c("50%", "85%"),
+      size = "140%",
+      startAngle = -90,
+      endAngle = 90,
+      background = list(
+        backgroundColor = list(
+          linearGradient = list(x1 = 0, y1 = 0, x2 = 0, y2 = 1),
+          stops = list(
+            list(0, "#FFF"),
+            list(1, "#FFF")
+          )
+        ),
+        innerRadius = "60%",
+        outerRadius = "100%",
+        shape = "arc"
+      )
+    ) |>
+    highcharter::hc_tooltip(enabled = FALSE) |>
+    highcharter::hc_yAxis(
+      min = minv,
+      max = maxv,
+      stops = color_stops,
+      lineWidth = 0,
+      tickWidth = 0,
+      minorTickInterval = NULL,
+      tickAmount = 2,
+      title = list(y = -70),
+      labels = list(y = 16, style = list(fontSize = "18px", fontWeight = "bold")),
+      plotLines = list(
+        list(
+          value = thrshval,
+          color = "#FF0000",
+          width = 3,
+          zIndex = 5
+        )
+      )
+    ) |>
+    highcharter::hc_plotOptions(
+      solidgauge = list(
+        dataLabels = list(
+          y = 5,
+          borderWidth = 0,
+          useHTML = TRUE
+        )
+      )
+    ) |>
+    highcharter::hc_add_series(
+      name = "Value",
+      data = list(curval),
+      dataLabels = list(
+        format = paste0('<div style="text-align:center">',
+                        '<span style="font-size:25px">{y}</span><br/>',
+                        '<span style="font-size:16px;opacity:0.4">Time Series Mean (', units, ')</span>',
+                        '</div>')
+      ),
+      tooltip = list(
+        valueSuffix = paste(" ", units)
+      )
+    ) |>
+    highcharter::hc_credits(enabled = FALSE) |>
+    highcharter::hc_exporting(enabled = FALSE) |> 
+    highcharter::hc_chart(height = 275) |> 
+    highcharter::hc_chart(reflow = FALSE)
+  
+  return(out)
   
 }
 

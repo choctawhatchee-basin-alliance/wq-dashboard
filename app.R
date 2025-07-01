@@ -97,7 +97,17 @@ ui <- page_navbar(
             leaflet::leafletOutput('byareamap', height = "100%"),
             sidebar = sidebar(
               id = "byareasidebar",
-              highcharter::highchartOutput('byareaplo', height = "calc(100vh - 300px)"),
+              htmltools::div(
+                style = "height: 600px; overflow: hidden;",
+                htmltools::div(
+                  style = "height: 325px; margin-bottom: 10px; overflow: hidden;",
+                  highcharter::highchartOutput('byareaplo'),
+                ),
+                htmltools::div(
+                  style = "height: 275px; overflow: hidden;",
+                  highcharter::highchartOutput("byareagauge"),
+                )
+              ),
               width = "50%",
               position = "right",
               open = FALSE
@@ -284,19 +294,24 @@ server <- function(input, output, session) {
     updating = FALSE
   )
   
+  # data to map and gauge
+  byareadat <- reactive({
+    try(byareadat_fun(alldat, stas, input$summarize1, input$location1, input$parameter1, input$daterange1), 
+        silent = T)
+  })
+  
   # by area map initialize
-  observeEvent(list(input$summarize1, input$parameter1, input$location1, input$daterange1, input$`main-nav`), {
+  observeEvent(list(byareadat(), input$summarize1, input$parameter1, input$location1, input$daterange1, input$`main-nav`), {
     
     if(input$`main-nav` == 'byarea' && !values1$updating){
       
-      req(input$location1)
+      req(byareadat())
       req(input$daterange1)
       
       # Set flag to prevent concurrent updates
       values1$updating <- TRUE
       
-      byareamap_fun(byareamap_proxy, alldat, stas, input$summarize1, 
-                    input$location1, input$parameter1, input$daterange1)
+      byareamap_fun(byareamap_proxy, byareadat(), input$summarize1, input$parameter1, input$location1)
       
       # reset flag after brief delay
       later::later(function() {
@@ -332,6 +347,7 @@ server <- function(input, output, session) {
   byareaplo <- reactive({
     
     req(map_sel1())
+    req(input$daterange1)
     
     sel <- map_sel1()
     
@@ -345,10 +361,32 @@ server <- function(input, output, session) {
     # reset flag after brief delay
     later::later(function() {
       values2$updating <- FALSE
-    }, 0.1)  # 100ms delay
+    }, 0.2)  # 100ms delay
     
     return(out)    
     
+  })
+  
+  # by area gauge
+  byareagauge <- reactive({
+  
+    req(map_sel1())
+    req(input$daterange1)
+    
+    sel <- map_sel1()
+    
+    # Set flag to prevent concurrent updates
+    values2$updating <- TRUE
+    
+    out <- byareagauge_fun(sel, byareadat(), nncdat, input$parameter1)
+    
+    # reset flag after brief delay
+    later::later(function() {
+      values2$updating <- FALSE
+    }, 0.2)  # 100ms delay
+    
+    return(out)  
+      
   })
   
   # toggle areamap open sidebar, polygon or marker
@@ -571,6 +609,7 @@ server <- function(input, output, session) {
   output$byareamap <- leaflet::renderLeaflet(bsmap(stas))
   byareamap_proxy <- leaflet::leafletProxy("byareamap")
   output$byareaplo <- highcharter::renderHighchart(byareaplo())
+  output$byareagauge <- highcharter::renderHighchart(byareagauge())
   
   output$bystationmap1 <- leaflet::renderLeaflet(bsmap(stas))
   output$bystationmap2 <- leaflet::renderLeaflet(bsmap(stas))
