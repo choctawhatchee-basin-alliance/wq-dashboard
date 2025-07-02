@@ -98,9 +98,9 @@ ui <- page_navbar(
             sidebar = sidebar(
               id = "byareasidebar",
               htmltools::div(
-                style = "height: 600px; overflow: hidden;",
+                style = "height: 625px; overflow: hidden;",
                 htmltools::div(
-                  style = "height: 325px; margin-bottom: 10px; overflow: hidden;",
+                  style = "height: 350px; margin-bottom: 10px; overflow: hidden;",
                   highcharter::highchartOutput('byareaplo'),
                 ),
                 htmltools::div(
@@ -284,40 +284,23 @@ server <- function(input, output, session) {
   # reactives
     
   # byareamap update
-  
-  # reactive value to prevent double firing
-  values1 <- reactiveValues(
-    updating = FALSE
-  )
-  
-  values2 <- reactiveValues(
-    updating = FALSE
-  )
-  
+
   # data to map and gauge
   byareadat <- reactive({
+    
     try(byareadat_fun(alldat, stas, input$summarize1, input$location1, input$parameter1, input$daterange1), 
         silent = T)
   })
   
   # by area map initialize
-  observeEvent(list(byareadat(), input$summarize1, input$parameter1, input$location1, input$daterange1, input$`main-nav`), {
+  observeEvent(list(byareadat(), input$summarize1, input$parameter1, input$location1, input$`main-nav`), {
     
-    if(input$`main-nav` == 'byarea' && !values1$updating){
+    if(input$`main-nav` == 'byarea'){
       
       req(byareadat())
-      req(input$daterange1)
-      
-      # Set flag to prevent concurrent updates
-      values1$updating <- TRUE
       
       byareamap_fun(byareamap_proxy, byareadat(), input$summarize1, input$parameter1, input$location1)
-      
-      # reset flag after brief delay
-      later::later(function() {
-        values1$updating <- FALSE
-      }, 0.1)  # 100ms delay
-      
+
       req(map_sel1())
       
       addselareamap_fun(map_sel1()$data)
@@ -350,18 +333,10 @@ server <- function(input, output, session) {
     req(input$daterange1)
     
     sel <- map_sel1()
-    
-    # Set flag to prevent concurrent updates
-    values2$updating <- TRUE
 
     out <- byareaplo_fun(sel, alldat, stas, nncdat,
               input$location1, input$parameter1,
               input$daterange1)
-    
-    # reset flag after brief delay
-    later::later(function() {
-      values2$updating <- FALSE
-    }, 0.2)  # 100ms delay
     
     return(out)    
     
@@ -375,15 +350,7 @@ server <- function(input, output, session) {
     
     sel <- map_sel1()
     
-    # Set flag to prevent concurrent updates
-    values2$updating <- TRUE
-    
     out <- byareagauge_fun(sel, byareadat(), nncdat, input$parameter1)
-    
-    # reset flag after brief delay
-    later::later(function() {
-      values2$updating <- FALSE
-    }, 0.2)  # 100ms delay
     
     return(out)  
       

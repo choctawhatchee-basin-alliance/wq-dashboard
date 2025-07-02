@@ -372,7 +372,7 @@ byareaplo_fun <- function(sel, alldat, stas, nncdat, location1, parameter1, date
   #   hc
   # )
   # 
-  out <- hc |> highcharter::hc_chart(height = 325) |> highcharter::hc_chart(reflow = FALSE)
+  out <- hc |> highcharter::hc_chart(height = 350) |> highcharter::hc_chart(reflow = F)
   
   return(out)
   
@@ -401,9 +401,9 @@ byareagauge_fun <- function(sel, byareadat, nncdat, parameter1){
     dplyr::pull(val) |> 
     round(2)
   
-  minv <- min(byareadat$val, na.rm = T)
-  maxv <- max(byareadat$val, na.rm = T)
-  
+  minv <- round(min(byareadat$val, na.rm = T), 2)
+  maxv <- round(max(byareadat$val, na.rm = T), 2)
+
   thrshval <- NULL
 
   chknnc <- nncdat |> 
@@ -420,7 +420,7 @@ byareagauge_fun <- function(sel, byareadat, nncdat, parameter1){
   units <- gsub('^.*\\((.*)\\)$', '\\1', units)
   
   # Create color stops for gradient
-  vals <- seq(0, 1, by = 0.1)
+  vals <- seq(0, 1, length.out = 11)
   pal <- leaflet::colorNumeric(
     palette = "YlGnBu",
     domain = vals,
@@ -439,13 +439,7 @@ byareagauge_fun <- function(sel, byareadat, nncdat, parameter1){
       startAngle = -90,
       endAngle = 90,
       background = list(
-        backgroundColor = list(
-          linearGradient = list(x1 = 0, y1 = 0, x2 = 0, y2 = 1),
-          stops = list(
-            list(0, "#FFF"),
-            list(1, "#FFF")
-          )
-        ),
+        backgroundColor = '#FFF',
         innerRadius = "60%",
         outerRadius = "100%",
         shape = "arc"
@@ -456,12 +450,12 @@ byareagauge_fun <- function(sel, byareadat, nncdat, parameter1){
       min = minv,
       max = maxv,
       stops = color_stops,
-      lineWidth = 0,
-      tickWidth = 0,
-      minorTickInterval = NULL,
-      tickAmount = 2,
+      minorTickLength = 0,
+      tickLength = 10,                                    
+      # tickPositions = round(seq(minv + 0.1*(maxv-minv),       
+      #                     maxv - 0.1*(maxv-minv),       
+      #                     length.out = 5), 2), 
       title = list(y = -70),
-      labels = list(y = 16, style = list(fontSize = "18px", fontWeight = "bold")),
       plotLines = list(
         list(
           value = thrshval,
@@ -496,7 +490,7 @@ byareagauge_fun <- function(sel, byareadat, nncdat, parameter1){
     highcharter::hc_credits(enabled = FALSE) |>
     highcharter::hc_exporting(enabled = FALSE) |> 
     highcharter::hc_chart(height = 275) |> 
-    highcharter::hc_chart(reflow = FALSE)
+    highcharter::hc_chart(reflow = F)
   
   return(out)
   
