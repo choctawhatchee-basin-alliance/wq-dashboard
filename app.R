@@ -285,22 +285,44 @@ server <- function(input, output, session) {
     
   # byareamap update
 
-  # data to map and gauge
+  # Create debounced inputs to prevent cascade firing
+  # This waits for all related inputs to stabilize before firing
+  inputs_debounced <- reactive({
+    list(
+      summarize1 = input$summarize1,
+      parameter1 = input$parameter1,
+      location1 = input$location1,
+      daterange1 = input$daterange1
+    )
+  }) %>% debounce(500)  # 500ms delay
+  
+  # data to map and gauge - using debounced inputs
   byareadat <- reactive({
     
-    try(byareadat_fun(alldat, stas, input$summarize1, input$location1, input$parameter1, input$daterange1), 
+    inputs <- inputs_debounced()
+    
+    req(inputs$location1)  
+    req(inputs$daterange1)
+    
+    try(byareadat_fun(alldat, stas, inputs$summarize1, inputs$location1, 
+                      inputs$parameter1, inputs$daterange1), 
         silent = T)
-  })
+  }) 
   
   # by area map initialize
-  observeEvent(list(byareadat(), input$summarize1, input$parameter1, input$location1, input$`main-nav`), {
-    
+  observeEvent(list(byareadat(), inputs_debounced()$summarize1, 
+                    inputs_debounced()$parameter1, inputs_debounced()$location1, 
+                    input$`main-nav`), {
+                      
     if(input$`main-nav` == 'byarea'){
       
       req(byareadat())
+      inputs <- inputs_debounced()
+      req(inputs$location1)
       
-      byareamap_fun(byareamap_proxy, byareadat(), input$summarize1, input$parameter1, input$location1)
-
+      byareamap_fun(byareamap_proxy, byareadat(), inputs$summarize1, 
+                    inputs$parameter1, inputs$location1)
+      
       req(map_sel1())
       
       addselareamap_fun(map_sel1()$data)
@@ -323,44 +345,44 @@ server <- function(input, output, session) {
     req(map_sel1())
     
     addselareamap_fun(map_sel1()$data)
- 
+    
   })
   
-  # by area plot
+  # by area plot - using debounced inputs
   byareaplo <- reactive({
     
     req(map_sel1())
-    req(input$daterange1)
+    inputs <- inputs_debounced()
+    req(inputs$location1)
+    req(inputs$daterange1)
     
     sel <- map_sel1()
-
+    
     out <- byareaplo_fun(sel, alldat, stas, nncdat,
-              input$location1, input$parameter1,
-              input$daterange1)
+                         inputs$location1, inputs$parameter1,
+                         inputs$daterange1)
     
     return(out)    
     
   })
   
-  # by area gauge
+  # by area gauge - using debounced inputs
   byareagauge <- reactive({
-  
+    
+    req(byareadat())
     req(map_sel1())
-    req(input$daterange1)
     
     sel <- map_sel1()
+    inputs <- inputs_debounced()
     
-    out <- byareagauge_fun(sel, byareadat(), nncdat, input$parameter1)
+    out <- byareagauge_fun(sel, byareadat(), nncdat, inputs$parameter1)
     
     return(out)  
-      
+    
   })
   
   # toggle areamap open sidebar, polygon or marker
   observeEvent(input$byareamap_shape_click, {
-    sidebar_toggle("byareasidebar", open = TRUE)
-  })
-  observeEvent(input$byareamap_marker_click, {
     sidebar_toggle("byareasidebar", open = TRUE)
   })
   
@@ -532,7 +554,7 @@ server <- function(input, output, session) {
     location1 <- input$location1 
     parameter1 <- input$parameter1
     
-    dtchc <- datechoice_fun(alldat, location1, parameter1)
+    dtchc <- try(datechoice_fun(alldat, location1, parameter1), silent = T)
     
     sliderTextInput("daterange1", "Select Date Range:",
                 choices = dtchc, selected = range(dtchc))
@@ -566,7 +588,7 @@ server <- function(input, output, session) {
     waterbody4 <- input$waterbody4
     parameter4 <- input$parameter4
     
-    dtchc <- datechoice_fun(alldat, parameter = parameter4, waterbody = waterbody4)
+    dtchc <- try(datechoice_fun(alldat, parameter = parameter4, waterbody = waterbody4), silent = T)
     
     sliderTextInput("daterange4", "Select Date Range:", 
                 choices = dtchc, selected = range(dtchc))
