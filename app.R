@@ -87,7 +87,16 @@ ui <- page_navbar(
             fillable = TRUE,
             width = "600px",
             open = "desktop",
-            radioButtons("summarize1", "Summarize By:", choices = c("WBID", "HUC12"), selected = "WBID"), 
+            radioButtons("summarize1", 
+                         label = bslib::popover(
+                           trigger = list(
+                             "Summarize By:",
+                             icon("info-circle")
+                           ),
+                           HTML('click an area on the map to view summary info')
+                         ),
+                         choices = c("WBID", "HUC12"), 
+                         selected = "WBID"), 
             selectInput("parameter1", "Select Parameter:", choices = prms), 
             uiOutput("location1"),
             uiOutput("daterange1")
@@ -118,7 +127,7 @@ ui <- page_navbar(
       nav_panel(
         title = "HOW TO USE",
         class = 'card-scroll',
-        NULL
+        shiny::includeMarkdown('doc/byareahowto.md')
         )
       )
       
@@ -137,8 +146,15 @@ ui <- page_navbar(
         class = 'card-scroll',
         layout_sidebar(
           border = FALSE,
-          sliderTextInput("daterange2", "Select Date Range:", 
-                          choices = dtchc, selected = range(dtchc), width = '100%'),
+          sliderTextInput("daterange2", 
+                          label = bslib::popover(
+                            trigger = list(
+                              "Select Date Range:",
+                              icon("info-circle")
+                            ),
+                            HTML('click a station on the map to view summary info')
+                          ), 
+                          choices = dtchc, selected = range(dtchc), width = '50%'),
           div(
             style = "height: calc(100vh - 400px); display: flex; flex-direction: column;",
             div(
@@ -285,8 +301,7 @@ server <- function(input, output, session) {
     
   # byareamap update
 
-  # Create debounced inputs to prevent cascade firing
-  # This waits for all related inputs to stabilize before firing
+  # debounced inputs to prevent cascade firing for by area
   inputs_debounced <- reactive({
     list(
       summarize1 = input$summarize1,
@@ -334,6 +349,11 @@ server <- function(input, output, session) {
   # for area map clicks
   map_sel1 <- reactiveVal(NULL)
   
+  # reset map selection when summarize1 changes
+  observeEvent(input$summarize1, {
+    map_sel1(NULL)
+  }, ignoreInit = TRUE)
+  
   # handle marker clicks  
   observeEvent(input$byareamap_shape_click, {
     map_sel1(list(type = "marker", data = input$byareamap_shape_click))
@@ -350,7 +370,7 @@ server <- function(input, output, session) {
   
   # by area plot - using debounced inputs
   byareaplo <- reactive({
-    
+
     req(map_sel1())
     inputs <- inputs_debounced()
     req(inputs$location1)
@@ -381,9 +401,14 @@ server <- function(input, output, session) {
     
   })
   
-  # toggle areamap open sidebar, polygon or marker
+  # toggle areamap open sidebar, polygon
   observeEvent(input$byareamap_shape_click, {
     sidebar_toggle("byareasidebar", open = TRUE)
+  })
+  
+  # toggle areamap close sidebar, summarize1 changes
+  observeEvent(input$summarize1, {
+    sidebar_toggle("byareasidebar", open = FALSE)
   })
   
   # station map

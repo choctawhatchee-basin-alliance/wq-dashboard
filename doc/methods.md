@@ -42,7 +42,7 @@
 
 <h4 style = 'text-align: center'>Reference Lines</h4>
 
-<p>Several graphics on this dashboard include reference lines for Numeric Nutrient Criteria (NNC) for total phosphorus, total nitrogen, and chloropyll-a.  These reference lines vary by WBID and are based on 62-302.531, and 62-302.532, F.A.C.</p>
+<p>Several graphics on this dashboard include reference lines for Numeric Nutrient Criteria (NNC) for total phosphorus, total nitrogen, and chloropyll-a.  These reference lines vary by WBID and are based on 62-302.531, and 62-302.532, F.A.C. They are provided as reference only and cannot be used for regulatory assessments.</p>
 
 </div>
 <div class = 'col-md-2'></div>
