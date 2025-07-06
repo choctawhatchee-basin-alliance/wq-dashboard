@@ -161,12 +161,12 @@ ui <- page_navbar(
               style = "flex: 1; display: flex; gap: 10px; margin-bottom: 10px;",
               div(
                 style = "flex: 1;",
-                selectInput('parameter2a', "Select Parameter One:", choices = stationprmsel),
+                uiOutput('parameter2a'),
                 leaflet::leafletOutput('bystationmap1', height = "100%")
               ),
               div(
                 style = "flex: 1;",
-                selectInput('parameter2b', "Select Parameter Two:", choices = stationprmsel),
+                uiOutput('parameter2b'),
                 leaflet::leafletOutput('bystationmap2', height = "100%")
               )
             )
@@ -413,9 +413,62 @@ server <- function(input, output, session) {
   
   # station map
   
+  # parameters to select
+  dtprmsel <- reactive({
+
+    stationprmsel_fun(input$daterange2)
+    
+  })
+  
+  # retain last parameter selection on daterange2 change
+  observeEvent(input$daterange2, {
+    
+    dtprmsel <- stationprmsel_fun(input$daterange2)
+    
+    # Get current selection
+    curparameter2a <- input$parameter2a
+    curparameter2b <- input$parameter2b
+    
+    choices <- dtprmsel
+    
+    # update choices but preserve selection if it exists
+    if (!is.null(curparameter2a)) {
+      if (!curparameter2a %in% dtprmsel) {
+        curparameter2a <- stationprmsel[stationprmsel %in% curparameter2a]
+        names(curparameter2a) <- paste(names(curparameter2a), "(not in date range)")
+        choices <- c(curparameter2a, dtprmsel)
+      }
+      updateSelectInput(session, "parameter2a",
+                        choices = choices,
+                        selected = curparameter2a)
+      
+    } else {
+      updateSelectInput(session, "parameter2a",
+                        choices = dtprmsel)
+    }
+    
+    if(!is.null(curparameter2b)) {
+      if (!curparameter2b %in% dtprmsel) {
+        curparameter2b <- stationprmsel[stationprmsel %in% curparameter2b]
+        names(curparameter2b) <- paste(names(curparameter2b), "(not in date range)")
+        choices <- c(curparameter2b, dtprmsel)
+      }
+      updateSelectInput(session, "parameter2b",
+                        choices = choices,
+                        selected = curparameter2b)
+    } else {
+      updateSelectInput(session, "parameter2b",
+                        choices = dtprmsel)
+    }
+    
+  })
+  
   # station data
   bystationdat <- reactive({
-  
+
+    req(input$parameter2a)
+    req(input$parameter2b)
+    
     out <- bystationdat_fun(alldat, input$parameter2a, input$parameter2b)
 
     return(out)
@@ -427,10 +480,10 @@ server <- function(input, output, session) {
   sync_in_progress <- reactiveVal(FALSE)
   
   # Initialize both maps
-  observeEvent(list(input$daterange2, input$parameter2a, input$parameter2b, input$`main-nav`), {
+  observeEvent(list(bystationdat(), input$daterange2, input$parameter2a, input$parameter2b, input$`main-nav`), {
     
     if(input$`main-nav` == 'bystation'){
-      
+  
       # Initialize both maps with the same data
       bystationmap_fun(bystationmap1_proxy, bystationdat(), stas, input$parameter2a, input$daterange2)
       bystationmap_fun(bystationmap2_proxy, bystationdat(), stas, input$parameter2b, input$daterange2)
@@ -604,6 +657,22 @@ server <- function(input, output, session) {
     } else {
       div(style = "display: none;", out)
     }
+    
+  })
+  
+  output$parameter2a <- renderUI({
+  
+    req(dtprmsel())
+    
+    selectInput('parameter2a', "Select Parameter One:", choices = dtprmsel())
+    
+  })
+  
+  output$parameter2b <- renderUI({
+    
+    req(dtprmsel())
+    
+    selectInput('parameter2b', "Select Parameter Two:", choices = dtprmsel())
     
   })
   
