@@ -302,7 +302,7 @@ server <- function(input, output, session) {
   # byareamap update
 
   # debounced inputs to prevent cascade firing for by area
-  inputs_debounced <- reactive({
+  inputs_debounced1 <- reactive({
     list(
       summarize1 = input$summarize1,
       parameter1 = input$parameter1,
@@ -314,7 +314,7 @@ server <- function(input, output, session) {
   # data to map and gauge - using debounced inputs
   byareadat <- reactive({
     
-    inputs <- inputs_debounced()
+    inputs <- inputs_debounced1()
     
     req(inputs$location1)  
     req(inputs$daterange1)
@@ -325,14 +325,14 @@ server <- function(input, output, session) {
   }) 
   
   # by area map initialize
-  observeEvent(list(byareadat(), inputs_debounced()$summarize1, 
-                    inputs_debounced()$parameter1, inputs_debounced()$location1, 
+  observeEvent(list(byareadat(), inputs_debounced1()$summarize1, 
+                    inputs_debounced1()$parameter1, inputs_debounced1()$location1, 
                     input$`main-nav`), {
                       
     if(input$`main-nav` == 'byarea'){
       
       req(byareadat())
-      inputs <- inputs_debounced()
+      inputs <- inputs_debounced1()
       req(inputs$location1)
       
       byareamap_fun(byareamap_proxy, byareadat(), inputs$summarize1, 
@@ -372,7 +372,7 @@ server <- function(input, output, session) {
   byareaplo <- reactive({
 
     req(map_sel1())
-    inputs <- inputs_debounced()
+    inputs <- inputs_debounced1()
     req(inputs$location1)
     req(inputs$daterange1)
     
@@ -393,7 +393,7 @@ server <- function(input, output, session) {
     req(map_sel1())
     
     sel <- map_sel1()
-    inputs <- inputs_debounced()
+    inputs <- inputs_debounced1()
     
     out <- byareagauge_fun(sel, byareadat(), nncdat, inputs$parameter1)
     
@@ -413,6 +413,14 @@ server <- function(input, output, session) {
   
   # station map
   
+  # debounced inputs to prevent cascade firing for parameter comparison
+  inputs_debounced2 <- reactive({
+    list(
+      parameter2a = input$parameter2a,
+      parameter2b = input$parameter2b
+    )
+  }) %>% debounce(500)  # 500ms delay
+  
   # parameters to select
   dtprmsel <- reactive({
 
@@ -423,20 +431,25 @@ server <- function(input, output, session) {
   # retain last parameter selection on daterange2 change
   observeEvent(input$daterange2, {
     
+    inputs <- inputs_debounced2()
+
+    req(inputs$parameter2a)
+    req(inputs$parameter2b)
+    
     dtprmsel <- stationprmsel_fun(input$daterange2)
     
     # Get current selection
-    curparameter2a <- input$parameter2a
-    curparameter2b <- input$parameter2b
+    curparameter2a <- inputs$parameter2a
+    curparameter2b <- inputs$parameter2b
     
     choices <- dtprmsel
-    
+
     # update choices but preserve selection if it exists
     if (!is.null(curparameter2a)) {
       if (!curparameter2a %in% dtprmsel) {
         curparameter2a <- stationprmsel[stationprmsel %in% curparameter2a]
         names(curparameter2a) <- paste(names(curparameter2a), "(not in date range)")
-        choices <- c(curparameter2a, dtprmsel)
+        choices <- c(curparameter2a, choices)
       }
       updateSelectInput(session, "parameter2a",
                         choices = choices,
@@ -444,49 +457,56 @@ server <- function(input, output, session) {
       
     } else {
       updateSelectInput(session, "parameter2a",
-                        choices = dtprmsel)
+                        choices = choices)
     }
     
     if(!is.null(curparameter2b)) {
       if (!curparameter2b %in% dtprmsel) {
         curparameter2b <- stationprmsel[stationprmsel %in% curparameter2b]
         names(curparameter2b) <- paste(names(curparameter2b), "(not in date range)")
-        choices <- c(curparameter2b, dtprmsel)
+        choices <- c(curparameter2b, choices)
       }
       updateSelectInput(session, "parameter2b",
                         choices = choices,
                         selected = curparameter2b)
     } else {
       updateSelectInput(session, "parameter2b",
-                        choices = dtprmsel)
+                        choices = choices)
     }
     
   })
   
   # station data
   bystationdat <- reactive({
-
-    req(input$parameter2a)
-    req(input$parameter2b)
     
-    out <- bystationdat_fun(alldat, input$parameter2a, input$parameter2b)
+    inputs <- inputs_debounced2()
+
+    req(inputs$parameter2a)
+    req(inputs$parameter2b)
+
+    out <- bystationdat_fun(alldat, inputs$parameter2a, inputs$parameter2b)
 
     return(out)
     
-  })
+  }) |> debounce(500)
   
   # shared reactive values for map synchronization
   last_sync_time <- reactiveVal(Sys.time())
   sync_in_progress <- reactiveVal(FALSE)
   
   # Initialize both maps
-  observeEvent(list(bystationdat(), input$daterange2, input$parameter2a, input$parameter2b, input$`main-nav`), {
+  observeEvent(list(bystationdat(), inputs_debounced2(), input$daterange2, input$`main-nav`), {
     
     if(input$`main-nav` == 'bystation'){
   
+      inputs <- inputs_debounced2()
+
+      req(inputs$parameter2a)
+      req(inputs$parameter2b)
+      
       # Initialize both maps with the same data
-      bystationmap_fun(bystationmap1_proxy, bystationdat(), stas, input$parameter2a, input$daterange2)
-      bystationmap_fun(bystationmap2_proxy, bystationdat(), stas, input$parameter2b, input$daterange2)
+      bystationmap_fun(bystationmap1_proxy, bystationdat(), stas, inputs$parameter2a, input$daterange2)
+      bystationmap_fun(bystationmap2_proxy, bystationdat(), stas, inputs$parameter2b, input$daterange2)
       
       req(map_sel2())
       
@@ -495,7 +515,7 @@ server <- function(input, output, session) {
       
     }
     
-  }, ignoreInit = FALSE)
+  }, ignoreInit = FALSE) |> debounce(500)  # 500ms delay
   
   # Station selection reactive
   map_sel2 <- reactiveVal(NULL)
@@ -568,20 +588,23 @@ server <- function(input, output, session) {
   observe({
     req(map_sel2())
     addselstationmap_fun(map_sel2()$data)
-  })
+  }) |> debounce(500)
   
   # Plot for parameter 1
   bystationplo <- reactive({
     
     req(map_sel2())
     req(bystationdat())
+    inputs <- inputs_debounced2()
+    req(inputs$parameter2a)
+    req(inputs$parameter2b)
     sel <- map_sel2()$data
 
-    out <- bystationplo_fun(sel, bystationdat(), nncdat, input$summarize2, input$parameter2a, input$parameter2b, input$daterange2)  
+    out <- bystationplo_fun(sel, bystationdat(), nncdat, input$summarize2, inputs$parameter2a, inputs$parameter2b, input$daterange2)  
     
     return(out)
     
-  })
+  }) |> debounce(500)
   
   # Toggle sidebar when marker is clicked
   observeEvent(map_sel2(), {

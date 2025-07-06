@@ -726,7 +726,7 @@ bystationplo_fun <- function(sel, bystationdat, nncdat, summarize2, parameter2a,
   }
   
   # Add NNC threshold line for first chart
-  if(nrow(nncchk1) == 1) {
+  if(nrow(nncchk1) == 1 & nrow(toplo1) > 0) {
     hc1 <- hc1 |>
       highcharter::hc_add_series(
         data = list(
@@ -796,7 +796,7 @@ bystationplo_fun <- function(sel, bystationdat, nncdat, summarize2, parameter2a,
   }
   
   # Add NNC threshold line for second chart
-  if(nrow(nncchk2) == 1) {
+  if(nrow(nncchk2) == 1 & nrow(toplo2) > 0) {
     hc2 <- hc2 |>
       highcharter::hc_add_series(
         data = list(
