@@ -191,7 +191,7 @@ ui <- page_navbar(
       nav_panel(
         title = "HOW TO USE",
         class = 'card-scroll',
-        NULL
+        shiny::includeMarkdown('www/parmcomphowto.md')
       )
     )
     
