@@ -1,7 +1,6 @@
 library(sf)
 library(markdown)
 library(shinyWidgets)
-library(munsell)
 
 # data
 load(file = 'data/alldat.RData')
