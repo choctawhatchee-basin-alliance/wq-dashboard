@@ -1,7 +1,7 @@
 library(plotly)
 library(dplyr)
 
-load(file = 'app/data/cntdat.RData')
+load(file = 'wq-dashboard/data/cntdat.RData')
 
 # Filter data for Little Red Fish, Station 1
 filtered_data <- cntdat %>%

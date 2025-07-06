@@ -67,7 +67,7 @@ cbadat <- dat1
 rawdat2 <- read_sheet('1h4yvi9AnISVFbH_AvBw7wDx7s5-4VIOdqD-VToExmvg', na = c('NA', ''))
 
 # inactive lakewatch stations to remove
-torm <- read_excel('app/data-raw/Lakewatch inactive_kw.xlsx')
+torm <- read_excel('wq-dashboard/data-raw/Lakewatch inactive_kw.xlsx')
                  
 dat2 <- rawdat2 |> 
   clean_names() |> 
@@ -157,7 +157,7 @@ alldat <- list(
   unnest('value') |> 
   filter(!is.na(val))
 
-save(alldat, file = 'app/data/alldat.RData')
+save(alldat, file = 'wq-dashboard/data/alldat.RData')
 
 # station locations and wbid ------------------------------------------------------------------
 
@@ -185,7 +185,7 @@ allwbid <- st_read('https://ca.dep.state.fl.us/arcgis/rest/services/OpenData/WBI
   select(WBID)
 cbawbid <- allwbid[stas,] 
 
-save(cbawbid, file = 'app/data/cbawbid.RData')
+save(cbawbid, file = 'wq-dashboard/data/cbawbid.RData')
 
 # add updated wbid
 # those in more than one wbid, use original
@@ -195,7 +195,7 @@ stas <- st_join(stas, cbawbid, join = st_intersects, left = TRUE) |>
   select(-isdup, -WBIDorig)
 
 # add date range to stations
-load(file = 'app/data/alldat.RData')
+load(file = 'wq-dashboard/data/alldat.RData')
 dts <- alldat |> 
   select(waterbody, station, date) |> 
   summarise(
@@ -213,17 +213,17 @@ cbahuc <- hucall |>
 cbahuc <- cbahuc[stas,] |> 
   dplyr::select(huc12)
 
-save(cbahuc, file = 'app/data/cbahuc.RData')
+save(cbahuc, file = 'wq-dashboard/data/cbahuc.RData')
 
 # add huc12 to stas
 stas <- st_join(stas, cbahuc, join = st_intersects, left = TRUE) |> 
   mutate(huc12 = ifelse(is.na(huc12), NA, huc12))
 
-save(stas, file = 'app/data/stas.RData')
+save(stas, file = 'wq-dashboard/data/stas.RData')
 
 # metadata file -------------------------------------------------------------------------------
 
-load(file = 'app/data/alldat.RData')
+load(file = 'wq-dashboard/data/alldat.RData')
 
 meta <- alldat |> 
   select(type, units, location, parameter, date, val) |> 
@@ -270,7 +270,7 @@ meta <- alldat |>
     )
   )
   
-save(meta, file = 'app/data/meta.RData')
+save(meta, file = 'wq-dashboard/data/meta.RData')
 
 # nnc references ------------------------------------------------------------------------------
 
@@ -303,7 +303,7 @@ nncdat <- nncdat |>
     )
   )
 
-save(nncdat, file = 'app/data/nncdat.RData')
+save(nncdat, file = 'wq-dashboard/data/nncdat.RData')
   
 # create dummy file for continuous data -------------------------------------------------------
 
@@ -345,4 +345,4 @@ cntdat <- crossing(
     sal_ppt = pmax(sal_ppt, 0)
   )
 
-save(cntdat, file = 'app/data/cntdat.RData')
+save(cntdat, file = 'wq-dashboard/data/cntdat.RData')
