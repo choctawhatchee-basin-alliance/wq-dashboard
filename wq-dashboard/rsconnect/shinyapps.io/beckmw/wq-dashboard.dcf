@@ -1,0 +1,11 @@
+name: wq-dashboard
+title:
+username:
+account: beckmw
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 15038396
+bundleId: 10572867
+url: https://beckmw.shinyapps.io/wq-dashboard/
+when: 1751813695.94256
+lastSyncTime: 1751813695.94257
