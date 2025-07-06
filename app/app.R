@@ -1,8 +1,8 @@
 library(shiny)
 library(bslib)
 
-source(here::here('R/funcs.R'))
-source(here::here('R/global.R'))
+source('R/funcs.R')
+source('R/global.R')
 
 ui <- page_navbar(
   title = "CBA WATER QUALITY DASHBOARD",
@@ -49,7 +49,7 @@ ui <- page_navbar(
         value = 'about',
         class = 'card-scroll',
         layout_sidebar(
-          shiny::includeMarkdown('doc/overview.md'),
+          shiny::includeMarkdown('www/overview.md'),
           sidebar = sidebar(
             position = 'right',
             width = '500px',
@@ -65,7 +65,7 @@ ui <- page_navbar(
       nav_panel(
         title = 'METHODS', 
         class = 'card-scroll',
-        shiny::includeMarkdown('doc/methods.md')
+        shiny::includeMarkdown('www/methods.md')
       )
     )
   ),
@@ -93,7 +93,7 @@ ui <- page_navbar(
                              "Summarize By:",
                              icon("info-circle")
                            ),
-                           HTML('click an area on the map to view summary info')
+                           HTML('click an area on the map to view summary info on the right')
                          ),
                          choices = c("WBID", "HUC12"), 
                          selected = "WBID"), 
@@ -127,7 +127,7 @@ ui <- page_navbar(
       nav_panel(
         title = "HOW TO USE",
         class = 'card-scroll',
-        shiny::includeMarkdown('doc/byareahowto.md')
+        shiny::includeMarkdown('www/byareahowto.md')
         )
       )
       
@@ -152,7 +152,7 @@ ui <- page_navbar(
                               "Select Date Range:",
                               icon("info-circle")
                             ),
-                            HTML('click a station on the map to view summary info')
+                            HTML('click a station on the map to view summary info on the right')
                           ), 
                           choices = dtchc, selected = range(dtchc), width = '50%'),
           div(
@@ -245,7 +245,7 @@ ui <- page_navbar(
     value = 'download',
     layout_sidebar(
       sidebar = sidebar(
-        title = "Controls",
+        title = "Controls:",
         border_radius = FALSE, 
         fillable = TRUE,
         width = "600px",
