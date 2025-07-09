@@ -602,13 +602,13 @@ server <- function(input, output, session) {
     req(input$daterange4)
     
     waterbody4 <- input$waterbody4
-    paramater4 <- input$parameter4
+    parameter4 <- input$parameter4
     daterange4 <- input$daterange4
-    
+
     out <- alldat |> 
       dplyr::filter(
         waterbody %in% waterbody4 &
-        parameter %in% paramater4 & 
+        parameter %in% parameter4 & 
         date >= daterange4[1] & 
         date <= daterange4[2]
         ) |> 
@@ -622,7 +622,7 @@ server <- function(input, output, session) {
   dltab <- reactive({
     
     dldat <- dldat()
-    
+
     out <- dldattab_fun(dldat)
     
     return(out)
@@ -692,8 +692,12 @@ server <- function(input, output, session) {
     
     dtchc <- try(datechoice_fun(alldat, parameter = parameter4, waterbody = waterbody4), silent = T)
     
-    sliderTextInput("daterange4", "Select Date Range:", 
-                choices = dtchc, selected = range(dtchc))
+    if(inherits(dtchc, "try-error")) {
+      div(style = "display: none;")
+    } else {
+      sliderTextInput("daterange4", "Select Date Range:", 
+                      choices = dtchc, selected = range(dtchc))
+    }
     
   })
   
