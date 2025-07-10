@@ -177,7 +177,7 @@ ui <- page_navbar(
           sidebar = sidebar(
             id = "bystationsidebar",
             selectInput("summarize2", "Summarize By:", 
-                        choices = c("day", "week", "month", "year"), 
+                        choices = c("day", "year"), 
                         selected = "day"),
             uiOutput('bystationplo'),
             border_radius = FALSE, 

@@ -21,7 +21,7 @@
 <img src='parmcompplotex1.png' style='width: 20%; display: block; margin: 0 auto;'>   
 <br>
 
-<p>The time series plot can also be summarized by means for different time periods.  Available options are by day, week, month, or year.  Confidence intervals (95%) are provided for the time period summaries if sufficient values are available.</p>
+<p>The time series plot can also be summarized by means for different time periods.  Available options are by day or year.  Confidence intervals (95%) are provided for the time period if year summaries are selected.</p>
 
 <p>Sub-tabs can be expanded or minimized by clicking the arrows on the top right.</p>
 

@@ -354,9 +354,27 @@ byareaplo_fun <- function(sel, alldat, stas, nncdat, location1, parameter1, date
         color = "red",
         dashStyle = "Dash",
         showInLegend = FALSE,
-        tooltip = list(
-          headerFormat = '',
-          pointFormatter = highcharter::JS("function() { return 'NNC Threshold: ' + this.y; }")
+        enableMouseTracking = FALSE
+      ) |> 
+      highcharter::hc_add_annotation(
+        labels = list(
+          list(
+            point = list(
+              xAxis = 0,  # Specify which axis
+              yAxis = 0,  # Specify which axis
+              x = date_range_ms[1],
+              y = chknnc$value
+            ),
+            y = 0,
+            text = paste0("NNC Threshold: ", chknnc$value),
+            backgroundColor = rgb(0, 0, 0, 0),
+            borderColor = rgb(0, 0, 0, 0),
+            style = list(
+              color = "red",
+              fontSize = "12px",
+              fontWeight = "normal"
+            )
+          )
         )
       )
   }
@@ -603,7 +621,7 @@ bystationdat_fun <- function(alldat, parameter2a, parameter2b){
 #' @param sel Selected station data from the input
 #' @param bystationdat Data frame containing the water quality data to plot
 #' @param nncdat Data frame containing the NNC data
-#' @param summarize2 Character string indicating how to summarize the data ('day', 'week', 'month', 'year')
+#' @param summarize2 Character string indicating how to summarize the data ('day', 'year')
 #' @param parameter2a Character string indicating the first parameter to filter by
 #' @param parameter2b Character string indicating the second parameter to filter by
 #' @param daterange2 Date range to filter the data
@@ -673,150 +691,9 @@ bystationplo_fun <- function(sel, bystationdat, nncdat, summarize2, parameter2a,
   date_range_ms <- c(as.numeric(as.POSIXct(daterange2[1])) * 1000,
                      as.numeric(as.POSIXct(daterange2[2])) * 1000)
 
-  # Create first chart
-  hc1 <- highcharter::highchart() |>
-    highcharter::hc_chart(type = "line") |>
-    highcharter::hc_title(text = paste(waterbody, station)) |>
-    highcharter::hc_xAxis(
-      type = "datetime",
-      min = date_range_ms[1],
-      max = date_range_ms[2],
-      title = list(text = "")
-    ) |>
-    highcharter::hc_yAxis(title = list(text = ylab1)) |>
-    highcharter::hc_legend(enabled = FALSE)
-  
-  # Add data series for first chart
-  if(nrow(toplo1) > 0) {
-    if(summarize2 != 'day') {
-      # Add series with error bars
-      hc1 <- hc1 |>
-        highcharter::hc_add_series(
-          data = toplo1,
-          type = "line",
-          highcharter::hcaes(x = date, y = avev),
-          color = "blue",
-          marker = list(radius = 3, fillColor = "lightblue"),
-          tooltip = list(
-            pointFormatter = highcharter::JS("function() { return 'Value: ' + this.y.toFixed(2); }")
-          )
-        ) |>
-        highcharter::hc_add_series(
-          data = toplo1,
-          type = "errorbar",
-          highcharter::hcaes(x = date, low = lovl, high = hivl),
-          color = "blue",
-          showInLegend = FALSE,
-          tooltip = list(enabled = FALSE)
-        )
-    } else {
-      # Add series without error bars
-      hc1 <- hc1 |>
-        highcharter::hc_add_series(
-          data = toplo1,
-          type = "line",
-          highcharter::hcaes(x = date, y = avev),
-          color = "blue",
-          marker = list(radius = 3, fillColor = "lightblue"),
-          tooltip = list(
-            pointFormatter = highcharter::JS("function() { return 'Value: ' + this.y.toFixed(2); }")
-          )
-        )
-    }
-  }
-  
-  # Add NNC threshold line for first chart
-  if(nrow(nncchk1) == 1 & nrow(toplo1) > 0) {
-    hc1 <- hc1 |>
-      highcharter::hc_add_series(
-        data = list(
-          list(x = date_range_ms[1], y = nncchk1$value),
-          list(x = date_range_ms[2], y = nncchk1$value)
-        ),
-        type = "line",
-        color = "red",
-        dashStyle = "Dash",
-        showInLegend = FALSE,
-        tooltip = list(
-          headerFormat = '',
-          pointFormatter = highcharter::JS("function() { return 'NNC Threshold: ' + this.y; }")
-        )
-      )
-  }
-  
-  # Create second chart
-  hc2 <- highcharter::highchart() |>
-    highcharter::hc_chart(type = "line") |>
-    highcharter::hc_xAxis(
-      type = "datetime",
-      min = date_range_ms[1],
-      max = date_range_ms[2],
-      title = list(text = "")
-    ) |>
-    highcharter::hc_yAxis(title = list(text = ylab2)) |>
-    highcharter::hc_legend(enabled = FALSE)
-  
-  # Add data series for second chart
-  if(nrow(toplo2) > 0) {
-    if(summarize2 != 'day') {
-      # Add series with error bars
-      hc2 <- hc2 |>
-        highcharter::hc_add_series(
-          data = toplo2,
-          type = "line",
-          highcharter::hcaes(x = date, y = avev),
-          color = "darkgreen",
-          marker = list(radius = 3, fillColor = "lightgreen"),
-          tooltip = list(
-            pointFormatter = highcharter::JS("function() { return 'Value: ' + this.y.toFixed(2); }")
-          )
-        ) |>
-        highcharter::hc_add_series(
-          data = toplo2,
-          type = "errorbar",
-          highcharter::hcaes(x = date, low = lovl, high = hivl),
-          color = "darkgreen",
-          showInLegend = FALSE,
-          tooltip = list(enabled = FALSE)
-        )
-    } else {
-      # Add series without error bars
-      hc2 <- hc2 |>
-        highcharter::hc_add_series(
-          data = toplo2,
-          type = "line",
-          highcharter::hcaes(x = date, y = avev),
-          color = "darkgreen",
-          marker = list(radius = 3, fillColor = "lightgreen"),
-          tooltip = list(
-            pointFormatter = highcharter::JS("function() { return 'Value: ' + this.y.toFixed(2); }")
-          )
-        )
-    }
-  }
-  
-  # Add NNC threshold line for second chart
-  if(nrow(nncchk2) == 1 & nrow(toplo2) > 0) {
-    hc2 <- hc2 |>
-      highcharter::hc_add_series(
-        data = list(
-          list(x = date_range_ms[1], y = nncchk2$value),
-          list(x = date_range_ms[2], y = nncchk2$value)
-        ),
-        type = "line",
-        color = "red",
-        dashStyle = "Dash",
-        showInLegend = FALSE,
-        tooltip = list(
-          headerFormat = '',
-          pointFormatter = highcharter::JS("function() { return 'NNC Threshold: ' + this.y; }")
-        )
-      )
-  }
-  
   # Create combined chart using htmltools
-  hc1 <- hc1 |> highcharter::hc_chart(height = 275) |> highcharter::hc_chart(reflow = FALSE) 
-  hc2 <- hc2 |> highcharter::hc_chart(height = 275) |> highcharter::hc_chart(reflow = FALSE) 
+  hc1 <- bystationplohc_fun(toplo1, nncchk1, date_range_ms, ylab1, summarize2, waterbody, station)
+  hc2 <- bystationplohc_fun(toplo2, nncchk2, date_range_ms, ylab2, summarize2, waterbody, station)
   
   out <- htmltools::div(
     style = "height: 550px; overflow: hidden;",
@@ -834,6 +711,109 @@ bystationplo_fun <- function(sel, bystationdat, nncdat, summarize2, parameter2a,
   
 }
 
+#' Helper function to create highcharts for bystationareaplo_fun
+#' 
+#' @param toplo Data frame containing the summarized data for the chart
+#' @param nncchk Data frame containing the NNC threshold data
+#' @param date_range_ms Numeric vector containing the start and end dates in milliseconds
+#' @param ylab Character string for the y-axis label
+#' @param summarize2 Character string indicating how to summarize the data ('day', 'year')
+bystationplohc_fun <- function(toplo, nncchk, date_range_ms, ylab, summarize2, waterbody, station){
+  
+  # Create first chart
+  hc <- highcharter::highchart() |>
+    highcharter::hc_chart(type = "line") |>
+    highcharter::hc_title(text = paste(waterbody, station)) |>
+    highcharter::hc_xAxis(
+      type = "datetime",
+      min = date_range_ms[1],
+      max = date_range_ms[2],
+      title = list(text = "")
+    ) |>
+    highcharter::hc_yAxis(title = list(text = ylab)) |>
+    highcharter::hc_legend(enabled = FALSE)
+  
+  # Add data series for first chart
+  if(nrow(toplo) > 0) {
+    if(summarize2 != 'day') {
+      # Add series with error bars
+      hc <- hc |>
+        highcharter::hc_add_series(
+          data = toplo,
+          type = "errorbar",
+          highcharter::hcaes(x = date, low = lovl, high = hivl),
+          color = "blue",
+          showInLegend = FALSE,
+          tooltip = list(enabled = FALSE)
+        ) |> 
+        highcharter::hc_add_series(
+          data = toplo,
+          type = "line",
+          highcharter::hcaes(x = date, y = avev),
+          color = "blue",
+          marker = list(radius = 3, fillColor = "lightblue"),
+          tooltip = list(
+            pointFormatter = highcharter::JS("function() { return 'Value: ' + this.y.toFixed(2); }")
+          )
+        )
+    } else {
+      # Add series without error bars
+      hc <- hc |>
+        highcharter::hc_add_series(
+          data = toplo,
+          type = "line",
+          highcharter::hcaes(x = date, y = avev),
+          color = "blue",
+          marker = list(radius = 3, fillColor = "lightblue"),
+          tooltip = list(
+            pointFormatter = highcharter::JS("function() { return 'Value: ' + this.y.toFixed(2); }")
+          )
+        )
+    }
+  }
+  
+  # Add NNC threshold line
+  if(nrow(nncchk) == 1 & nrow(toplo) > 0) {
+    hc <- hc |>
+      highcharter::hc_add_series(
+        data = list(
+          list(x = date_range_ms[1], y = nncchk$value),
+          list(x = date_range_ms[2], y = nncchk$value)
+        ),
+        type = "line",
+        color = "red",
+        dashStyle = "Dash",
+        showInLegend = FALSE,
+        enableMouseTracking = FALSE
+      ) |> 
+      highcharter::hc_add_annotation(
+        labels = list(
+          list(
+            point = list(
+              xAxis = 0,  # Specify which axis
+              yAxis = 0,  # Specify which axis
+              x = date_range_ms[1],
+              y = nncchk$value
+            ),
+            y = 0,
+            text = paste0("NNC Threshold: ", nncchk$value),
+            backgroundColor = rgb(0, 0, 0, 0),
+            borderColor = rgb(0, 0, 0, 0),
+            style = list(
+              color = "red",
+              fontSize = "12px",
+              fontWeight = "normal"
+            )
+          )
+        )
+      )
+  }
+  
+  out <- hc |> highcharter::hc_chart(height = 275) |> highcharter::hc_chart(reflow = FALSE) 
+  
+  return(out)
+  
+}
 #' Add marker or shape highlight to area map selection
 #'
 #' @param mapsel1 Data frame containing the selected area or station's ID
