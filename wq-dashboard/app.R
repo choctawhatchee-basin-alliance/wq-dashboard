@@ -95,7 +95,7 @@ ui <- page_navbar(
                            ),
                            HTML('click an area on the map to view summary info on the right')
                          ),
-                         choices = c("WBID", "HUC12"), 
+                         choices = c("WBID", "Station"), 
                          selected = "WBID"), 
             selectInput("parameter1", "Select Parameter:", choices = prms), 
             uiOutput("location1"),
@@ -354,9 +354,21 @@ server <- function(input, output, session) {
     map_sel1(NULL)
   }, ignoreInit = TRUE)
   
-  # handle marker clicks  
+  # for area map clicks
+  map_sel1 <- reactiveVal(NULL)
+  
+  # handle shape clicks
   observeEvent(input$byareamap_shape_click, {
-    map_sel1(list(type = "marker", data = input$byareamap_shape_click))
+    if (!is.null(input$byareamap_shape_click)) {
+      map_sel1(list(type = "shape", data = input$byareamap_shape_click))
+    }
+  })
+  
+  # handle marker clicks  
+  observeEvent(input$byareamap_marker_click, {
+    if (!is.null(input$byareamap_marker_click)) {
+      map_sel1(list(type = "marker", data = input$byareamap_marker_click))
+    }
   })
   
   # add highlight of shape to byareamap if map_sel1
@@ -378,7 +390,15 @@ server <- function(input, output, session) {
     
     sel <- map_sel1()
     
-    out <- byareaplo_fun(sel, alldat, stas, nncdat,
+    if (sel$type == "shape") {
+      shape_click <- sel$data
+      marker_click <- NULL
+    } else {
+      shape_click <- NULL
+      marker_click <- sel$data
+    }
+    
+    out <- byareaplo_fun(shape_click, marker_click, alldat, stas, nncdat,
                          inputs$location1, inputs$parameter1,
                          inputs$daterange1)
     
@@ -393,9 +413,18 @@ server <- function(input, output, session) {
     req(map_sel1())
     
     sel <- map_sel1()
+    
+    if (sel$type == "shape") {
+      shape_click <- sel$data
+      marker_click <- NULL
+    } else {
+      shape_click <- NULL
+      marker_click <- sel$data
+    }
+    
     inputs <- inputs_debounced1()
     
-    out <- byareagauge_fun(sel, byareadat(), nncdat, inputs$parameter1)
+    out <- byareagauge_fun(shape_click, marker_click, byareadat(), nncdat, inputs$parameter1)
     
     return(out)  
     
@@ -403,6 +432,11 @@ server <- function(input, output, session) {
   
   # toggle areamap open sidebar, polygon
   observeEvent(input$byareamap_shape_click, {
+    sidebar_toggle("byareasidebar", open = TRUE)
+  })
+  
+  # toggle areamap open sidebar, marker
+  observeEvent(input$byareamap_marker_click, {
     sidebar_toggle("byareasidebar", open = TRUE)
   })
   

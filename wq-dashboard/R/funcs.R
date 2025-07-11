@@ -95,7 +95,7 @@ bsmap <- function(bnds){
 #' 
 #' @param mapin Leaflet map object to update
 #' @param byareadat Data frame returned by byareadat_fun
-#' @param summarize1 Character string indicating how to summarize the data ('WBID' or 'HUC12')
+#' @param summarize1 Character string indicating how to summarize the data ('WBID' or 'Station')
 #' @param parameter1 Character string indicating the parameter to filter by
 #' @param location1 Character string indicating the sample location (e.g., 'surface', 'bottom')
 byareamap_fun <- function(mapin, byareadat, summarize1, parameter1, location1){
@@ -104,6 +104,7 @@ byareamap_fun <- function(mapin, byareadat, summarize1, parameter1, location1){
   if(inherits(byareadat, 'try-error'))
     out <- mapin %>%
       leaflet::clearShapes() |> 
+      leaflet::clearMarkers() |> 
       leaflet::clearControls()
   
   if(!inherits(byareadat, 'try-error')) {
@@ -118,6 +119,7 @@ byareamap_fun <- function(mapin, byareadat, summarize1, parameter1, location1){
     
     out <- mapin %>%
       leaflet::clearShapes() |> 
+      leaflet::clearMarkers() |> 
       leaflet::clearControls()
 
     if(summarize1 == 'WBID')
@@ -141,25 +143,20 @@ byareamap_fun <- function(mapin, byareadat, summarize1, parameter1, location1){
           layerId = ~WBID
         )
     
-    if(summarize1 == 'HUC12')
+    if(summarize1 == 'Station')
       out <- out |> 
-        leaflet::addPolygons(
+        leaflet::addCircleMarkers(
           data = byareadat,
+          radius = 7,
           fillColor = ~pal(val),
           fillOpacity = 0.7,
           color = "#666",
           weight = 1,
-          highlightOptions = leaflet::highlightOptions(
-            weight = 3,
-            color = "#666",
-            fillOpacity = 0.7,
-            bringToFront = FALSE
-          ),
-          label = ~paste0(huc12, " (", stas, "), Value: ", round(val, 2)),
+          label = ~paste0(waterbody, ' ', station, ", Value: ", round(val, 2)),
           labelOptions = leaflet::labelOptions(
             style = list("font-size" = "16px")
-          ), 
-          layerId = ~huc12
+          ),
+          layerId = ~paste0(stas)
         )
     
     # add legend
@@ -183,7 +180,7 @@ byareamap_fun <- function(mapin, byareadat, summarize1, parameter1, location1){
 #' 
 #' @param alldat Data frame containing the data to summarize
 #' @param stas sf object containing station geometries
-#' @param summarize1 Character string indicating how to summarize the data ('WBID' or 'HUC12')
+#' @param summarize1 Character string indicating how to summarize the data ('WBID' or 'Station')
 #' @param location1 Character string indicating the sample location (e.g., 'surface', 'bottom')
 #' @param parameter1 Character string indicating the parameter to filter by
 #' @param daterange1 Date range to filter the data
@@ -199,12 +196,12 @@ byareadat_fun <- function(alldat, stas, summarize1, location1, parameter1, dater
     dplyr::select(waterbody, station, date, parameter, val) |> 
     dplyr::filter(!is.na(val))
   dat <- dplyr::inner_join(stas, dat, by = c("waterbody", "station")) |> 
-    dplyr::select(waterbody, station, date, parameter, val, WBID, huc12) |>  
+    dplyr::select(waterbody, station, date, parameter, val, WBID, huc12) |> 
     sf::st_set_geometry(NULL)
     
   if (summarize1 == "WBID") {
 
-    out <- dat |> 
+    out <- dat |>
       tidyr::unite('stas', waterbody, station) |> 
       dplyr::summarise(
         val = mean(val, na.rm = TRUE),
@@ -224,28 +221,20 @@ byareadat_fun <- function(alldat, stas, summarize1, location1, parameter1, dater
     
   }
   
-  if (summarize1 == "HUC12") {
-    
+  if (summarize1 == "Station") {
+
     out <- dat |>  
-      sf::st_drop_geometry() |> 
-      tidyr::unite('stas', waterbody, station) |> 
       dplyr::summarise(
         val = mean(val, na.rm = TRUE),
-        stas = length(unique(stas)),
-        .by = c(huc12)
+        .by = c(waterbody, station)
       ) |> 
-      dplyr::mutate(
-        stas = dplyr::case_when(
-          stas == 1 ~ paste0(stas, " station"),
-          stas > 1 ~ paste0(stas, " stations"),
-          TRUE ~ "no stations"
-        )
-      ) |> 
-      dplyr::inner_join(cbahuc, by = 'huc12') |> 
+      dplyr::left_join(stas, by = c('waterbody', 'station')) |> 
+      dplyr::select(-name, -WBID, -datestr, -dateend, -huc12) |>
+      tidyr::unite('stas', waterbody, station, sep = '_', remove = F) |> 
       sf::st_as_sf() |> 
       dplyr::filter(!is.na(val))
-    
-  }
+
+    }
   
   return(out)
   
@@ -253,15 +242,16 @@ byareadat_fun <- function(alldat, stas, summarize1, location1, parameter1, dater
 
 #' Function to create a time series plot for a selected area or station
 #' 
-#' @param sel Shape click event data from leaflet
+#' @param shape_click Shape click event data from leaflet
+#' @param marker_click Marker click event data from leaflet
 #' @param alldat Data frame containing the water quality data to plo
 #' @param stas sf object containing station geometries
 #' @param nncdat Data frame containing the NNC data
 #' @param location1 Character string indicating the sample location (e.g., 'surface', 'bottom')
 #' @param parameter1 Character string indicating the parameter to filter by
 #' @param daterange1 Date range to filter the data
-byareaplo_fun <- function(sel, alldat, stas, nncdat, location1, parameter1, daterange1){
-  
+byareaplo_fun <- function(shape_click, marker_click, alldat, stas, nncdat, location1, parameter1, daterange1){
+
   toplo <- alldat |> 
     dplyr::filter(
       parameter == parameter1 &
@@ -273,16 +263,9 @@ byareaplo_fun <- function(sel, alldat, stas, nncdat, location1, parameter1, date
   
   ylab <- ylab_fun(parameter1, location1)
   
-  id <- sel$data$id
-  
-  # get nnc line if present
-  chknnc <- nncdat |> 
-    dplyr::filter(WBID %in% id & parameter %in% substr(parameter1, 1, 3)) |> 
-    dplyr::select(WBID, parameter, value) |> 
-    dplyr::distinct()
-  
-  if(id %in% stas$WBID){
+  if(!is.null(shape_click)){
     
+    id <- shape_click$id
     ttl <- paste('WBID', id)
     
     toplo <- toplo |> 
@@ -294,22 +277,39 @@ byareaplo_fun <- function(sel, alldat, stas, nncdat, location1, parameter1, date
         .by = date
       )
     
+    # get nnc line if present
+    chknnc <- nncdat |> 
+      dplyr::filter(WBID %in% id & parameter %in% substr(parameter1, 1, 3)) |> 
+      dplyr::select(WBID, parameter, value) |> 
+      dplyr::distinct()
+    
   }
   
-  if(id %in% cbahuc$huc12){
+  if(!is.null(marker_click)){
     
-    ttl <- paste('HUC12', id)
-    
+    id <- marker_click$id
+    waterbody <- sub("_(.*)", "", id)
+    station <- sub(".*_(.*)", "\\1", id)
+    ttl <- paste(waterbody, station)
+
     toplo <- toplo |> 
-      dplyr::inner_join(stas, by = c('waterbody', 'station')) |> 
-      dplyr::filter(huc12 %in% id) |> 
+      dplyr::filter(waterbody == !!waterbody & station == !!station) |> 
       dplyr::select(date, val) |> 
       dplyr::summarise(
         avev = mean(val, na.rm = TRUE),
         .by = date
       )
     
+    # get nnc line if present
+    chknnc <- nncdat |> 
+      dplyr::filter(waterbody %in% !!waterbody & station %in% !!station & parameter %in% substr(parameter1, 1, 3)) |> 
+      dplyr::select(waterbody, station, parameter, value) |> 
+      dplyr::distinct()
+    
   }
+  
+
+  
   # Convert dates to milliseconds for Highcharts
   date_range_ms <- c(as.numeric(as.POSIXct(daterange1[1])) * 1000,
                      as.numeric(as.POSIXct(daterange1[2])) * 1000)
@@ -379,17 +379,6 @@ byareaplo_fun <- function(sel, alldat, stas, nncdat, location1, parameter1, date
       )
   }
   
-  # # Set chart height and disable reflow (consistent with your first function)
-  # hc <- hc |> 
-  #   highcharter::hc_chart(height = 275) |> 
-  #   highcharter::hc_chart(reflow = FALSE)
-  # 
-  # # Return as HTML div (consistent with your first function format)
-  # out <- htmltools::div(
-  #   style = "height: 275px; overflow: hidden;",
-  #   hc
-  # )
-  # 
   out <- hc |> highcharter::hc_chart(height = 350) |> highcharter::hc_chart(reflow = F)
   
   return(out)
@@ -399,22 +388,43 @@ byareaplo_fun <- function(sel, alldat, stas, nncdat, location1, parameter1, date
 
 #' Function to create a gauge chart for a selected area
 #' 
-#' @param sel Shape click event data from leaflet
+#' @param shape_click Shape click event data from leaflet
+#' @param marker_click Marker click event data from leaflet
 #' @param byareadat Data frame containing the summarized data by area
 #' @param nncdat Data frame containing the NNC data
 #' @param parameter1 Character string indicating the parameter to filter by
-byareagauge_fun <- function(sel, byareadat, nncdat, parameter1){
- 
-  id <- sel$data$id
+byareagauge_fun <- function(shape_click, marker_click, byareadat, nncdat, parameter1){
 
-  if('WBID' %in% names(byareadat))
+  if(!is.null(shape_click)){
+    
+    id <- shape_click$id
+    
     curval<- byareadat |> 
       dplyr::filter(WBID %in% id)
-      
-  if('huc12' %in% names(byareadat))
+    
+    chknnc <- nncdat |> 
+      dplyr::filter(WBID %in% id & parameter %in% substr(parameter1, 1, 3)) |> 
+      dplyr::select(WBID, parameter, value) |> 
+      dplyr::distinct()
+    
+  }
+  
+  if(!is.null(marker_click)){
+    
+    id <- marker_click$id
+    waterbody <- sub("_(.*)", "", id)
+    station <- sub(".*_(.*)", "\\1", id)
+    
     curval<- byareadat |> 
-      dplyr::filter(huc12 %in% id) 
-
+      dplyr::filter(stas %in% id) 
+    
+    chknnc <- nncdat |> 
+      dplyr::filter(waterbody %in% !!waterbody & station %in% !!station & parameter %in% substr(parameter1, 1, 3)) |> 
+      dplyr::select(waterbody, station, parameter, value) |> 
+      dplyr::distinct()
+    
+  }
+  
   curval <- curval |> 
     dplyr::pull(val) |> 
     round(2)
@@ -424,10 +434,6 @@ byareagauge_fun <- function(sel, byareadat, nncdat, parameter1){
 
   thrshval <- NULL
 
-  chknnc <- nncdat |> 
-    dplyr::filter(WBID %in% id & parameter %in% substr(parameter1, 1, 3)) |> 
-    dplyr::select(WBID, parameter, value) |> 
-    dplyr::distinct()
   if(nrow(chknnc) == 1)
     thrshval <- chknnc$value
 
@@ -470,9 +476,6 @@ byareagauge_fun <- function(sel, byareadat, nncdat, parameter1){
       stops = color_stops,
       minorTickLength = 0,
       tickLength = 10,                                    
-      # tickPositions = round(seq(minv + 0.1*(maxv-minv),       
-      #                     maxv - 0.1*(maxv-minv),       
-      #                     length.out = 5), 2), 
       title = list(y = -70),
       plotLines = list(
         list(
@@ -831,16 +834,6 @@ addselareamap_fun <- function(mapsel1){
           options = leaflet::pathOptions(clickable = FALSE)
         )
 
-    # huc12      
-    if(mapsel1$id %in% cbahuc$huc12)
-      leaflet::leafletProxy("byareamap") |>
-        leaflet::clearGroup("highlight") |>
-        leaflet::addPolygons(
-          data = cbahuc |> dplyr::filter(huc12 == mapsel1$id), opacity = 1,
-          group = "highlight", color = "black", weight = 6, fillOpacity = 0,
-          options = leaflet::pathOptions(clickable = FALSE)
-        )
-    
     # station
     if(!mapsel1$id %in% cbawbid$WBID & !mapsel1$id %in% cbahuc$huc12)
       leaflet::leafletProxy("byareamap") |>
@@ -852,7 +845,6 @@ addselareamap_fun <- function(mapsel1){
           options = leaflet::pathOptions(clickable = FALSE)
         )
       
-    
   }
   
 }
