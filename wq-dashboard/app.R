@@ -152,7 +152,7 @@ ui <- page_navbar(
                               "Select Date Range:",
                               icon("info-circle")
                             ),
-                            HTML('click a station on the map to view summary info on the right')
+                            HTML('click a station on the maps to view summary info on the right')
                           ), 
                           choices = dtchc, selected = range(dtchc), width = '50%'),
           div(

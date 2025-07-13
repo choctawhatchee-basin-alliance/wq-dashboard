@@ -9,7 +9,6 @@ load(file = 'data/meta.RData')
 load(file = 'data/stas.RData')
 load(file = 'data/nncdat.RData')
 load(file = 'data/cbawbid.RData')
-load(file = 'data/cbahuc.RData')
 
 # selections
 prmsdf <- meta |> 

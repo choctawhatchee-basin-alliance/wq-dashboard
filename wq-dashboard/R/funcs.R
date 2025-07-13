@@ -136,11 +136,11 @@ byareamap_fun <- function(mapin, byareadat, summarize1, parameter1, location1){
             fillOpacity = 0.7,
             bringToFront = FALSE
           ),
-          label = ~paste0(WBID, " (", stas, "), Value: ", round(val, 2)),
+          label = ~ lapply(paste0(WATERBODY_NAME, ' - ', WBID, "<br>Value: ", round(val, 2), " (", stas , ")"), HTML),
           labelOptions = leaflet::labelOptions(
             style = list("font-size" = "16px")
           ), 
-          layerId = ~WBID
+          layerId = ~ WBID
         )
     
     if(summarize1 == 'Station')
@@ -176,7 +176,7 @@ byareamap_fun <- function(mapin, byareadat, summarize1, parameter1, location1){
   
 }
 
-#' Function to summarize data by WBID or HUC12
+#' Function to summarize data by WBID or Station
 #' 
 #' @param alldat Data frame containing the data to summarize
 #' @param stas sf object containing station geometries
@@ -196,7 +196,7 @@ byareadat_fun <- function(alldat, stas, summarize1, location1, parameter1, dater
     dplyr::select(waterbody, station, date, parameter, val) |> 
     dplyr::filter(!is.na(val))
   dat <- dplyr::inner_join(stas, dat, by = c("waterbody", "station")) |> 
-    dplyr::select(waterbody, station, date, parameter, val, WBID, huc12) |> 
+    dplyr::select(waterbody, station, date, parameter, val, WBID, WATERBODY_NAME) |> 
     sf::st_set_geometry(NULL)
     
   if (summarize1 == "WBID") {
@@ -206,7 +206,7 @@ byareadat_fun <- function(alldat, stas, summarize1, location1, parameter1, dater
       dplyr::summarise(
         val = mean(val, na.rm = TRUE),
         stas = length(unique(stas)),
-        .by = c(WBID)
+        .by = c(WBID, WATERBODY_NAME)
       ) |> 
       dplyr::mutate(
         stas = dplyr::case_when(
@@ -215,7 +215,7 @@ byareadat_fun <- function(alldat, stas, summarize1, location1, parameter1, dater
           TRUE ~ "no stations"
         )
       ) |> 
-      dplyr::inner_join(cbawbid, by = 'WBID') |> 
+      dplyr::inner_join(cbawbid, by = c('WBID', 'WATERBODY_NAME')) |> 
       sf::st_as_sf() |> 
       dplyr::filter(!is.na(val))
     
@@ -229,7 +229,7 @@ byareadat_fun <- function(alldat, stas, summarize1, location1, parameter1, dater
         .by = c(waterbody, station)
       ) |> 
       dplyr::left_join(stas, by = c('waterbody', 'station')) |> 
-      dplyr::select(-name, -WBID, -datestr, -dateend, -huc12) |>
+      dplyr::select(-name, -WBID, -datestr, -dateend) |>
       tidyr::unite('stas', waterbody, station, sep = '_', remove = F) |> 
       sf::st_as_sf() |> 
       dplyr::filter(!is.na(val))
@@ -266,16 +266,21 @@ byareaplo_fun <- function(shape_click, marker_click, alldat, stas, nncdat, locat
   if(!is.null(shape_click)){
     
     id <- shape_click$id
-    ttl <- paste('WBID', id)
-    
+
     toplo <- toplo |> 
       dplyr::inner_join(stas, by = c('waterbody', 'station')) |> 
-      dplyr::filter(WBID %in% id) |> 
+      dplyr::filter(WBID %in% !!id) |> 
       dplyr::select(date, val) |> 
       dplyr::summarise(
         avev = mean(val, na.rm = TRUE),
         .by = date
       )
+    
+    ttl <- stas |> 
+      dplyr::filter(WBID %in% id) |> 
+      dplyr::pull(WATERBODY_NAME) |> 
+      unique()
+    ttl <- paste(ttl, "-", id)
     
     # get nnc line if present
     chknnc <- nncdat |> 
@@ -398,6 +403,7 @@ byareagauge_fun <- function(shape_click, marker_click, byareadat, nncdat, parame
   if(!is.null(shape_click)){
     
     id <- shape_click$id
+    id <- gsub("^.*\\s\\-\\s", "", id)
     
     curval<- byareadat |> 
       dplyr::filter(WBID %in% id)
@@ -835,7 +841,7 @@ addselareamap_fun <- function(mapsel1){
         )
 
     # station
-    if(!mapsel1$id %in% cbawbid$WBID & !mapsel1$id %in% cbahuc$huc12)
+    if(!mapsel1$id %in% cbawbid$WBID)
       leaflet::leafletProxy("byareamap") |>
         leaflet::clearGroup("highlight") |>
         leaflet::addCircleMarkers(

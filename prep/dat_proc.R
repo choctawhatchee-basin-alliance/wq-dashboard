@@ -161,6 +161,14 @@ save(alldat, file = 'wq-dashboard/data/alldat.RData')
 
 # station locations and wbid ------------------------------------------------------------------
 
+# from tolower help file examples
+capwords <- function(s, strict = FALSE) {
+  cap <- function(s) paste(toupper(substring(s, 1, 1)),
+                           {s <- substring(s, 2); if(strict) tolower(s) else s},
+                           sep = "", collapse = " " )
+  sapply(strsplit(s, split = " "), cap, USE.NAMES = !is.null(names(s)))
+}
+
 rawdat <- read_sheet('13ob5pYoKnYMTMn-jqKFFT6e0QyrDPXmBK9QtcB0gnrw')
 
 # this has wbid but it's from an older wbid layer, not all are in the current fdep layer
@@ -182,8 +190,14 @@ stas <- rawdat |>
 
 allwbid <- st_read('https://ca.dep.state.fl.us/arcgis/rest/services/OpenData/WBIDS/MapServer/0/query?outFields=*&where=1%3D1&f=geojson') |> 
   st_make_valid() |> 
-  select(WBID)
-cbawbid <- allwbid[stas,] 
+  select(WBID, WATERBODY_NAME)
+cbawbid <- allwbid[stas,] |> 
+  mutate(
+    WATERBODY_NAME = capwords(tolower(WATERBODY_NAME)),
+    WATERBODY_NAME = gsub("lower", "Lower", WATERBODY_NAME), 
+    WATERBODY_NAME = gsub("upper", "Upper", WATERBODY_NAME),
+    WATERBODY_NAME = gsub("middle", "Middle", WATERBODY_NAME)
+  )
 
 save(cbawbid, file = 'wq-dashboard/data/cbawbid.RData')
 
@@ -204,20 +218,6 @@ dts <- alldat |>
     .by = c(waterbody, station)
   )
 stas <- left_join(stas, dts, by = c('waterbody', 'station'))
-
-# get huc12
-# https://prd-tnm.s3.amazonaws.com/index.html?prefix=StagedProducts/Hydrography/NHD/State/Shape/
-hucall <- st_read('~/Desktop/NHD_H_Florida_State_Shape/Shape/WBDHU12.shp')
-cbahuc <- hucall |> 
-  st_transform(crs = st_crs(stas))
-cbahuc <- cbahuc[stas,] |> 
-  dplyr::select(huc12)
-
-save(cbahuc, file = 'wq-dashboard/data/cbahuc.RData')
-
-# add huc12 to stas
-stas <- st_join(stas, cbahuc, join = st_intersects, left = TRUE) |> 
-  mutate(huc12 = ifelse(is.na(huc12), NA, huc12))
 
 save(stas, file = 'wq-dashboard/data/stas.RData')
 
