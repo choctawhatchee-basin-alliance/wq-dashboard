@@ -631,10 +631,11 @@ bystationdat_fun <- function(alldat, parameter2a, parameter2b){
 #' @param bystationdat Data frame containing the water quality data to plot
 #' @param nncdat Data frame containing the NNC data
 #' @param summarize2 Character string indicating how to summarize the data ('day', 'year')
+#' #' @param showtrnd Logical indicating whether to show trend lines (default FALSE)
 #' @param parameter2a Character string indicating the first parameter to filter by
 #' @param parameter2b Character string indicating the second parameter to filter by
 #' @param daterange2 Date range to filter the data
-bystationplo_fun <- function(sel, bystationdat, nncdat, summarize2, parameter2a,
+bystationplo_fun <- function(sel, bystationdat, nncdat, summarize2, showtrnd, parameter2a,
                              parameter2b, daterange2){
   
   waterbody <- gsub("(^.*)\\_.*$", "\\1", sel$id)
@@ -644,15 +645,6 @@ bystationplo_fun <- function(sel, bystationdat, nncdat, summarize2, parameter2a,
   loca <- gsub(".*\\_(.*)$", "\\1", parameter2a)
   locb <- gsub(".*\\_(.*)$", "\\1", parameter2b)
   
-  if(summarize2 != 'day'){
-    ylab1 <- ylab_fun(prm2a, loca)
-    ylab2 <- ylab_fun(prm2b, locb)
-  }
-  if(summarize2 == 'day'){
-    ylab1 <- ylab_fun(prm2a, loca, addmean = F)
-    ylab2 <- ylab_fun(prm2b, locb, addmean = F)
-  }
-  
   toplo <- bystationdat |> 
     dplyr::filter(
       date >= as.Date(daterange2[1]) & 
@@ -660,15 +652,30 @@ bystationplo_fun <- function(sel, bystationdat, nncdat, summarize2, parameter2a,
     ) |>
     dplyr::filter(waterbody == !!waterbody & station == !!station) |> 
     dplyr::rename(avev = val) |> 
-    dplyr::mutate(
-      date = lubridate::floor_date(date, summarize2),
-    ) |> 
-    dplyr::summarise(
-      hivl = tryCatch(t.test(avev, conf.level = 0.95)$conf.int[2], silent = TRUE, error = function(e) NA),
-      lovl = tryCatch(t.test(avev, conf.level = 0.95)$conf.int[1], silent = TRUE, error = function(e) NA),
-      avev = mean(avev, na.rm = TRUE),
-      .by = c(date, parameter, location)
-    )
+    dplyr::select(date, parameter, location, avev)
+  
+  if(summarize2 == 'day'){
+    ylab1 <- ylab_fun(prm2a, loca, addmean = F)
+    ylab2 <- ylab_fun(prm2b, locb, addmean = F)
+  }
+  
+  if(summarize2 != 'day'){
+    
+    ylab1 <- ylab_fun(prm2a, loca)
+    ylab2 <- ylab_fun(prm2b, locb)
+    
+    toplo <-  toplo |> 
+      dplyr::mutate(
+        date = lubridate::floor_date(date, summarize2),
+      ) |> 
+      dplyr::summarise(
+        hivl = tryCatch(t.test(avev, conf.level = 0.95)$conf.int[2], silent = TRUE, error = function(e) NA),
+        lovl = tryCatch(t.test(avev, conf.level = 0.95)$conf.int[1], silent = TRUE, error = function(e) NA),
+        avev = mean(avev, na.rm = TRUE),
+        .by = c(date, parameter, location)
+      )
+    
+  }
   
   toplo1 <- toplo |> 
     dplyr::filter(parameter == prm2a & location == loca) |> 
@@ -701,8 +708,8 @@ bystationplo_fun <- function(sel, bystationdat, nncdat, summarize2, parameter2a,
                      as.numeric(as.POSIXct(daterange2[2])) * 1000)
 
   # Create combined chart using htmltools
-  hc1 <- bystationplohc_fun(toplo1, nncchk1, date_range_ms, ylab1, summarize2, waterbody, station)
-  hc2 <- bystationplohc_fun(toplo2, nncchk2, date_range_ms, ylab2, summarize2, waterbody, station)
+  hc1 <- bystationplohc_fun(toplo1, nncchk1, showtrnd, date_range_ms, ylab1, summarize2, waterbody, station)
+  hc2 <- bystationplohc_fun(toplo2, nncchk2, showtrnd, date_range_ms, ylab2, summarize2, waterbody, station)
   
   out <- htmltools::div(
     style = "height: 550px; overflow: hidden;",
@@ -724,10 +731,11 @@ bystationplo_fun <- function(sel, bystationdat, nncdat, summarize2, parameter2a,
 #' 
 #' @param toplo Data frame containing the summarized data for the chart
 #' @param nncchk Data frame containing the NNC threshold data
+#' @param showtrnd Logical indicating whether to show trend lines (default FALSE)
 #' @param date_range_ms Numeric vector containing the start and end dates in milliseconds
 #' @param ylab Character string for the y-axis label
 #' @param summarize2 Character string indicating how to summarize the data ('day', 'year')
-bystationplohc_fun <- function(toplo, nncchk, date_range_ms, ylab, summarize2, waterbody, station){
+bystationplohc_fun <- function(toplo, nncchk, showtrnd, date_range_ms, ylab, summarize2, waterbody, station){
   
   # Create first chart
   hc <- highcharter::highchart() |>
@@ -741,7 +749,7 @@ bystationplohc_fun <- function(toplo, nncchk, date_range_ms, ylab, summarize2, w
     ) |>
     highcharter::hc_yAxis(title = list(text = ylab)) |>
     highcharter::hc_legend(enabled = FALSE)
-  
+
   # Add data series for first chart
   if(nrow(toplo) > 0) {
     if(summarize2 != 'day') {
@@ -816,6 +824,32 @@ bystationplohc_fun <- function(toplo, nncchk, date_range_ms, ylab, summarize2, w
           )
         )
       )
+  }
+  
+  if(showtrnd & nrow(toplo > 1)){
+    
+    mod <- lm(avev ~ date, data = toplo)
+    
+    # Create a sequence of dates for the trend line based on the summary period
+    trend_data <- data.frame(
+      date = toplo$date,
+      avev = predict(mod)
+    )
+    
+    # add to chart
+    hc <- hc |>
+      highcharter::hc_add_series(
+        data = trend_data,
+        type = "line",
+        highcharter::hcaes(x = date, y = avev),
+        color = "dodgerblue",
+        dashStyle = "Dash",
+        marker = list(enabled = FALSE),
+        tooltip = list(
+          pointFormatter = highcharter::JS("function() { return 'Trend: ' + this.y.toFixed(2); }")
+        )
+      )
+    
   }
   
   out <- hc |> highcharter::hc_chart(height = 275) |> highcharter::hc_chart(reflow = FALSE) 

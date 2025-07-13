@@ -176,9 +176,24 @@ ui <- page_navbar(
           open = TRUE,
           sidebar = sidebar(
             id = "bystationsidebar",
-            selectInput("summarize2", "Summarize By:", 
+            fluidRow(
+              column(8, selectInput("summarize2", "Summarize By:", 
                         choices = c("day", "year"), 
                         selected = "day"),
+              ), 
+              column(4, 
+                     div(
+                       tags$label("Show Trends?", `for` = "showtrnd"),
+                       br(),
+                       shinyWidgets::materialSwitch(
+                         inputId = "showtrnd", 
+                         label = NULL,  # Remove the built-in label
+                         value = FALSE, 
+                         status = "primary"
+                       )
+                     )
+              )
+            ),
             uiOutput('bystationplo'),
             border_radius = FALSE, 
             fillable = FALSE,
@@ -619,7 +634,7 @@ server <- function(input, output, session) {
     req(input$parameter2b)
     sel <- map_sel2()$data
 
-    out <- bystationplo_fun(sel, bystationdat(), nncdat, input$summarize2, input$parameter2a, input$parameter2b, input$daterange2)  
+    out <- bystationplo_fun(sel, bystationdat(), nncdat, input$summarize2, input$showtrnd, input$parameter2a, input$parameter2b, input$daterange2)  
     
     return(out)
     
