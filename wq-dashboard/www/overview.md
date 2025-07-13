@@ -3,8 +3,10 @@
 <div class = 'col-md-8'>
 
 <div style="display: flex; align-items: center; width: 100%; gap: 10px;">
-  <img src='logo.png' style='width: 20%; height: auto;'>
-  <h2 style='margin: 0; flex: 1; text-align: center;'>WELCOME TO THE CHOCTAWHATCHEE BASIN ALLIANCE WATER QUALITY DASHBOARD!</h2>
+  <img src='logo.png' style='width: 25%; min-width: 40px; max-width: 180px; height: auto;'>
+  <h2 style='margin: 0; flex: 1; text-align: center; font-size: clamp(0.9rem, 3vw, 1.8rem);'>
+    WELCOME TO THE CHOCTAWHATCHEE&nbsp;BASIN&nbsp;ALLIANCE WATER QUALITY DASHBOARD!
+  </h2>
 </div>
 <br>
 
