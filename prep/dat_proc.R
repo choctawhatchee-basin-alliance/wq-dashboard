@@ -71,6 +71,7 @@ torm <- read_excel('wq-dashboard/data-raw/Lakewatch inactive_kw.xlsx')
                  
 dat2 <- rawdat2 |> 
   clean_names() |> 
+  select(-matches('^x\\d+$')) |> # remove x1, x2 columns
   rename(
     waterbody = lake, 
     tp_mgl = tp_mg_l, # us labelled as mg with clean_names, to convert
@@ -85,6 +86,7 @@ dat2 <- rawdat2 |>
   mutate(
     date = as.Date(date),
     station = unlist(station), 
+    station = as.character(station),
     tp_mgl = tp_mgl / 1000,
     tn_mgl = tn_mgl / 1000, 
     cond_mscm = case_when(
@@ -100,8 +102,7 @@ dat2 <- rawdat2 |>
   ) |> 
   select(-month, -day, -year, -cond_uscm) |> 
   select(county, waterbody,  station,  date, everything()) |> 
-  anti_join(torm, by = c('waterbody', 'station')) |> 
-  filter(!(waterbody == 'Campbell' & station == '2 Deep')) # only one instance of this, not in stations
+  anti_join(torm, by = c('waterbody', 'station'))
 
 lkwdat <- dat2
 
@@ -144,6 +145,7 @@ lkwdatlng <- lkwdat |>
   mutate(
     location = 'surf'
   ) |> 
+  distinct() |> 
   left_join(
     secchi, 
     by = c('county', 'waterbody', 'station', 'date', 'parameter', 'val')
