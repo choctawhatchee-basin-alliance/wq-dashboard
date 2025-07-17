@@ -15,7 +15,7 @@ gs4_auth(scope = "https://www.googleapis.com/auth/spreadsheets.readonly")
 # combine cba (physical) and lakewatch (discrete) ---------------------------------------------
 
 # physical data - CBA
-rawdat1 <- read_sheet('16_B7XLMDDgL-4RDz4UaFE4Gk569tYi2xaf1f96mAauY', na = c('.'))
+rawdat1 <- read_sheet('16_B7XLMDDgL-4RDz4UaFE4Gk569tYi2xaf1f96mAauY', na = c('NA', '', '.'))
 
 dat1 <- rawdat1 |> 
   clean_names() |> 
@@ -64,10 +64,13 @@ dat1 <- rawdat1 |>
 cbadat <- dat1
 
 # nutrient data - lakewatch
-rawdat2 <- read_sheet('1h4yvi9AnISVFbH_AvBw7wDx7s5-4VIOdqD-VToExmvg', na = c('NA', ''))
+rawdat2 <- read_sheet('1h4yvi9AnISVFbH_AvBw7wDx7s5-4VIOdqD-VToExmvg', na = c('NA', '', '.'), col_types = 'c')#cccccccccccccccccccccccccccccc')
 
 # inactive lakewatch stations to remove
-torm <- read_excel('wq-dashboard/data-raw/Lakewatch inactive_kw.xlsx')
+torm <- read_excel('wq-dashboard/data-raw/Lakewatch to remove.xlsx') |> 
+  mutate(
+    station = as.character(station)
+  )
                  
 dat2 <- rawdat2 |> 
   clean_names() |> 
@@ -83,10 +86,10 @@ dat2 <- rawdat2 |>
     cond_uscm = cond_m_s_cm, # us
     cond_mscm = cond_m_s_cm_2 # ms
   ) |> 
+  mutate(across(-c(county, waterbody, date, month, day, year, station, secchi_onbott), function(x) gsub('broken|bottle|No water sample or Data sheet only Chl\\.|Not Reported|\\_', '', x))) |>
+  mutate(across(-c(county, waterbody, date, month, day, year, station, secchi_onbott), as.numeric)) |>
   mutate(
-    date = as.Date(date),
-    station = unlist(station), 
-    station = as.character(station),
+    date = mdy(date),
     tp_mgl = tp_mgl / 1000,
     tn_mgl = tn_mgl / 1000, 
     cond_mscm = case_when(
@@ -94,7 +97,7 @@ dat2 <- rawdat2 |>
       T ~ cond_mscm
     ), 
     secchi_ft = case_when(
-      is.na(secchi_ft) & !is.na(secchi_onbott) ~ as.numeric(gsub('^.*\\(|\\).*$|Weeds|Bottom', '', secchi_onbott)), 
+      is.na(secchi_ft) & !is.na(secchi_onbott) ~ as.numeric(gsub('^.*\\(|\\).*$|Weeds|Bottom|Not Reported|^S$', '', secchi_onbott)), 
       T ~ secchi_ft
     ), 
     secchi_onbott = grepl('Weeds|Bottom', secchi_onbott), 
@@ -277,7 +280,7 @@ save(meta, file = 'wq-dashboard/data/meta.RData')
 # nnc references ------------------------------------------------------------------------------
 
 nncraw <- read_sheet('1VQWzS-GMOzc-Xs0XoTa8Ifz8QyG_6WhU8THJPjRqWBs', 
-                     col_types = 'cccccddd')  
+                     col_types = 'cccccddd', na = c('NA', '', '.'))  
 
 nncdat <- nncraw |> 
   select(
