@@ -313,8 +313,6 @@ byareaplo_fun <- function(shape_click, marker_click, alldat, stas, nncdat, locat
     
   }
   
-
-  
   # Convert dates to milliseconds for Highcharts
   date_range_ms <- c(as.numeric(as.POSIXct(daterange1[1])) * 1000,
                      as.numeric(as.POSIXct(daterange1[2])) * 1000)
@@ -322,7 +320,6 @@ byareaplo_fun <- function(shape_click, marker_click, alldat, stas, nncdat, locat
   # Create chart
   hc <- highcharter::highchart() |>
     highcharter::hc_chart(type = "line") |>
-    highcharter::hc_title(text = ttl) |>
     highcharter::hc_xAxis(
       type = "datetime",
       min = date_range_ms[1],
@@ -384,10 +381,26 @@ byareaplo_fun <- function(shape_click, marker_click, alldat, stas, nncdat, locat
       )
   }
   
-  out <- hc |> highcharter::hc_chart(height = 350) |> highcharter::hc_chart(reflow = F)
+  hc <- hc |> highcharter::hc_chart(height = 320) |> highcharter::hc_chart(reflow = F)
+  
+  out <- htmltools::div(
+    style = "height: 350px; overflow: hidden;",
+    
+    # Styled title
+    htmltools::h5(
+      style = "text-align: center; margin: 0 0 10px 0; padding: 5px; color: #333; font-family: Arial, sans-serif;",
+      ttl
+    ),
+    
+    # Charts with equal heights
+    htmltools::div(
+      style = "height: 320px; margin-bottom: 0px; overflow: hidden;",
+      hc
+    )
+    
+  )
   
   return(out)
-  
   
 }
 
@@ -708,17 +721,26 @@ bystationplo_fun <- function(sel, bystationdat, nncdat, summarize2, showtrnd, pa
                      as.numeric(as.POSIXct(daterange2[2])) * 1000)
 
   # Create combined chart using htmltools
-  hc1 <- bystationplohc_fun(toplo1, nncchk1, showtrnd, date_range_ms, ylab1, summarize2, waterbody, station)
-  hc2 <- bystationplohc_fun(toplo2, nncchk2, showtrnd, date_range_ms, ylab2, summarize2, waterbody, station)
+  hc1 <- bystationplohc_fun(toplo1, nncchk1, showtrnd, date_range_ms, ylab1, summarize2)
+  hc2 <- bystationplohc_fun(toplo2, nncchk2, showtrnd, date_range_ms, ylab2, summarize2)
   
   out <- htmltools::div(
     style = "height: 550px; overflow: hidden;",
+    
+    # Styled title
+    htmltools::h5(
+      style = "text-align: center; margin: 0 0 10px 0; padding: 5px; color: #333; font-family: Arial, sans-serif;",
+      paste(waterbody, station)
+    ),
+    
+    # Charts with equal heights
     htmltools::div(
-      style = "height: 275px; margin-bottom: 10px; overflow: hidden;",
+      style = "height: 250px; margin-bottom: 10px; overflow: hidden;",
       hc1
     ),
+    
     htmltools::div(
-      style = "height: 275px; overflow: hidden;",
+      style = "height: 250px; overflow: hidden;",
       hc2
     )
   )
@@ -735,12 +757,11 @@ bystationplo_fun <- function(sel, bystationdat, nncdat, summarize2, showtrnd, pa
 #' @param date_range_ms Numeric vector containing the start and end dates in milliseconds
 #' @param ylab Character string for the y-axis label
 #' @param summarize2 Character string indicating how to summarize the data ('day', 'year')
-bystationplohc_fun <- function(toplo, nncchk, showtrnd, date_range_ms, ylab, summarize2, waterbody, station){
+bystationplohc_fun <- function(toplo, nncchk, showtrnd, date_range_ms, ylab, summarize2){
   
   # Create first chart
   hc <- highcharter::highchart() |>
     highcharter::hc_chart(type = "line") |>
-    highcharter::hc_title(text = paste(waterbody, station)) |>
     highcharter::hc_xAxis(
       type = "datetime",
       min = date_range_ms[1],
@@ -749,7 +770,7 @@ bystationplohc_fun <- function(toplo, nncchk, showtrnd, date_range_ms, ylab, sum
     ) |>
     highcharter::hc_yAxis(title = list(text = ylab)) |>
     highcharter::hc_legend(enabled = FALSE)
-
+                            
   # Add data series for first chart
   if(nrow(toplo) > 0) {
     if(summarize2 != 'day') {
@@ -852,7 +873,7 @@ bystationplohc_fun <- function(toplo, nncchk, showtrnd, date_range_ms, ylab, sum
     
   }
   
-  out <- hc |> highcharter::hc_chart(height = 275) |> highcharter::hc_chart(reflow = FALSE) 
+  out <- hc |> highcharter::hc_chart(height = 250) |> highcharter::hc_chart(reflow = FALSE) 
   
   return(out)
   

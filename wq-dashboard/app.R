@@ -110,7 +110,7 @@ ui <- page_navbar(
                 style = "height: 625px; overflow: hidden;",
                 htmltools::div(
                   style = "height: 350px; margin-bottom: 10px; overflow: hidden;",
-                  highcharter::highchartOutput('byareaplo'),
+                  uiOutput('byareaplo'),
                 ),
                 htmltools::div(
                   style = "height: 275px; overflow: hidden;",
@@ -752,7 +752,7 @@ server <- function(input, output, session) {
   
   output$byareamap <- leaflet::renderLeaflet(bsmap(stas))
   byareamap_proxy <- leaflet::leafletProxy("byareamap")
-  output$byareaplo <- highcharter::renderHighchart(byareaplo())
+  output$byareaplo <- renderUI(byareaplo())
   output$byareagauge <- highcharter::renderHighchart(byareagauge())
   
   output$bystationmap1 <- leaflet::renderLeaflet(bsmap(stas))
