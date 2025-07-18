@@ -91,91 +91,6 @@ bsmap <- function(bnds){
   
 }
 
-#' Function to update the map with summarized data by area
-#' 
-#' @param mapin Leaflet map object to update
-#' @param byareadat Data frame returned by byareadat_fun
-#' @param summarize1 Character string indicating how to summarize the data ('WBID' or 'Station')
-#' @param parameter1 Character string indicating the parameter to filter by
-#' @param location1 Character string indicating the sample location (e.g., 'surface', 'bottom')
-byareamap_fun <- function(mapin, byareadat, summarize1, parameter1, location1){
-  
-  # create map
-  if(inherits(byareadat, 'try-error'))
-    out <- mapin %>%
-      leaflet::clearShapes() |> 
-      leaflet::clearMarkers() |> 
-      leaflet::clearControls()
-  
-  if(!inherits(byareadat, 'try-error')) {
-    
-    pal <- leaflet::colorNumeric(
-      palette = "YlGnBu",
-      domain = byareadat$val,
-      na.color = "transparent"
-    )
-    
-    lab <- ylab_fun(parameter1, location1)
-    
-    out <- mapin %>%
-      leaflet::clearShapes() |> 
-      leaflet::clearMarkers() |> 
-      leaflet::clearControls()
-
-    if(summarize1 == 'WBID')
-      out <- out |> 
-        leaflet::addPolygons(
-          data = byareadat,
-          fillColor = ~pal(val),
-          fillOpacity = 0.7,
-          color = "#666",
-          weight = 1,
-          highlightOptions = leaflet::highlightOptions(
-            weight = 3,
-            color = "#666",
-            fillOpacity = 0.7,
-            bringToFront = FALSE
-          ),
-          label = ~ lapply(paste0(WATERBODY_NAME, ' - ', WBID, "<br>Value: ", round(val, 2), " (", stas , ")"), HTML),
-          labelOptions = leaflet::labelOptions(
-            style = list("font-size" = "16px")
-          ), 
-          layerId = ~ WBID
-        )
-    
-    if(summarize1 == 'Station')
-      out <- out |> 
-        leaflet::addCircleMarkers(
-          data = byareadat,
-          radius = 7,
-          fillColor = ~pal(val),
-          fillOpacity = 0.7,
-          color = "#666",
-          weight = 1,
-          label = ~paste0(waterbody, ' ', station, ", Value: ", round(val, 2)),
-          labelOptions = leaflet::labelOptions(
-            style = list("font-size" = "16px")
-          ),
-          layerId = ~paste0(stas)
-        )
-    
-    # add legend
-    out <- out |>
-      leaflet::addLegend(
-        pal = pal,
-        values = byareadat$val,
-        title = lab,
-        position = "topright",
-        opacity = 0.8,
-        na.label = "No Data"
-      )
-    
-  }
-  
-  return(out)
-  
-}
-
 #' Function to summarize data by WBID or Station
 #' 
 #' @param alldat Data frame containing the data to summarize
@@ -235,6 +150,91 @@ byareadat_fun <- function(alldat, stas, summarize1, location1, parameter1, dater
       dplyr::filter(!is.na(val))
 
     }
+  
+  return(out)
+  
+}
+
+#' Function to update the map with summarized data by area
+#' 
+#' @param mapin Leaflet map object to update
+#' @param byareadat Data frame returned by byareadat_fun
+#' @param summarize1 Character string indicating how to summarize the data ('WBID' or 'Station')
+#' @param parameter1 Character string indicating the parameter to filter by
+#' @param location1 Character string indicating the sample location (e.g., 'surface', 'bottom')
+byareamap_fun <- function(mapin, byareadat, summarize1, parameter1, location1){
+  
+  # create map
+  if(inherits(byareadat, 'try-error'))
+    out <- mapin %>%
+      leaflet::clearShapes() |> 
+      leaflet::clearMarkers() |> 
+      leaflet::clearControls()
+  
+  if(!inherits(byareadat, 'try-error')) {
+    
+    pal <- leaflet::colorNumeric(
+      palette = "YlGnBu",
+      domain = byareadat$val,
+      na.color = "transparent"
+    )
+    
+    lab <- ylab_fun(parameter1, location1)
+    
+    out <- mapin %>%
+      leaflet::clearShapes() |> 
+      leaflet::clearMarkers() |> 
+      leaflet::clearControls()
+    
+    if(summarize1 == 'WBID')
+      out <- out |> 
+      leaflet::addPolygons(
+        data = byareadat,
+        fillColor = ~pal(val),
+        fillOpacity = 0.7,
+        color = "#666",
+        weight = 1,
+        highlightOptions = leaflet::highlightOptions(
+          weight = 3,
+          color = "#666",
+          fillOpacity = 0.7,
+          bringToFront = FALSE
+        ),
+        label = ~ lapply(paste0(WATERBODY_NAME, ' - ', WBID, "<br>Value: ", round(val, 2), " (", stas , ")"), HTML),
+        labelOptions = leaflet::labelOptions(
+          style = list("font-size" = "16px")
+        ), 
+        layerId = ~ WBID
+      )
+    
+    if(summarize1 == 'Station')
+      out <- out |> 
+      leaflet::addCircleMarkers(
+        data = byareadat,
+        radius = 7,
+        fillColor = ~pal(val),
+        fillOpacity = 0.7,
+        color = "#666",
+        weight = 1,
+        label = ~paste0(waterbody, ' ', station, ", Value: ", round(val, 2)),
+        labelOptions = leaflet::labelOptions(
+          style = list("font-size" = "16px")
+        ),
+        layerId = ~paste0(stas)
+      )
+    
+    # add legend
+    out <- out |>
+      leaflet::addLegend(
+        pal = pal,
+        values = byareadat$val,
+        title = lab,
+        position = "topright",
+        opacity = 0.8,
+        na.label = "No Data"
+      )
+    
+  }
   
   return(out)
   
@@ -536,6 +536,28 @@ byareagauge_fun <- function(shape_click, marker_click, byareadat, nncdat, parame
   
 }
 
+#' Function to filter data by selected parameters and date range
+#' 
+#' @param alldat Data frame containing the water quality data to filter
+#' @param parameter2a Character string indicating the first parameter to filter by
+#' @param parameter2b Character string indicating the second parameter to filter by
+bystationdat_fun <- function(alldat, parameter2a, parameter2b){
+  
+  prm2a <- gsub("(^.*)\\_.*$", "\\1", parameter2a)
+  prm2b <- gsub("(^.*)\\_.*$", "\\1", parameter2b)
+  loca <- gsub(".*\\_(.*)$", "\\1", parameter2a)
+  locb <- gsub(".*\\_(.*)$", "\\1", parameter2b)
+  
+  out <- alldat |> 
+    dplyr::filter((parameter == prm2a & location == loca) | 
+                    (parameter == prm2b & location == locb)
+    ) |>
+    dplyr::filter(!is.na(val))
+  
+  return(out)
+  
+}
+
 #' Function to update the map with summarized data by area
 #'
 #' @param mapin Leaflet map object to update 
@@ -612,28 +634,6 @@ bystationmap_fun <- function(mapin, bystationdat, stas, parameter, daterange2){
       na.label = "No Data"
     )
   
-  return(out)
-  
-}
-
-#' Function to filter data by selected parameters and date range
-#' 
-#' @param alldat Data frame containing the water quality data to filter
-#' @param parameter2a Character string indicating the first parameter to filter by
-#' @param parameter2b Character string indicating the second parameter to filter by
-bystationdat_fun <- function(alldat, parameter2a, parameter2b){
-  
-  prm2a <- gsub("(^.*)\\_.*$", "\\1", parameter2a)
-  prm2b <- gsub("(^.*)\\_.*$", "\\1", parameter2b)
-  loca <- gsub(".*\\_(.*)$", "\\1", parameter2a)
-  locb <- gsub(".*\\_(.*)$", "\\1", parameter2b)
-  
-  out <- alldat |> 
-    dplyr::filter((parameter == prm2a & location == loca) | 
-                  (parameter == prm2b & location == locb)
-                  ) |>
-    dplyr::filter(!is.na(val))
-    
   return(out)
   
 }
@@ -878,6 +878,96 @@ bystationplohc_fun <- function(toplo, nncchk, showtrnd, date_range_ms, ylab, sum
   return(out)
   
 }
+
+#' Function to summarize continuous data by station
+#' 
+#' @param cntdat Data frame containing the continuous data to summarize
+#' @param stas sf object containing station geometries
+#' @param parameter3 Character string indicating the parameter to filter by
+#' @param daterange3 Date range to filter the data
+bycntdat_fun <- function(cntdat, stas, parameter3, daterange3){
+
+  out <- cntdat |> 
+    dplyr::select(waterbody, station, timestamp, val = contains(parameter3)) |> 
+    dplyr::filter(
+        timestamp >= as.Date(daterange3[1]) & 
+        timestamp <= as.Date(daterange3[2]) 
+    ) |>  
+    dplyr::summarise(
+      val = mean(val, na.rm = TRUE),
+      .by = c(waterbody, station)
+    ) |> 
+    dplyr::left_join(stas, by = c('waterbody', 'station')) |> 
+    dplyr::select(-name, -WBID, -datestr, -dateend) |>
+    tidyr::unite('stas', waterbody, station, sep = '_', remove = F) |> 
+    sf::st_as_sf() |> 
+    dplyr::filter(!is.na(val))
+    
+  return(out)
+  
+}
+
+#' Function to update the continuous map with summarized data
+#' 
+#' @param mapin Leaflet map object to update
+#' @param bycntdat Data frame returned by bycntdat_fun
+#' @param parameter1 Character string indicating the parameter to filter by
+bycntmap_fun <- function(mapin, bycntdat, parameter3){
+  
+  # create map
+  if(inherits(bycntdat, 'try-error'))
+    out <- mapin %>%
+      leaflet::clearShapes() |> 
+      leaflet::clearMarkers() |> 
+      leaflet::clearControls()
+  
+  if(!inherits(bycntdat, 'try-error')) {
+    
+    pal <- leaflet::colorNumeric(
+      palette = "YlGnBu",
+      domain = bycntdat$val,
+      na.color = "transparent"
+    )
+
+    lab <- ylab_fun(parameter3, NULL)
+    
+    out <- mapin %>%
+      leaflet::clearShapes() |> 
+      leaflet::clearMarkers() |> 
+      leaflet::clearControls()
+
+    out <- out |> 
+      leaflet::addCircleMarkers(
+        data = bycntdat,
+        radius = 7,
+        fillColor = ~pal(val),
+        fillOpacity = 0.7,
+        color = "#666",
+        weight = 1,
+        label = ~paste0(waterbody, ' ', station, ", Value: ", round(val, 2)),
+        labelOptions = leaflet::labelOptions(
+          style = list("font-size" = "16px")
+        ),
+        layerId = ~paste0(stas)
+      )
+  
+    # add legend
+    out <- out |>
+      leaflet::addLegend(
+        pal = pal,
+        values = bycntdat$val,
+        title = lab,
+        position = "topright",
+        opacity = 0.8,
+        na.label = "No Data"
+      )
+    
+  }
+  
+  return(out)
+  
+}
+
 #' Add marker or shape highlight to area map selection
 #'
 #' @param mapsel1 Data frame containing the selected area or station's ID
@@ -1037,12 +1127,14 @@ ylab_fun <- function(prm, loc, addmean = TRUE){
     dplyr::pull(location) |> 
     unique()
   
-  loclb <- ifelse(
-    length(chklocs) == 1, '', 
-    ifelse(
-      loc == 'surf', ': Surface', ': Bottom'
+  loclb <- NULL
+  if(!is.null(loc))
+    loclb <- ifelse(
+      length(chklocs) == 1, '', 
+      ifelse(
+        loc == 'surf', ': Surface', ': Bottom'
+      )
     )
-  )
   
   meanlb <- ''
   if(addmean)
