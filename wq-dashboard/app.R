@@ -183,10 +183,10 @@ ui <- page_navbar(
               ),
               column(4,
                      div(
-                       tags$label("Show Trends?", `for` = "showtrnd"),
+                       tags$label("Show Trends?", `for` = "showtrnd2"),
                        br(),
                        shinyWidgets::materialSwitch(
-                         inputId = "showtrnd",
+                         inputId = "showtrnd2",
                          label = NULL,  # Remove the built-in label
                          value = FALSE,
                          status = "primary"
@@ -229,7 +229,15 @@ ui <- page_navbar(
             fillable = TRUE,
             width = "600px",
             open = "desktop",
-            selectInput("parameter3", "Select Parameter:", choices = cntprms),
+            selectInput("parameter3", 
+                        label = bslib::popover(
+                          trigger = list(
+                            "Select Parameter:",
+                            icon("info-circle")
+                          ),
+                          HTML('click an area on the map to view summary info on the right')
+                        ), 
+                        choices = cntprms),
             uiOutput("daterange3")
           ),
           layout_sidebar(
@@ -237,7 +245,35 @@ ui <- page_navbar(
             leaflet::leafletOutput('bycntmap', height = "100%"),
             sidebar = sidebar(
               id = "bycntsidebar",
-              "right content",
+              fluidRow(
+                column(8, selectInput("summarize3", "Summarize By:",
+                                      choices = c("none", "day", "week", "month", "quarter", "year"),
+                                      selected = "month"),
+                ),
+                column(4,
+                       div(
+                         tags$label("Show Trends?", `for` = "showtrnd3"),
+                         br(),
+                         shinyWidgets::materialSwitch(
+                           inputId = "showtrnd3",
+                           label = NULL,  # Remove the built-in label
+                           value = FALSE,
+                           status = "primary"
+                         )
+                       )
+                )
+              ),
+              htmltools::div(
+                style = "height: 510px; overflow: hidden;",
+                htmltools::div(
+                  style = "height: 300px; margin-bottom: 10px; overflow: hidden;",
+                  uiOutput('bycntplo'),
+                ),
+                htmltools::div(
+                  style = "height: 210px; overflow: hidden;",
+                  highcharter::highchartOutput("bycntgauge"),
+                )
+              ),
               width = "50%",
               position = "right",
               open = FALSE
@@ -628,7 +664,7 @@ server <- function(input, output, session) {
     req(input$parameter2b)
     sel <- map_sel2()$data
 
-    out <- bystationplo_fun(sel, bystationdat(), nncdat, input$summarize2, input$showtrnd, input$parameter2a, input$parameter2b, input$daterange2)
+    out <- bystationplo_fun(sel, bystationdat(), nncdat, input$summarize2, input$showtrnd2, input$parameter2a, input$parameter2b, input$daterange2)
 
     return(out)
 
@@ -682,6 +718,33 @@ server <- function(input, output, session) {
   observe({
     req(map_sel3())
     addselcntmap_fun(map_sel3()$data)
+  })
+  
+  # continous plot
+  bycntplo <- reactive({
+    
+    req(map_sel3())
+    sel <- map_sel3()
+    
+    out <- bycntplo_fun(sel$data, cntdat, input$parameter3,
+                         input$daterange3, input$summarize3, input$showtrnd3)
+    
+    return(out)
+    
+  })
+  
+  # by continuous gauge\
+  bycntgauge <- reactive({
+    
+    req(bycntdat())
+    req(map_sel3())
+    
+    sel <- map_sel3()
+    
+    out <- bycntgauge_fun(sel$data, bycntdat(), input$parameter3)
+    
+    return(out)
+    
   })
   
   # Toggle sidebar when marker is clicked
@@ -823,6 +886,8 @@ server <- function(input, output, session) {
 
   output$bycntmap <- leaflet::renderLeaflet(bsmap(stas))
   bycntmap_proxy <- leaflet::leafletProxy("bycntmap")
+  output$bycntplo <- renderUI(bycntplo())
+  output$bycntgauge <- highcharter::renderHighchart(bycntgauge())
   
   # download table
   output$dltabout <- reactable::renderReactable(dltab())

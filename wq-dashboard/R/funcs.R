@@ -14,11 +14,11 @@
 #' @return A data frame with timestamp and value columns
 #'
 cntdat_fun <- function(start_date, end_date, 
-                                      base_value = 70, 
-                                      amplitude = 20, 
-                                      peak_hour = 16, 
-                                      trough_hour = 4, 
-                                      noise_sd = 0) {
+                       base_value = 70, 
+                       amplitude = 20, 
+                       peak_hour = 16, 
+                       trough_hour = 4, 
+                       noise_sd = 0) {
   
   # Convert input dates to proper date objects if they're strings
   if (is.character(start_date)) start_date <- as.Date(start_date)
@@ -100,22 +100,22 @@ bsmap <- function(bnds){
 #' @param parameter1 Character string indicating the parameter to filter by
 #' @param daterange1 Date range to filter the data
 byareadat_fun <- function(alldat, stas, summarize1, location1, parameter1, daterange1){
-
+  
   dat <- alldat |> 
     dplyr::filter(
       parameter == parameter1 &
-      date >= as.Date(daterange1[1]) & 
-      date <= as.Date(daterange1[2]) & 
-      location == location1
+        date >= as.Date(daterange1[1]) & 
+        date <= as.Date(daterange1[2]) & 
+        location == location1
     ) |> 
     dplyr::select(waterbody, station, date, parameter, val) |> 
     dplyr::filter(!is.na(val))
   dat <- dplyr::inner_join(stas, dat, by = c("waterbody", "station")) |> 
     dplyr::select(waterbody, station, date, parameter, val, WBID, WATERBODY_NAME) |> 
     sf::st_set_geometry(NULL)
-    
+  
   if (summarize1 == "WBID") {
-
+    
     out <- dat |>
       tidyr::unite('stas', waterbody, station) |> 
       dplyr::summarise(
@@ -137,7 +137,7 @@ byareadat_fun <- function(alldat, stas, summarize1, location1, parameter1, dater
   }
   
   if (summarize1 == "Station") {
-
+    
     out <- dat |>  
       dplyr::summarise(
         val = mean(val, na.rm = TRUE),
@@ -148,8 +148,8 @@ byareadat_fun <- function(alldat, stas, summarize1, location1, parameter1, dater
       tidyr::unite('stas', waterbody, station, sep = '_', remove = F) |> 
       sf::st_as_sf() |> 
       dplyr::filter(!is.na(val))
-
-    }
+    
+  }
   
   return(out)
   
@@ -251,7 +251,7 @@ byareamap_fun <- function(mapin, byareadat, summarize1, parameter1, location1){
 #' @param parameter1 Character string indicating the parameter to filter by
 #' @param daterange1 Date range to filter the data
 byareaplo_fun <- function(shape_click, marker_click, alldat, stas, nncdat, location1, parameter1, daterange1){
-
+  
   toplo <- alldat |> 
     dplyr::filter(
       parameter == parameter1 &
@@ -266,7 +266,7 @@ byareaplo_fun <- function(shape_click, marker_click, alldat, stas, nncdat, locat
   if(!is.null(shape_click)){
     
     id <- shape_click$id
-
+    
     toplo <- toplo |> 
       dplyr::inner_join(stas, by = c('waterbody', 'station')) |> 
       dplyr::filter(WBID %in% !!id) |> 
@@ -296,7 +296,7 @@ byareaplo_fun <- function(shape_click, marker_click, alldat, stas, nncdat, locat
     waterbody <- sub("_(.*)", "", id)
     station <- sub(".*_(.*)", "\\1", id)
     ttl <- paste(waterbody, station)
-
+    
     toplo <- toplo |> 
       dplyr::filter(waterbody == !!waterbody & station == !!station) |> 
       dplyr::select(date, val) |> 
@@ -412,7 +412,7 @@ byareaplo_fun <- function(shape_click, marker_click, alldat, stas, nncdat, locat
 #' @param nncdat Data frame containing the NNC data
 #' @param parameter1 Character string indicating the parameter to filter by
 byareagauge_fun <- function(shape_click, marker_click, byareadat, nncdat, parameter1){
-
+  
   if(!is.null(shape_click)){
     
     id <- shape_click$id
@@ -450,12 +450,12 @@ byareagauge_fun <- function(shape_click, marker_click, byareadat, nncdat, parame
   
   minv <- round(min(byareadat$val, na.rm = T), 2)
   maxv <- round(max(byareadat$val, na.rm = T), 2)
-
+  
   thrshval <- NULL
-
+  
   if(nrow(chknnc) == 1)
     thrshval <- chknnc$value
-
+  
   units <- meta |>
     dplyr::filter(parameter %in% parameter1) |> 
     dplyr::pull(label) |> 
@@ -473,7 +473,7 @@ byareagauge_fun <- function(shape_click, marker_click, byareadat, nncdat, parame
   color_stops <- lapply(seq_along(cols), function(i) {
     list(vals[i], cols[i])
   })
-
+  
   out <- highcharter::highchart() |>
     highcharter::hc_chart(type = "solidgauge") |>
     highcharter::hc_pane(
@@ -574,7 +574,7 @@ bystationmap_fun <- function(mapin, bystationdat, stas, parameter, daterange2){
     dplyr::filter(parameter == !!prm & location == !!loc) |> 
     dplyr::filter(
       date >= as.Date(daterange2[1]) & 
-      date <= as.Date(daterange2[2])
+        date <= as.Date(daterange2[2])
     ) |>
     dplyr::summarise(
       val = mean(val, na.rm = T), 
@@ -582,7 +582,7 @@ bystationmap_fun <- function(mapin, bystationdat, stas, parameter, daterange2){
     ) 
   
   out <- mapin
-
+  
   pal <- leaflet::colorNumeric(
     palette = "YlGnBu",
     domain = tomap$val,
@@ -597,13 +597,13 @@ bystationmap_fun <- function(mapin, bystationdat, stas, parameter, daterange2){
     out <- out %>%
       leaflet::clearMarkers() |> 
       leaflet::clearControls()
-  
+    
   }
   
   if(nrow(tomap) != 0) {
-
+    
     tomap <- dplyr::inner_join(stas, tomap, by = c('waterbody', 'station'))
-      
+    
     out <- out |> 
       leaflet::clearMarkers() |> 
       leaflet::clearControls() |> 
@@ -719,7 +719,7 @@ bystationplo_fun <- function(sel, bystationdat, nncdat, summarize2, showtrnd, pa
   # Convert dates to milliseconds for Highcharts
   date_range_ms <- c(as.numeric(as.POSIXct(daterange2[1])) * 1000,
                      as.numeric(as.POSIXct(daterange2[2])) * 1000)
-
+  
   # Create combined chart using htmltools
   hc1 <- bystationplohc_fun(toplo1, nncchk1, showtrnd, date_range_ms, ylab1, summarize2)
   hc2 <- bystationplohc_fun(toplo2, nncchk2, showtrnd, date_range_ms, ylab2, summarize2)
@@ -770,7 +770,7 @@ bystationplohc_fun <- function(toplo, nncchk, showtrnd, date_range_ms, ylab, sum
     ) |>
     highcharter::hc_yAxis(title = list(text = ylab)) |>
     highcharter::hc_legend(enabled = FALSE)
-                            
+  
   # Add data series for first chart
   if(nrow(toplo) > 0) {
     if(summarize2 != 'day') {
@@ -847,7 +847,7 @@ bystationplohc_fun <- function(toplo, nncchk, showtrnd, date_range_ms, ylab, sum
       )
   }
   
-  if(showtrnd & nrow(toplo > 1)){
+  if(showtrnd & nrow(toplo) > 1){
     
     mod <- lm(avev ~ date, data = toplo)
     
@@ -886,11 +886,11 @@ bystationplohc_fun <- function(toplo, nncchk, showtrnd, date_range_ms, ylab, sum
 #' @param parameter3 Character string indicating the parameter to filter by
 #' @param daterange3 Date range to filter the data
 bycntdat_fun <- function(cntdat, stas, parameter3, daterange3){
-
+  
   out <- cntdat |> 
     dplyr::select(waterbody, station, timestamp, val = contains(parameter3)) |> 
     dplyr::filter(
-        timestamp >= as.Date(daterange3[1]) & 
+      timestamp >= as.Date(daterange3[1]) & 
         timestamp <= as.Date(daterange3[2]) 
     ) |>  
     dplyr::summarise(
@@ -902,7 +902,7 @@ bycntdat_fun <- function(cntdat, stas, parameter3, daterange3){
     tidyr::unite('stas', waterbody, station, sep = '_', remove = F) |> 
     sf::st_as_sf() |> 
     dplyr::filter(!is.na(val))
-    
+  
   return(out)
   
 }
@@ -928,14 +928,14 @@ bycntmap_fun <- function(mapin, bycntdat, parameter3){
       domain = bycntdat$val,
       na.color = "transparent"
     )
-
+    
     lab <- ylab_fun(parameter3, NULL)
     
     out <- mapin %>%
       leaflet::clearShapes() |> 
       leaflet::clearMarkers() |> 
       leaflet::clearControls()
-
+    
     out <- out |> 
       leaflet::addCircleMarkers(
         data = bycntdat,
@@ -950,7 +950,7 @@ bycntmap_fun <- function(mapin, bycntdat, parameter3){
         ),
         layerId = ~paste0(stas)
       )
-  
+    
     # add legend
     out <- out |>
       leaflet::addLegend(
@@ -968,34 +968,277 @@ bycntmap_fun <- function(mapin, bycntdat, parameter3){
   
 }
 
+#' Function to create a time series plot for a selected station
+#' 
+#' @param sel Selected station data from the input
+#' @param cntdat Data frame containing the continuous water quality data
+#' @param parameter3 Character string indicating the parameter to filter by
+#' @param daterange3 Date range to filter the data
+#' @param summarize3 Character string indicating how to summarize the data ('none', 'day', 'week', 'quarter' 'year')
+#' #' @param showtrnd Logical indicating whether to show trend lines (default FALSE)
+bycntplo_fun <- function(sel, cntdat, parameter3, daterange3, summarize3, 
+                         showtrnd){
+  
+  waterbody <- gsub("(^.*)\\_.*$", "\\1", sel$id)
+  station <- gsub(".*\\_(.*)$", "\\1", sel$id)
+  prm3 <- gsub("(^.*)\\_.*$", "\\1", parameter3)
+
+  toplo <- cntdat |> 
+    dplyr::select(waterbody, station, date = timestamp, avev = contains(parameter3)) |> 
+    dplyr::filter(
+      date >= as.Date(daterange3[1]) & 
+        date <= as.Date(daterange3[2]) &
+        waterbody == !!waterbody &
+        station == !!station
+    ) |> 
+    dplyr::arrange(date)
+
+  if(summarize3 == 'none')
+    ylab <- ylab_fun(prm3, NULL, addmean = F)
+  
+  if(summarize3 != 'none'){
+    
+    ylab <- ylab_fun(prm3, NULL, addmean = T)
+    
+    toplo <-  toplo |> 
+      dplyr::mutate(
+        date = lubridate::floor_date(date, summarize3),
+      ) |> 
+      dplyr::summarise(
+        hivl = tryCatch(t.test(avev, conf.level = 0.95)$conf.int[2], silent = TRUE, error = function(e) NA),
+        lovl = tryCatch(t.test(avev, conf.level = 0.95)$conf.int[1], silent = TRUE, error = function(e) NA),
+        avev = mean(avev, na.rm = TRUE),
+        .by = c(date)
+      )
+    
+  }
+  
+  # Convert dates to milliseconds for Highcharts
+  date_range_ms <- c(as.numeric(as.POSIXct(daterange3[1])) * 1000,
+                     as.numeric(as.POSIXct(daterange3[2])) * 1000)
+
+  # Create chart
+  hc <- highcharter::highchart() |>
+    highcharter::hc_chart(type = "line") |>
+    highcharter::hc_xAxis(
+      type = "datetime",
+      min = date_range_ms[1],
+      max = date_range_ms[2],
+      title = list(text = "")
+    ) |>
+    highcharter::hc_yAxis(title = list(text = ylab)) |>
+    highcharter::hc_legend(enabled = FALSE)
+  
+  # Add data series for first chart
+  if(nrow(toplo) > 0) {
+    
+    toplo <- toplo |> 
+      dplyr::mutate(date = as.numeric(as.POSIXct(date)) * 1000)
+    if(summarize3 != 'none') {
+      # Add series with error bars
+      hc <- hc |>
+        highcharter::hc_add_series(
+          data = toplo,
+          type = "errorbar",
+          highcharter::hcaes(x = date, low = lovl, high = hivl),
+          color = "blue",
+          showInLegend = FALSE,
+          tooltip = list(enabled = FALSE)
+        ) |> 
+        highcharter::hc_add_series(
+          data = toplo,
+          type = "line",
+          highcharter::hcaes(x = date, y = avev),
+          color = "blue",
+          marker = list(radius = 3, fillColor = "lightblue"),
+          tooltip = list(
+            pointFormatter = highcharter::JS("function() { return 'Value: ' + this.y.toFixed(2); }")
+          )
+        )
+    } else {
+      # Add series without error bars
+      hc <- hc |>
+        highcharter::hc_add_series(
+          data = toplo,
+          type = "line",
+          highcharter::hcaes(x = date, y = avev),
+          color = "blue",
+          # marker = list(radius = 3, fillColor = "lightblue"),
+          tooltip = list(
+            pointFormatter = highcharter::JS("function() { return 'Value: ' + this.y.toFixed(2); }")
+          )
+        )
+    }
+  }
+  
+  if(showtrnd & nrow(toplo) > 1){
+    
+    mod <- lm(avev ~ date, data = toplo)
+    
+    # Create a sequence of dates for the trend line based on the summary period
+    trend_data <- data.frame(
+      date = toplo$date,
+      avev = predict(mod)
+    )
+    
+    # add to chart
+    hc <- hc |>
+      highcharter::hc_add_series(
+        data = trend_data,
+        type = "line",
+        highcharter::hcaes(x = date, y = avev),
+        color = "dodgerblue",
+        dashStyle = "Dash",
+        marker = list(enabled = FALSE),
+        tooltip = list(
+          pointFormatter = highcharter::JS("function() { return 'Trend: ' + this.y.toFixed(2); }")
+        )
+      )
+    
+  }
+  
+  hc <- hc |> highcharter::hc_chart(height = 250) |> highcharter::hc_chart(reflow = FALSE) 
+  
+  out <- htmltools::div(
+    style = "height: 300px; overflow: hidden;",
+    
+    # Styled title
+    htmltools::h5(
+      style = "text-align: center; margin: 0 0 10px 0; padding: 5px; color: #333; font-family: Arial, sans-serif;",
+      paste(waterbody, station)
+    ),
+    
+    # chart
+    htmltools::div(
+      style = "height: 275px; margin-bottom: 10px; overflow: hidden;",
+      hc
+    )
+    
+  )
+  
+  return(out)
+  
+}
+
+#' Function to create a gauge chart for continuous data
+#' 
+#' @param marker_click Marker click event data from leaflet
+#' @param bycntdat Data frame containing the summarized continuous data
+#' @param parameter3 Character string indicating the parameter to filter by
+bycntgauge_fun <- function(marker_click, bycntdat, parameter3){
+
+  id <- marker_click$id
+  waterbody <- sub("_(.*)", "", id)
+  station <- sub(".*_(.*)", "\\1", id)
+
+  curval <- bycntdat |>
+    dplyr::filter(stas %in% id) |> 
+    dplyr::pull(val) |>
+    round(2)
+
+  minv <- round(min(bycntdat$val, na.rm = T), 2)
+  maxv <- round(max(bycntdat$val, na.rm = T), 2)
+
+  units <- meta |>
+    dplyr::filter(parameter %in% parameter3) |>
+    dplyr::pull(label) |>
+    unique()
+  units <- gsub('^.*\\((.*)\\)$', '\\1', units)
+
+  # Create color stops for gradient
+  vals <- seq(0, 1, length.out = 11)
+  pal <- leaflet::colorNumeric(
+    palette = "YlGnBu",
+    domain = vals,
+    na.color = "transparent"
+  )
+  cols <- pal(vals)
+  color_stops <- lapply(seq_along(cols), function(i) {
+    list(vals[i], cols[i])
+  })
+
+  out <- highcharter::highchart() |>
+    highcharter::hc_chart(type = "solidgauge") |>
+    highcharter::hc_pane(
+      center = c("50%", "85%"),
+      size = "140%",
+      startAngle = -90,
+      endAngle = 90,
+      background = list(
+        backgroundColor = '#FFF',
+        innerRadius = "60%",
+        outerRadius = "100%",
+        shape = "arc"
+      )
+    ) |>
+    highcharter::hc_tooltip(enabled = FALSE) |>
+    highcharter::hc_yAxis(
+      min = minv,
+      max = maxv,
+      stops = color_stops,
+      minorTickLength = 0,
+      tickLength = 10,
+      title = list(y = -70)
+    ) |>
+    highcharter::hc_plotOptions(
+      solidgauge = list(
+        dataLabels = list(
+          y = 5,
+          borderWidth = 0,
+          useHTML = TRUE
+        )
+      )
+    ) |>
+    highcharter::hc_add_series(
+      name = "Value",
+      data = list(curval),
+      dataLabels = list(
+        format = paste0('<div style="text-align:center">',
+                        '<span style="font-size:25px">{y}</span><br/>',
+                        '<span style="font-size:16px;opacity:0.4">Time Series Mean (', units, ')</span>',
+                        '</div>')
+      ),
+      tooltip = list(
+        valueSuffix = paste(" ", units)
+      )
+    ) |>
+    highcharter::hc_credits(enabled = FALSE) |>
+    highcharter::hc_exporting(enabled = FALSE) |>
+    highcharter::hc_chart(height = 210) |>
+    highcharter::hc_chart(reflow = F)
+
+  return(out)
+  
+}
+
 #' Add marker or shape highlight to area map selection
 #'
 #' @param mapsel1 Data frame containing the selected area or station's ID
 addselareamap_fun <- function(mapsel1){
-
+  
   if (!is.null(mapsel1)) {
-
+    
     # wbid
     if(mapsel1$id %in% cbawbid$WBID)
       leaflet::leafletProxy("byareamap") |>
-        leaflet::clearGroup("highlight") |>
-        leaflet::addPolygons(
-          data = cbawbid |> dplyr::filter(WBID == mapsel1$id), opacity = 1,
-          group = "highlight", color = "black", weight = 6, fillOpacity = 0,
-          options = leaflet::pathOptions(clickable = FALSE)
-        )
-
+      leaflet::clearGroup("highlight") |>
+      leaflet::addPolygons(
+        data = cbawbid |> dplyr::filter(WBID == mapsel1$id), opacity = 1,
+        group = "highlight", color = "black", weight = 6, fillOpacity = 0,
+        options = leaflet::pathOptions(clickable = FALSE)
+      )
+    
     # station
     if(!mapsel1$id %in% cbawbid$WBID)
       leaflet::leafletProxy("byareamap") |>
-        leaflet::clearGroup("highlight") |>
-        leaflet::addCircleMarkers(
-          lng = mapsel1$lng, lat = mapsel1$lat,
-          group = "highlight", radius = 8, color = "black",
-          fillColor = '#007BC2', fillOpacity = 0, opacity = 1, weight = 6,
-          options = leaflet::pathOptions(clickable = FALSE)
-        )
-      
+      leaflet::clearGroup("highlight") |>
+      leaflet::addCircleMarkers(
+        lng = mapsel1$lng, lat = mapsel1$lat,
+        group = "highlight", radius = 8, color = "black",
+        fillColor = '#007BC2', fillOpacity = 0, opacity = 1, weight = 6,
+        options = leaflet::pathOptions(clickable = FALSE)
+      )
+    
   }
   
 }
@@ -1004,7 +1247,7 @@ addselareamap_fun <- function(mapsel1){
 #'
 #' @param mapsel2 Data frame containing the selected station's longitude and latitude
 addselstationmap_fun <- function(mapsel2){
-
+  
   if (!is.null(mapsel2)) {
     
     leaflet::leafletProxy("bystationmap1") |>
@@ -1052,7 +1295,7 @@ addselcntmap_fun <- function(mapsel3){
 #' 
 #' @param mapsel2 Data frame containing the selected station's ID
 stationprmsel_fun <- function(daterange2){
-
+  
   out <- alldat |> 
     dplyr::filter(date >= daterange2[1] & date <= daterange2[2]) |>
     dplyr::select(parameter, location) |> 
@@ -1113,13 +1356,13 @@ dldattab_fun <- function(dldat){
 #' @param parameter Optional character string to filter by parameter
 datechoice_fun <- function(alldat, location = unique(alldat$location), parameter = unique(alldat$parameter), 
                            waterbody = unique(alldat$waterbody)){
-
+  
   dtrng <- alldat |> 
     dplyr::filter(
       parameter %in% !!parameter &
-      location %in% !!location &
-      waterbody %in% !!waterbody
-      ) |> 
+        location %in% !!location &
+        waterbody %in% !!waterbody
+    ) |> 
     dplyr::pull(date) |> 
     range()
   
@@ -1139,7 +1382,7 @@ datechoice_fun <- function(alldat, location = unique(alldat$location), parameter
 #' 
 #' @details Will return the parameter name, units, and location.  Location will only be included if parameter has both surface and bottom measurements.
 ylab_fun <- function(prm, loc, addmean = TRUE){
-
+  
   ymeta <- meta |> 
     dplyr::filter(parameter == !!prm) 
   
