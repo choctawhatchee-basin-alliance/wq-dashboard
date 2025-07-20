@@ -1028,6 +1028,26 @@ addselstationmap_fun <- function(mapsel2){
   
 }
 
+#' Add marker highlight to continuous map selection
+#'
+#' @param mapsel3 Data frame containing the selected area or station's ID
+addselcntmap_fun <- function(mapsel3){
+  
+  if (!is.null(mapsel3)) {
+    
+    leaflet::leafletProxy("bycntmap") |>
+      leaflet::clearGroup("highlight") |>
+      leaflet::addCircleMarkers(
+        lng = mapsel3$lng, lat = mapsel3$lat,
+        group = "highlight", radius = 8, color = "black",
+        fillColor = '#007BC2', fillOpacity = 0, opacity = 1, weight = 6,
+        options = leaflet::pathOptions(clickable = FALSE)
+      )
+    
+  }
+  
+}
+
 #' Function to get the list of parameters for given dates
 #' 
 #' @param mapsel2 Data frame containing the selected station's ID

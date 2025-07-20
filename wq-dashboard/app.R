@@ -38,7 +38,7 @@ ui <- page_navbar(
     )
   ),
   
-  # First item - overview ----
+  # overview ----
   nav_panel(
     title = "OVERVIEW",
     value = 'overview',
@@ -71,7 +71,7 @@ ui <- page_navbar(
     )
   ),
 
-  # Second item - area comp ----
+  # 1 - area comp ----
   nav_panel(
     title = "1 BY AREA",
     value = 'byarea',
@@ -134,7 +134,7 @@ ui <- page_navbar(
 
   ),
 
-  # Third item - parameter comp ----
+  # 2 - parameter comp ----
   nav_panel(
     title = "2 PARAMETER COMPARISON",
     value = 'bystation',
@@ -212,7 +212,7 @@ ui <- page_navbar(
 
   ),
   
-  # Fourth item - cont data ----
+  # 3 - cont data ----
   nav_panel(
     title = "3 CONTINUOUS DATA",
     value = 'continuousdata',
@@ -254,7 +254,7 @@ ui <- page_navbar(
     
   ),
   
-  # Fifth item - download ----
+  # 4 - download ----
   nav_panel(
     title = "4 DOWNLOAD",
     value = 'download',
@@ -280,7 +280,7 @@ ui <- page_navbar(
     
   ),
   
-  # Sixth item - oyster map ----
+  # 5 - oyster map ----
   nav_panel(
     title = "5 OYSTER HABITAT SUITABILITY", 
     value = 'oyster',
@@ -311,7 +311,7 @@ server <- function(input, output, session) {
   
   # reactives
   
-  # area comp ----  
+  # 1 - area comp ----  
 
   # debounced inputs to prevent cascade firing for by area
   inputs_debounced1 <- reactive({
@@ -365,10 +365,7 @@ server <- function(input, output, session) {
   observeEvent(input$summarize1, {
     map_sel1(NULL)
   }, ignoreInit = TRUE)
-
-  # for area map clicks
-  map_sel1 <- reactiveVal(NULL)
-
+  
   # handle shape clicks
   observeEvent(input$byareamap_shape_click, {
     if (!is.null(input$byareamap_shape_click)) {
@@ -457,7 +454,7 @@ server <- function(input, output, session) {
     sidebar_toggle("byareasidebar", open = FALSE)
   })
 
-  # parameter comp ----
+  # 2 - parameter comp ----
 
   # parameters to select
   dtprmsel <- reactive({
@@ -642,7 +639,7 @@ server <- function(input, output, session) {
     sidebar_toggle("bystationsidebar", open = TRUE)
   })
 
-  # cnt data ----
+  # 3 - cnt data ----
   
   # data to map
   bycntdat <- reactive({
@@ -663,20 +660,36 @@ server <- function(input, output, session) {
 
         bycntmap_fun(bycntmap_proxy, bycntdat(), input$parameter3)
         
-        # req(map_sel3())
-        
-        # addselareamap_fun(map_sel3()$data)
+        req(map_sel3())
+
+        addselcntmap_fun(map_sel3()$data)
         
       }
       
     }, ignoreInit = FALSE) 
   
-  # # Toggle sidebar when marker is clicked
-  # observeEvent(map_sel3(), {
-  #   sidebar_toggle("bycntsidebar", open = TRUE)
-  # })
+  # Station selection reactive
+  map_sel3 <- reactiveVal(NULL)
   
-  # download ----
+  # Handle marker clicks from map 1
+  observeEvent(input$bycntmap_marker_click, {
+    if (!is.null(input$bycntmap_marker_click)) {
+      map_sel3(list(type = "marker", data = input$bycntmap_marker_click))
+    }
+  })
+  
+  # Highlight selected station on both maps
+  observe({
+    req(map_sel3())
+    addselcntmap_fun(map_sel3()$data)
+  })
+  
+  # Toggle sidebar when marker is clicked
+  observeEvent(map_sel3(), {
+    sidebar_toggle("bycntsidebar", open = TRUE)
+  })
+  
+  # 4 - download ----
   
   # data to download
   dldat <- reactive({
