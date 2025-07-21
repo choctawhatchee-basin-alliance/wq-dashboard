@@ -267,7 +267,7 @@ ui <- page_navbar(
                 style = "height: 510px; overflow: hidden;",
                 htmltools::div(
                   style = "height: 300px; margin-bottom: 10px; overflow: hidden;",
-                  uiOutput('bycntplo'),
+                  shinyWidgets::addSpinner(uiOutput('bycntplo'), spin = "circle", color = "#007bff")
                 ),
                 htmltools::div(
                   style = "height: 210px; overflow: hidden;",
