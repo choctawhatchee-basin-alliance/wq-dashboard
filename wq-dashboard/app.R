@@ -267,7 +267,7 @@ ui <- page_navbar(
                 style = "height: 510px; overflow: hidden;",
                 htmltools::div(
                   style = "height: 300px; margin-bottom: 10px; overflow: hidden;",
-                  shinyWidgets::addSpinner(uiOutput('bycntplo'), spin = "circle", color = "#007bff")
+                  uiOutput('bycntplo')
                 ),
                 htmltools::div(
                   style = "height: 210px; overflow: hidden;",
@@ -276,7 +276,7 @@ ui <- page_navbar(
               ),
               width = "50%",
               position = "right",
-              open = FALSE
+              open = F
             )
           )
         )
@@ -284,7 +284,7 @@ ui <- page_navbar(
       nav_panel(
         title = "HOW TO USE",
         class = 'card-scroll',
-        NULL
+        shiny::includeMarkdown('www/contdathowto.md')
       )
     )
     
@@ -733,7 +733,7 @@ server <- function(input, output, session) {
     
   })
   
-  # by continuous gauge\
+  # by continuous gauge
   bycntgauge <- reactive({
     
     req(bycntdat())
