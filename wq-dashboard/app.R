@@ -235,7 +235,7 @@ ui <- page_navbar(
                             "Select Parameter:",
                             icon("info-circle")
                           ),
-                          HTML('click an area on the map to view summary info on the right')
+                          HTML('click a station on the map to view summary info on the right')
                         ), 
                         choices = cntprms),
             uiOutput("daterange3")
