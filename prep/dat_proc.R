@@ -8,6 +8,7 @@ library(janitor)
 library(readxl)
 
 # need to do this because read only, won't work in non-interactive session
+# also note that sheet reads can lag when not pulled from home
 gs4_auth(scope = "https://www.googleapis.com/auth/spreadsheets.readonly")
 
 # all files https://drive.google.com/drive/u/1/folders/1x51X6p60KOKpC3UEStIkuAWRhOH-8FHS

@@ -212,87 +212,87 @@ ui <- page_navbar(
 
   ),
   
-  # 3 - cont data ----
-  nav_panel(
-    title = "3 CONTINUOUS DATA",
-    value = 'continuousdata',
-    navset_card_underline(
-      full_screen = TRUE,
-      height = '100%',
-      nav_panel(
-        title = "DATA",
-        class = 'card-scroll',
-        layout_sidebar(
-          sidebar = sidebar(
-            title = "Controls",
-            border_radius = FALSE, 
-            fillable = TRUE,
-            width = "600px",
-            open = "desktop",
-            selectInput("parameter3", 
-                        label = bslib::popover(
-                          trigger = list(
-                            "Select Parameter:",
-                            icon("info-circle")
-                          ),
-                          HTML('click a station on the map to view summary info on the right')
-                        ), 
-                        choices = cntprms),
-            uiOutput("daterange3")
-          ),
-          layout_sidebar(
-            border = FALSE,
-            leaflet::leafletOutput('bycntmap', height = "100%"),
-            sidebar = sidebar(
-              id = "bycntsidebar",
-              fluidRow(
-                column(8, selectInput("summarize3", "Summarize By:",
-                                      choices = c("none", "day", "week", "month", "quarter", "year"),
-                                      selected = "month"),
-                ),
-                column(4,
-                       div(
-                         tags$label("Show Trends?", `for` = "showtrnd3"),
-                         br(),
-                         shinyWidgets::materialSwitch(
-                           inputId = "showtrnd3",
-                           label = NULL,  # Remove the built-in label
-                           value = FALSE,
-                           status = "primary"
-                         )
-                       )
-                )
-              ),
-              htmltools::div(
-                style = "height: 510px; overflow: hidden;",
-                htmltools::div(
-                  style = "height: 300px; margin-bottom: 10px; overflow: hidden;",
-                  uiOutput('bycntplo')
-                ),
-                htmltools::div(
-                  style = "height: 210px; overflow: hidden;",
-                  highcharter::highchartOutput("bycntgauge"),
-                )
-              ),
-              width = "50%",
-              position = "right",
-              open = F
-            )
-          )
-        )
-      ), 
-      nav_panel(
-        title = "HOW TO USE",
-        class = 'card-scroll',
-        shiny::includeMarkdown('www/contdathowto.md')
-      )
-    )
-    
-  ),
+  # # 3 - cont data ----
+  # nav_panel(
+  #   title = "3 CONTINUOUS DATA",
+  #   value = 'continuousdata',
+  #   navset_card_underline(
+  #     full_screen = TRUE,
+  #     height = '100%',
+  #     nav_panel(
+  #       title = "DATA",
+  #       class = 'card-scroll',
+  #       layout_sidebar(
+  #         sidebar = sidebar(
+  #           title = "Controls",
+  #           border_radius = FALSE, 
+  #           fillable = TRUE,
+  #           width = "600px",
+  #           open = "desktop",
+  #           selectInput("parameter3", 
+  #                       label = bslib::popover(
+  #                         trigger = list(
+  #                           "Select Parameter:",
+  #                           icon("info-circle")
+  #                         ),
+  #                         HTML('click a station on the map to view summary info on the right')
+  #                       ), 
+  #                       choices = cntprms),
+  #           uiOutput("daterange3")
+  #         ),
+  #         layout_sidebar(
+  #           border = FALSE,
+  #           leaflet::leafletOutput('bycntmap', height = "100%"),
+  #           sidebar = sidebar(
+  #             id = "bycntsidebar",
+  #             fluidRow(
+  #               column(8, selectInput("summarize3", "Summarize By:",
+  #                                     choices = c("none", "day", "week", "month", "quarter", "year"),
+  #                                     selected = "month"),
+  #               ),
+  #               column(4,
+  #                      div(
+  #                        tags$label("Show Trends?", `for` = "showtrnd3"),
+  #                        br(),
+  #                        shinyWidgets::materialSwitch(
+  #                          inputId = "showtrnd3",
+  #                          label = NULL,  # Remove the built-in label
+  #                          value = FALSE,
+  #                          status = "primary"
+  #                        )
+  #                      )
+  #               )
+  #             ),
+  #             htmltools::div(
+  #               style = "height: 510px; overflow: hidden;",
+  #               htmltools::div(
+  #                 style = "height: 300px; margin-bottom: 10px; overflow: hidden;",
+  #                 uiOutput('bycntplo')
+  #               ),
+  #               htmltools::div(
+  #                 style = "height: 210px; overflow: hidden;",
+  #                 highcharter::highchartOutput("bycntgauge"),
+  #               )
+  #             ),
+  #             width = "50%",
+  #             position = "right",
+  #             open = F
+  #           )
+  #         )
+  #       )
+  #     ), 
+  #     nav_panel(
+  #       title = "HOW TO USE",
+  #       class = 'card-scroll',
+  #       shiny::includeMarkdown('www/contdathowto.md')
+  #     )
+  #   )
+  #   
+  # ),
   
-  # 4 - download ----
+  # 3 - download ----
   nav_panel(
-    title = "4 DOWNLOAD",
+    title = "3 DOWNLOAD",
     value = 'download',
     layout_sidebar(
       sidebar = sidebar(
@@ -316,9 +316,9 @@ ui <- page_navbar(
     
   ),
   
-  # 5 - oyster map ----
+  # 4 - oyster map ----
   nav_panel(
-    title = "5 OYSTER HABITAT SUITABILITY", 
+    title = "4 OYSTER HABITAT SUITABILITY", 
     value = 'oyster',
     div(
       style = "height: 80vh;", # Use viewport height for responsive sizing
@@ -675,84 +675,84 @@ server <- function(input, output, session) {
     sidebar_toggle("bystationsidebar", open = TRUE)
   })
 
-  # 3 - cnt data ----
+  # # 3 - cnt data ----
+  # 
+  # # data to map
+  # bycntdat <- reactive({
+  # 
+  #   req(input$daterange3)
+  # 
+  #   try(bycntdat_fun(cntdat, stas, input$parameter3, input$daterange3), 
+  #       silent = T)
+  #   
+  # }) 
+  # 
+  # # cont map initialize
+  # observeEvent(list(bycntdat(), input$parameter3, input$daterange3, input$`main-nav`), {
+  # 
+  #     if(input$`main-nav` == 'continuousdata'){
+  #       
+  #       req(bycntdat())
+  # 
+  #       bycntmap_fun(bycntmap_proxy, bycntdat(), input$parameter3)
+  #       
+  #       req(map_sel3())
+  # 
+  #       addselcntmap_fun(map_sel3()$data)
+  #       
+  #     }
+  #     
+  #   }, ignoreInit = FALSE) 
+  # 
+  # # Station selection reactive
+  # map_sel3 <- reactiveVal(NULL)
+  # 
+  # # Handle marker clicks from map 1
+  # observeEvent(input$bycntmap_marker_click, {
+  #   if (!is.null(input$bycntmap_marker_click)) {
+  #     map_sel3(list(type = "marker", data = input$bycntmap_marker_click))
+  #   }
+  # })
+  # 
+  # # Highlight selected station on both maps
+  # observe({
+  #   req(map_sel3())
+  #   addselcntmap_fun(map_sel3()$data)
+  # })
+  # 
+  # # continous plot
+  # bycntplo <- reactive({
+  #   
+  #   req(map_sel3())
+  #   sel <- map_sel3()
+  #   
+  #   out <- bycntplo_fun(sel$data, cntdat, input$parameter3,
+  #                        input$daterange3, input$summarize3, input$showtrnd3)
+  #   
+  #   return(out)
+  #   
+  # })
+  # 
+  # # by continuous gauge
+  # bycntgauge <- reactive({
+  #   
+  #   req(bycntdat())
+  #   req(map_sel3())
+  #   
+  #   sel <- map_sel3()
+  #   
+  #   out <- bycntgauge_fun(sel$data, bycntdat(), input$parameter3)
+  #   
+  #   return(out)
+  #   
+  # })
+  # 
+  # # Toggle sidebar when marker is clicked
+  # observeEvent(map_sel3(), {
+  #   sidebar_toggle("bycntsidebar", open = TRUE)
+  # })
   
-  # data to map
-  bycntdat <- reactive({
-
-    req(input$daterange3)
-
-    try(bycntdat_fun(cntdat, stas, input$parameter3, input$daterange3), 
-        silent = T)
-    
-  }) 
-  
-  # cont map initialize
-  observeEvent(list(bycntdat(), input$parameter3, input$daterange3, input$`main-nav`), {
-
-      if(input$`main-nav` == 'continuousdata'){
-        
-        req(bycntdat())
-
-        bycntmap_fun(bycntmap_proxy, bycntdat(), input$parameter3)
-        
-        req(map_sel3())
-
-        addselcntmap_fun(map_sel3()$data)
-        
-      }
-      
-    }, ignoreInit = FALSE) 
-  
-  # Station selection reactive
-  map_sel3 <- reactiveVal(NULL)
-  
-  # Handle marker clicks from map 1
-  observeEvent(input$bycntmap_marker_click, {
-    if (!is.null(input$bycntmap_marker_click)) {
-      map_sel3(list(type = "marker", data = input$bycntmap_marker_click))
-    }
-  })
-  
-  # Highlight selected station on both maps
-  observe({
-    req(map_sel3())
-    addselcntmap_fun(map_sel3()$data)
-  })
-  
-  # continous plot
-  bycntplo <- reactive({
-    
-    req(map_sel3())
-    sel <- map_sel3()
-    
-    out <- bycntplo_fun(sel$data, cntdat, input$parameter3,
-                         input$daterange3, input$summarize3, input$showtrnd3)
-    
-    return(out)
-    
-  })
-  
-  # by continuous gauge
-  bycntgauge <- reactive({
-    
-    req(bycntdat())
-    req(map_sel3())
-    
-    sel <- map_sel3()
-    
-    out <- bycntgauge_fun(sel$data, bycntdat(), input$parameter3)
-    
-    return(out)
-    
-  })
-  
-  # Toggle sidebar when marker is clicked
-  observeEvent(map_sel3(), {
-    sidebar_toggle("bycntsidebar", open = TRUE)
-  })
-  
-  # 4 - download ----
+  # 3 - download ----
   
   # data to download
   dldat <- reactive({
