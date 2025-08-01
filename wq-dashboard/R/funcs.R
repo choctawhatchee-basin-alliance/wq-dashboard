@@ -261,7 +261,10 @@ byareaplo_fun <- function(shape_click, marker_click, alldat, stas, nncdat, locat
     ) |> 
     dplyr::arrange(date)
   
-  ylab <- ylab_fun(parameter1, location1)
+  if(!is.null(marker_click))
+    ylab <- ylab_fun(parameter1, location1, addmean = F)
+  if(!is.null(shape_click))
+    ylab <- ylab_fun(parameter1, location1)
   
   if(!is.null(shape_click)){
     
