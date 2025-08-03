@@ -14,27 +14,11 @@ ui <- page_navbar(
     tags$img(src = "heron.png", height = "30px", style = "margin-right: 10px;")
   ),
 
-  # styles and download spinner
+  # styles and custom js
   header = tagList(
     tags$head(
       tags$link(rel = "stylesheet", type = "text/css", href = "styles.css"),
-      tags$script(HTML("
-      $(document).on('click', '#dwnld', function() {
-        $(this).prop('disabled', true).html('<span class=\"spinner-border spinner-border-sm\" role=\"status\"></span> Downloading...');
-      });
-      Shiny.addCustomMessageHandler('reset_download_button', function(message) {
-        $('#dwnld').prop('disabled', false).html('<i class=\"fa fa-download\"></i> Download data');
-      });
-      $(document).ready(function() {
-        $('.navbar-brand').css('cursor', 'pointer').on('click', function() {
-          $('a[data-value=\"overview\"]').tab('show');
-          Shiny.setInputValue('main-nav', 'overview');
-          setTimeout(function() {
-            $('a[data-value=\"about\"]').tab('show');
-          }, 100);
-        });
-      });
-      "))
+      tags$script(src = 'custom.js')
     )
   ),
   
@@ -137,7 +121,7 @@ ui <- page_navbar(
   # 2 - parameter comp ----
   nav_panel(
     title = "2 PARAMETER COMPARISON",
-    value = 'bystation',
+    value = 'parmcomp',
     navset_card_underline(
       full_screen = TRUE,
       height = '100%',
@@ -332,6 +316,13 @@ ui <- page_navbar(
     )
   ),
   
+  # additional resources ----
+  nav_panel(
+    title = "ADDITIONAL RESOURCES", 
+    value = 'addlresources',
+    shiny::includeMarkdown('www/addlresources.md')
+  ),
+  
   # Navbar configuration
   nav_spacer(),
   nav_item(
@@ -346,6 +337,10 @@ ui <- page_navbar(
 server <- function(input, output, session) {
   
   # reactives
+  
+  observeEvent(input$goto_panel, {
+    updateNavs("main-nav", selected = input$goto_panel)
+  })
   
   # 1 - area comp ----  
 
@@ -564,7 +559,7 @@ server <- function(input, output, session) {
   # Initialize both maps
   observeEvent(list(bystationdat(), input$daterange2, input$parameter2a, input$parameter2b, input$`main-nav`), {
 
-    if(input$`main-nav` == 'bystation'){
+    if(input$`main-nav` == 'parmcomp'){
 
       req(input$parameter2a)
       req(input$parameter2b)

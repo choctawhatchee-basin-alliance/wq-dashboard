@@ -17,11 +17,11 @@
 
 <p>This interactive dashboard presents CBA’s water quality data with several options for data summaries and visualization. Simply click the tabs at the top of the page to view:</p>
  
-* <b>By Area</b>: data for a specific region (WBID) or station are displayed once selected on the map
-* <b>Parameter Comparison</b>: visually compare the results of multiple parameters at once
-* <b>Download</b>: download monthly water quality data by filtering for waterbody, parameter, and date of interest
-* <b>Oyster Habitat Suitability</b>: explore the suitability of different regions of Choctawhatchee Bay for the Eastern Oyster, <i>Crassostrea virginica</i> based on water quality, substrate, and other factors and analysis
-* <b>Additional Resources</b>: links to other local environmental programs
+* [__By Area__](#byarea): data for a specific region (WBID) or station are displayed once selected on the map
+* [__Parameter Comparison__](#parmcomp): visually compare the results of multiple parameters at once
+* [__Download__](#download): download monthly water quality data by filtering for waterbody, parameter, and date of interest
+* [__Oyster Habitat Suitability__](#oyster): explore the suitability of different regions of Choctawhatchee Bay for the Eastern Oyster, <i>Crassostrea virginica</i> based on water quality, substrate, and other factors and analysis
+* [__Additional Resources__](#addlresources): links to other local environmental programs
 
 <p>The first three tabs contain a "How To Use"" pane with instructions for how to interact with the data within those tabs.</p>
 
