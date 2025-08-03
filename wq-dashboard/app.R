@@ -80,7 +80,7 @@ ui <- page_navbar(
                            ),
                            HTML('click an area on the map to view summary info on the right')
                          ),
-                         choices = c("WBID", "Station"),
+                         choices = c("Region (WBID)" = "WBID", "Station" = "Station"),
                          selected = "WBID"),
             selectInput("parameter1", "Select Parameter:", choices = prms),
             uiOutput("location1"),
@@ -337,10 +337,6 @@ ui <- page_navbar(
 server <- function(input, output, session) {
   
   # reactives
-  
-  observeEvent(input$goto_panel, {
-    updateNavs("main-nav", selected = input$goto_panel)
-  })
   
   # 1 - area comp ----  
 
