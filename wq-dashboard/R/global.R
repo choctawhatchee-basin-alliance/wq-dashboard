@@ -9,7 +9,7 @@ load(file = 'data/meta.RData')
 load(file = 'data/stas.RData')
 load(file = 'data/nncdat.RData')
 load(file = 'data/cbawbid.RData')
-load(file = 'data/cntdat.RData')
+# load(file = 'data/cntdat.RData')
 
 # selections
 prmsdf <- meta |> 
@@ -17,16 +17,16 @@ prmsdf <- meta |>
   dplyr::distinct() |> 
   dplyr::arrange(parameter)
 prms <- setNames(prmsdf$parameter, prmsdf$labelnouni)
-cntprms <- cntdat |> 
-  dplyr::select(-waterbody, -station, -timestamp) |> 
-  dplyr::rename_with(~ gsub('\\_.*$', '', .x)) |> 
-  names()
-cntprms <- meta |> 
-  dplyr::filter(parameter %in% cntprms) |> 
-  dplyr::select(parameter, labelnouni) |> 
-  dplyr::distinct() |> 
-  dplyr::arrange(parameter)
-cntprms <- setNames(cntprms$parameter, cntprms$labelnouni)
+# cntprms <- cntdat |> 
+#   dplyr::select(-waterbody, -station, -timestamp) |> 
+#   dplyr::rename_with(~ gsub('\\_.*$', '', .x)) |> 
+#   names()
+# cntprms <- meta |> 
+#   dplyr::filter(parameter %in% cntprms) |> 
+#   dplyr::select(parameter, labelnouni) |> 
+#   dplyr::distinct() |> 
+#   dplyr::arrange(parameter)
+# cntprms <- setNames(cntprms$parameter, cntprms$labelnouni)
 dtrng <- c(min(meta$datestr), max(meta$dateend))
 locs <- list('Surface' = 'surf', 'Bottom' = 'bott')
 dtchc <- datechoice_fun(alldat)

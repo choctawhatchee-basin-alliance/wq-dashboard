@@ -15,13 +15,15 @@
            
 <p>The Choctawhatchee Basin Alliance (CBA) of Northwest Florida State College has been monitoring local waterways since its inception in 1996. Partnering with the University of Florida’s Florida LAKEWATCH program, CBA conducts monthly water quality monitoring at 140+ stations throughout the watershed, including Choctawhatchee Bay, the Choctawhatchee River, and Walton County coastal dune lakes. A dedicated team of citizen scientist volunteers - CBA’s Water Science Crew - assists CBA staff in data collection efforts.</p>
 
-<p>Community collaboration enables the establishment of a baseline of water quality data, identification of areas with poor water conditions, determination of the causes of degradation, and development of solutions for improvement. The primary goal of CBA’s monitoring program is to engage a diverse, trained cohort of citizen scientist volunteers who act as vigilant stewards of local water bodies. These volunteers play a crucial role in detecting changes in water quality and supporting conservation efforts.</p>
+<p>This interactive dashboard presents CBA’s water quality data with several options for data summaries and visualization. Simply click the tabs at the top of the page to view:</p>
+ 
+* [__By Area__](#byarea): data for a specific region (WBID) or station are displayed once selected on the map
+* [__Parameter Comparison__](#parmcomp): visually compare the results of multiple parameters at once
+* [__Download__](#download): download monthly water quality data by filtering for waterbody, parameter, and date of interest
+* [__Oyster Habitat Suitability__](#oyster): explore the suitability of different regions of Choctawhatchee Bay for the Eastern Oyster, <i>Crassostrea virginica</i> based on water quality, substrate, and other factors and analysis
+* [__Additional Resources__](#addlresources): links to other local environmental programs
 
-<p>Every month, at each station, surface- and bottom-level water chemistry readings are recorded. Additionally, water samples are collected for analysis by the Florida LAKEWATCH program to determine nutrient concentration (total nitrogen and total phosphorus) and algae content (chlorophyll-a). Water clarity and depth are measured using a Secchi disk.</p>
-
-<p>CBA’s Water Science Crew members are our eyes and ears on the water. In addition to water quality parameters, our committed volunteers provide context, local knowledge, observations, and photographs.</p>
-
-<p>Spanning both Alabama and Florida portions of the watershed, CBA’s monitoring efforts cover Geneva, Holmes, Okaloosa, Walton, and Washington counties. Sampling locations are strategically distributed across the Choctawhatchee Bay, River, tributaries, and coastal dune lakes.</p>
+<p>The first three tabs contain a "How To Use"" pane with instructions for how to interact with the data within those tabs.</p>
 
 <h4 style = 'text-align: center;'>Dashboard Info</h4>
 

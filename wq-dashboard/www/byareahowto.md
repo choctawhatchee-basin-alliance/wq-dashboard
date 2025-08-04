@@ -4,7 +4,7 @@
 
 <h4 style = 'text-align: center'>Using this Tab</h4>
 
-<p>This tab provides a summary of individual parameters by WBID (Florida Department of Environmental Protection Waterbody ID) or station for a date range and sampling location (surface or bottom, if available). Begin by choosing a summary type, parameter, sample location, and date range of interest.</p>
+<p>This tab provides a summary of individual parameters by region (WBID, Florida Department of Environmental Protection Waterbody ID) or station for a date range and sampling location (surface or bottom, if available). Begin by choosing a summary type, parameter, sample location, and date range of interest.</p>
 
 <p>The map on the right shows the mean value of the parameter for the selection summarized by sampling stations within each WBID or station. The colors on the map show the relative mean values for the selection to quickly assess relative differences. Mousing over a WBID or station on the map will show additional information. The example below shows information for a WBID summary including the WBID identifier, the number of stations in the WBID used to summarize the parameter, and the average value of the parameter for the date range and sample location (if available).</p>
  

@@ -11,7 +11,7 @@ load(file = here('wq-dashboard/data/cbawbid.RData'))
 load(file = here('wq-dashboard/data/nncdat.RData'))
 
 dtrng <- c(as.Date('1992-11-08'), Sys.Date())
-stasbbox <- c(xmin = -86.6675, ymin = 30.2815, xmax = -85.68101, ymax = 31.10925) |> 
+stasbbox <- c(xmin = -86.78747, ymin = 30.2815, xmax = -85.68101, ymax = 31.10925) |> 
   st_bbox() |> 
   st_set_crs(4326) |> 
   st_as_sfc() |> 
