@@ -162,7 +162,7 @@ ui <- page_navbar(
             id = "bystationsidebar",
             fluidRow(
               column(8, selectInput("summarize2", "Summarize By:",
-                        choices = c("day", "year"),
+                        choices = c("day", "year", "winter", "spring", "summer", "fall", "wet season", "dry season"),
                         selected = "day"),
               ),
               column(4,

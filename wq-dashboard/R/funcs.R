@@ -703,11 +703,48 @@ bystationplo_fun <- function(sel, bystationdat, nncdat, summarize2, showtrnd, pa
     
     ylab1 <- ylab_fun(prm2a, loca)
     ylab2 <- ylab_fun(prm2b, locb)
+
+    if(summarize2 == 'year')
+      toplo <-  toplo |> 
+        dplyr::mutate(
+          date = lubridate::floor_date(date, summarize2),
+        ) 
+
+    if(summarize2 %in% c('wet season', 'dry season'))
+      toplo <- toplo |> 
+        dplyr::mutate(
+          mo = lubridate::month(date), 
+          wetdry = as.character(factor(
+            ifelse(mo %in% c(6, 7, 8, 9), "wet", "dry"),
+            levels = c("wet", "dry")
+          )), 
+          wetdrygrp = rep(seq_along(rle(wetdry)$lengths), rle(wetdry)$lengths)
+        ) |>
+        dplyr::mutate(
+          date = lubridate::floor_date(min(date), 'month'), 
+          .by = c(wetdrygrp)
+        ) |> 
+        dplyr::filter(wetdry == gsub('\\sseason$', '', summarize2))
+        
+    if(summarize2 %in% c('winter', 'spring', 'summer', 'fall'))
+      toplo <- toplo |>
+        dplyr::mutate(
+          mo = lubridate::month(date), 
+          season = as.character(factor(
+            ifelse(mo %in% c(12, 1, 2), "winter",
+                   ifelse(mo %in% c(3, 4, 5), "spring",
+                          ifelse(mo %in% c(6, 7, 8), "summer", "fall"))),
+            levels = c("winter", "spring", "summer", "fall")
+          )), 
+          seasongrp = rep(seq_along(rle(season)$lengths), rle(season)$lengths)
+        ) |> 
+        dplyr::mutate(
+          date = lubridate::floor_date(min(date), 'month'), 
+          .by = c(seasongrp)
+        ) |> 
+        dplyr::filter(season == summarize2)
     
-    toplo <-  toplo |> 
-      dplyr::mutate(
-        date = lubridate::floor_date(date, summarize2),
-      ) |> 
+    toplo <- toplo |> 
       dplyr::summarise(
         hivl = tryCatch(t.test(avev, conf.level = 0.95)$conf.int[2], silent = TRUE, error = function(e) NA),
         lovl = tryCatch(t.test(avev, conf.level = 0.95)$conf.int[1], silent = TRUE, error = function(e) NA),

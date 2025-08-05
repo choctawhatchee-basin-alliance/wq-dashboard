@@ -21,6 +21,8 @@
 <img src='byareaplotex1.png' style='width: 40%; display: block; margin: 0 auto;'>   
 <br>
 
+<p>The hamburger icon on the top right of each plot can be used to view the plot in full screen, download the plot as a png, or download the plot data as a csv.</p>
+
 <p>Sub-tabs can be expanded or minimized by clicking the arrows on the top right.</p>
 
 </div>
