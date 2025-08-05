@@ -323,6 +323,9 @@ byareaplo_fun <- function(shape_click, marker_click, alldat, stas, nncdat, locat
   # Create chart
   hc <- highcharter::highchart() |>
     highcharter::hc_chart(type = "line") |>
+    highcharter::hc_add_theme(
+      highcharter::hc_theme(chart = list(backgroundColor = 'white'))
+    ) |> 
     highcharter::hc_xAxis(
       type = "datetime",
       min = date_range_ms[1],
@@ -384,7 +387,19 @@ byareaplo_fun <- function(shape_click, marker_click, alldat, stas, nncdat, locat
       )
   }
   
-  hc <- hc |> highcharter::hc_chart(height = 320) |> highcharter::hc_chart(reflow = F)
+  hc <- hc |> 
+    highcharter::hc_chart(height = 320) |> 
+    highcharter::hc_chart(reflow = F) |> 
+    highcharter::hc_exporting(
+      enabled = TRUE,
+      filename = "myplot",
+      buttons = list(
+        contextButton = list(
+          menuItems = c("viewFullscreen", "downloadPNG", "downloadCSV")
+        )
+      )
+    )
+  
   
   out <- htmltools::div(
     style = "height: 350px; overflow: hidden;",
@@ -476,6 +491,9 @@ byareagauge_fun <- function(shape_click, marker_click, byareadat, nncdat, parame
 
   out <- highcharter::highchart() |>
     highcharter::hc_chart(type = "solidgauge") |>
+    highcharter::hc_add_theme(
+      highcharter::hc_theme(chart = list(backgroundColor = 'white'))
+    ) |> 
     highcharter::hc_pane(
       center = c("50%", "85%"),
       size = "140%",
@@ -529,7 +547,15 @@ byareagauge_fun <- function(shape_click, marker_click, byareadat, nncdat, parame
       )
     ) |>
     highcharter::hc_credits(enabled = FALSE) |>
-    highcharter::hc_exporting(enabled = FALSE) |> 
+    highcharter::hc_exporting(
+      enabled = TRUE,
+      filename = "mygauge",
+      buttons = list(
+        contextButton = list(
+          menuItems = c("viewFullscreen", "downloadPNG", "downloadCSV")
+        )
+      )
+    ) |> 
     highcharter::hc_chart(height = 275) |> 
     highcharter::hc_chart(reflow = F)
   
@@ -763,6 +789,9 @@ bystationplohc_fun <- function(toplo, nncchk, showtrnd, date_range_ms, ylab, sum
   # Create first chart
   hc <- highcharter::highchart() |>
     highcharter::hc_chart(type = "line") |>
+    highcharter::hc_add_theme(
+      highcharter::hc_theme(chart = list(backgroundColor = 'white'))
+    ) |> 
     highcharter::hc_xAxis(
       type = "datetime",
       min = date_range_ms[1],
@@ -874,7 +903,18 @@ bystationplohc_fun <- function(toplo, nncchk, showtrnd, date_range_ms, ylab, sum
     
   }
   
-  out <- hc |> highcharter::hc_chart(height = 250) |> highcharter::hc_chart(reflow = FALSE) 
+  out <- hc |> 
+    highcharter::hc_chart(height = 250) |> 
+    highcharter::hc_chart(reflow = FALSE) |> 
+    highcharter::hc_exporting(
+      enabled = TRUE,
+      filename = "myplot",
+      buttons = list(
+        contextButton = list(
+          menuItems = c("viewFullscreen", "downloadPNG", "downloadCSV")
+        )
+      )
+    )
   
   return(out)
   

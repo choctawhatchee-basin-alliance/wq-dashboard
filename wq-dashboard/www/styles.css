@@ -9,3 +9,10 @@
 .leaflet-pane {
   z-index: 800 !important;
 }
+
+highcharts-contextmenu {
+  z-index: 9999 !important;
+}
+.highcharts-button-box {
+  z-index: 9999 !important;
+}
