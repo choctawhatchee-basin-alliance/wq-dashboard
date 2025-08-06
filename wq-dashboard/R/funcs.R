@@ -480,7 +480,7 @@ byareagauge_fun <- function(shape_click, marker_click, byareadat, nncdat, parame
     dplyr::pull(label) |> 
     unique()
   units <- gsub('^.*\\((.*)\\)$', '\\1', units)
-
+  
   # get color
   pal <- leaflet::colorNumeric(
     palette = "YlGnBu",
@@ -488,7 +488,7 @@ byareagauge_fun <- function(shape_click, marker_click, byareadat, nncdat, parame
     na.color = "transparent"
   )
   col <- pal(curval)
-
+  
   out <- highcharter::highchart() |>
     highcharter::hc_chart(type = "solidgauge") |>
     highcharter::hc_add_theme(
@@ -675,7 +675,7 @@ bystationmap_fun <- function(mapin, bystationdat, stas, parameter, daterange2){
 #' @param parameter2a Character string indicating the first parameter to filter by
 #' @param parameter2b Character string indicating the second parameter to filter by
 #' @param daterange2 Date range to filter the data
-bystationplo_fun <- function(sel, bystationdat, nncdat, summarize2, showtrnd, parameter2a,
+bystationplo_fun <- function(sel, bystationdat, nncdat, summarize2, showtrnd2, parameter2a,
                              parameter2b, daterange2){
   
   waterbody <- gsub("(^.*)\\_.*$", "\\1", sel$id)
@@ -703,46 +703,46 @@ bystationplo_fun <- function(sel, bystationdat, nncdat, summarize2, showtrnd, pa
     
     ylab1 <- ylab_fun(prm2a, loca)
     ylab2 <- ylab_fun(prm2b, locb)
-
+    
     if(summarize2 == 'year')
       toplo <-  toplo |> 
-        dplyr::mutate(
-          date = lubridate::floor_date(date, summarize2),
-        ) 
-
+      dplyr::mutate(
+        date = lubridate::floor_date(date, summarize2),
+      ) 
+    
     if(summarize2 %in% c('wet season', 'dry season'))
       toplo <- toplo |> 
-        dplyr::mutate(
-          mo = lubridate::month(date), 
-          wetdry = as.character(factor(
-            ifelse(mo %in% c(6, 7, 8, 9), "wet", "dry"),
-            levels = c("wet", "dry")
-          )), 
-          wetdrygrp = rep(seq_along(rle(wetdry)$lengths), rle(wetdry)$lengths)
-        ) |>
-        dplyr::mutate(
-          date = lubridate::floor_date(min(date), 'month'), 
-          .by = c(wetdrygrp)
-        ) |> 
-        dplyr::filter(wetdry == gsub('\\sseason$', '', summarize2))
-        
+      dplyr::mutate(
+        mo = lubridate::month(date), 
+        wetdry = as.character(factor(
+          ifelse(mo %in% c(6, 7, 8, 9), "wet", "dry"),
+          levels = c("wet", "dry")
+        )), 
+        wetdrygrp = rep(seq_along(rle(wetdry)$lengths), rle(wetdry)$lengths)
+      ) |>
+      dplyr::mutate(
+        date = lubridate::floor_date(min(date), 'month'), 
+        .by = c(wetdrygrp)
+      ) |> 
+      dplyr::filter(wetdry == gsub('\\sseason$', '', summarize2))
+    
     if(summarize2 %in% c('winter', 'spring', 'summer', 'fall'))
       toplo <- toplo |>
-        dplyr::mutate(
-          mo = lubridate::month(date), 
-          season = as.character(factor(
-            ifelse(mo %in% c(12, 1, 2), "winter",
-                   ifelse(mo %in% c(3, 4, 5), "spring",
-                          ifelse(mo %in% c(6, 7, 8), "summer", "fall"))),
-            levels = c("winter", "spring", "summer", "fall")
-          )), 
-          seasongrp = rep(seq_along(rle(season)$lengths), rle(season)$lengths)
-        ) |> 
-        dplyr::mutate(
-          date = lubridate::floor_date(min(date), 'month'), 
-          .by = c(seasongrp)
-        ) |> 
-        dplyr::filter(season == summarize2)
+      dplyr::mutate(
+        mo = lubridate::month(date), 
+        season = as.character(factor(
+          ifelse(mo %in% c(12, 1, 2), "winter",
+                 ifelse(mo %in% c(3, 4, 5), "spring",
+                        ifelse(mo %in% c(6, 7, 8), "summer", "fall"))),
+          levels = c("winter", "spring", "summer", "fall")
+        )), 
+        seasongrp = rep(seq_along(rle(season)$lengths), rle(season)$lengths)
+      ) |> 
+      dplyr::mutate(
+        date = lubridate::floor_date(min(date), 'month'), 
+        .by = c(seasongrp)
+      ) |> 
+      dplyr::filter(season == summarize2)
     
     toplo <- toplo |> 
       dplyr::summarise(
@@ -785,8 +785,8 @@ bystationplo_fun <- function(sel, bystationdat, nncdat, summarize2, showtrnd, pa
                      as.numeric(as.POSIXct(daterange2[2])) * 1000)
   
   # Create combined chart using htmltools
-  hc1 <- bystationplohc_fun(toplo1, nncchk1, showtrnd, date_range_ms, ylab1, summarize2)
-  hc2 <- bystationplohc_fun(toplo2, nncchk2, showtrnd, date_range_ms, ylab2, summarize2)
+  hc1 <- bystationplohc_fun(toplo1, toplo2, nncchk1, showtrnd2, date_range_ms, ylab1, summarize2)
+  hc2 <- bystationplohc_fun(toplo2, toplo1, nncchk2, showtrnd2, date_range_ms, ylab2, summarize2)
   
   out <- htmltools::div(
     style = "height: 550px; overflow: hidden;",
@@ -816,12 +816,13 @@ bystationplo_fun <- function(sel, bystationdat, nncdat, summarize2, showtrnd, pa
 #' Helper function to create highcharts for bystationareaplo_fun
 #' 
 #' @param toplo Data frame containing the summarized data for the chart
+#' @param toplo Data frame containing the summarize data for the other chart, used if \code{showtrnd} is not "none"
 #' @param nncchk Data frame containing the NNC threshold data
-#' @param showtrnd Logical indicating whether to show trend lines (default FALSE)
+#' @param showtrnd2 Character string option for showing the trend line
 #' @param date_range_ms Numeric vector containing the start and end dates in milliseconds
 #' @param ylab Character string for the y-axis label
 #' @param summarize2 Character string indicating how to summarize the data ('day', 'year')
-bystationplohc_fun <- function(toplo, nncchk, showtrnd, date_range_ms, ylab, summarize2){
+bystationplohc_fun <- function(toplo, toplosupp, nncchk, showtrnd2, date_range_ms, ylab, summarize2){
   
   # Create first chart
   hc <- highcharter::highchart() |>
@@ -849,7 +850,9 @@ bystationplohc_fun <- function(toplo, nncchk, showtrnd, date_range_ms, ylab, sum
           highcharter::hcaes(x = date, low = lovl, high = hivl),
           color = "blue",
           showInLegend = FALSE,
-          tooltip = list(enabled = FALSE)
+          tooltip = list(
+            pointFormat = "Range: {point.low:.2f} - {point.high:.2f}"
+          )
         ) |> 
         highcharter::hc_add_series(
           data = toplo,
@@ -914,15 +917,63 @@ bystationplohc_fun <- function(toplo, nncchk, showtrnd, date_range_ms, ylab, sum
       )
   }
   
-  if(showtrnd & nrow(toplo) > 1){
+  if(showtrnd2 != 'none' & nrow(toplo) > 1){
     
-    mod <- lm(avev ~ date, data = toplo)
+    if(showtrnd2 == 'shortest' & nrow(toplosupp) == 0)
+      showtrnd2 <- 'both'
     
-    # Create a sequence of dates for the trend line based on the summary period
-    trend_data <- data.frame(
-      date = toplo$date,
-      avev = predict(mod)
-    )
+    if(showtrnd2 == 'both'){
+      
+      mod <- lm(avev ~ date, data = toplo)
+      
+      # Create a sequence of dates for the trend line based on the summary period
+      trend_data <- data.frame(
+        date = toplo$date,
+        avev = predict(mod)
+      )
+      
+    }
+    
+    if(showtrnd2 == 'shortest'){
+      
+      rng1 <- range(toplo$date, na.rm = T)
+      rng2 <- range(toplosupp$date, na.rm = T)
+      rng <- c(diff(rng1), diff(rng2))
+      rng <- list(rng1, rng2)[[which.min(rng)]]
+      
+      tomod <- toplo |> 
+        dplyr::filter(date >= rng[1] & date <= rng[2])
+      mod <- lm(avev ~ date, data = tomod)
+      
+      # Create a sequence of dates for the trend line based on the summary period
+      trend_data <- data.frame(
+        date = tomod$date,
+        avev = predict(mod)
+      )
+      
+    }
+    
+    if(showtrnd2 == 'ten years'){
+      maxdt <- max(toplo$date, na.rm = T)
+      rng <- c(maxdt - lubridate::years(9), maxdt)
+      if(rng[1] < min(toplo$date, na.rm = T)){
+        trend_data <- data.frame(
+          date = NA, 
+          avev = NA
+        )
+          
+      } else {
+        tomod <- toplo |> 
+          dplyr::filter(date >= rng[1] & date <= rng[2])
+        mod <- lm(avev ~ date, data = tomod)
+        
+        # Create a sequence of dates for the trend line based on the summary period
+        trend_data <- data.frame(
+          date = tomod$date,
+          avev = predict(mod)
+        )
+      }
+    }
     
     # add to chart
     hc <- hc |>

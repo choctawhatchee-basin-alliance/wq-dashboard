@@ -161,21 +161,13 @@ ui <- page_navbar(
           sidebar = sidebar(
             id = "bystationsidebar",
             fluidRow(
-              column(8, selectInput("summarize2", "Summarize By:",
+              column(6, selectInput("summarize2", "Summarize By:",
                         choices = c("day", "year", "winter", "spring", "summer", "fall", "wet season", "dry season"),
                         selected = "day"),
               ),
-              column(4,
-                     div(
-                       tags$label("Show Trends?", `for` = "showtrnd2"),
-                       br(),
-                       shinyWidgets::materialSwitch(
-                         inputId = "showtrnd2",
-                         label = NULL,  # Remove the built-in label
-                         value = FALSE,
-                         status = "primary"
-                       )
-                     )
+              column(6, selectInput("showtrnd2", "Show trends:",
+                                    choices = c("none", "both", "shortest", "ten years"),
+                                    selected = "none")
               )
             ),
             uiOutput('bystationplo'),
