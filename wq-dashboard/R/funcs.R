@@ -250,7 +250,8 @@ byareamap_fun <- function(mapin, byareadat, summarize1, parameter1, location1){
 #' @param location1 Character string indicating the sample location (e.g., 'surface', 'bottom')
 #' @param parameter1 Character string indicating the parameter to filter by
 #' @param daterange1 Date range to filter the data
-byareaplo_fun <- function(shape_click, marker_click, alldat, stas, nncdat, location1, parameter1, daterange1){
+#' @param showtrnd1 Logical indicating whether to show trend lines
+byareaplo_fun <- function(shape_click, marker_click, alldat, stas, nncdat, location1, parameter1, daterange1, showtrnd1){
   
   toplo <- alldat |> 
     dplyr::filter(
@@ -387,8 +388,61 @@ byareaplo_fun <- function(shape_click, marker_click, alldat, stas, nncdat, locat
       )
   }
   
+  # trend lines
+  if(showtrnd1 != 'none' & nrow(toplo) > 1){
+    
+    if(showtrnd1 == 'complete'){
+      
+      mod <- lm(avev ~ date, data = toplo)
+      
+      # Create a sequence of dates for the trend line based on the summary period
+      trend_data <- data.frame(
+        date = toplo$date,
+        avev = predict(mod)
+      )
+      
+    }
+    
+    if(showtrnd1 == 'ten years'){
+      maxdt <- max(toplo$date, na.rm = T)
+      rng <- c(maxdt - lubridate::years(9), maxdt)
+      if(rng[1] < min(toplo$date, na.rm = T)){
+        trend_data <- data.frame(
+          date = NA, 
+          avev = NA
+        )
+        
+      } else {
+        tomod <- toplo |> 
+          dplyr::filter(date >= rng[1] & date <= rng[2])
+        mod <- lm(avev ~ date, data = tomod)
+        
+        # Create a sequence of dates for the trend line based on the summary period
+        trend_data <- data.frame(
+          date = tomod$date,
+          avev = predict(mod)
+        )
+      }
+    }
+    
+    # add to chart
+    hc <- hc |>
+      highcharter::hc_add_series(
+        data = trend_data,
+        type = "line",
+        highcharter::hcaes(x = date, y = avev),
+        color = "dodgerblue",
+        dashStyle = "Dash",
+        marker = list(enabled = FALSE),
+        tooltip = list(
+          pointFormatter = highcharter::JS("function() { return 'Trend: ' + this.y.toFixed(2); }")
+        )
+      )
+    
+  }
+  
   hc <- hc |> 
-    highcharter::hc_chart(height = 320) |> 
+    highcharter::hc_chart(height = 265) |> 
     highcharter::hc_chart(reflow = F) |> 
     highcharter::hc_exporting(
       enabled = TRUE,
@@ -400,9 +454,8 @@ byareaplo_fun <- function(shape_click, marker_click, alldat, stas, nncdat, locat
       )
     )
   
-  
   out <- htmltools::div(
-    style = "height: 350px; overflow: hidden;",
+    style = "height: 295px; overflow: hidden;",
     
     # Styled title
     htmltools::h5(
@@ -412,7 +465,7 @@ byareaplo_fun <- function(shape_click, marker_click, alldat, stas, nncdat, locat
     
     # Charts with equal heights
     htmltools::div(
-      style = "height: 320px; margin-bottom: 0px; overflow: hidden;",
+      style = "height: 265px; margin-bottom: 0px; overflow: hidden;",
       hc
     )
     
@@ -556,7 +609,7 @@ byareagauge_fun <- function(shape_click, marker_click, byareadat, nncdat, parame
         )
       )
     ) |> 
-    highcharter::hc_chart(height = 275) |> 
+    highcharter::hc_chart(height = 220) |> 
     highcharter::hc_chart(reflow = F)
   
   return(out)
@@ -920,9 +973,9 @@ bystationplohc_fun <- function(toplo, toplosupp, nncchk, showtrnd2, date_range_m
   if(showtrnd2 != 'none' & nrow(toplo) > 1){
     
     if(showtrnd2 == 'shortest' & nrow(toplosupp) == 0)
-      showtrnd2 <- 'both'
+      showtrnd2 <- 'complete'
     
-    if(showtrnd2 == 'both'){
+    if(showtrnd2 == 'complete'){
       
       mod <- lm(avev ~ date, data = toplo)
       

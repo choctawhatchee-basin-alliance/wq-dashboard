@@ -91,14 +91,20 @@ ui <- page_navbar(
             leaflet::leafletOutput('byareamap', height = "100%"),
             sidebar = sidebar(
               id = "byareasidebar",
+              fluidRow(
+                column(6, selectInput("showtrnd1", "Show trends:",
+                                      choices = c("none", "complete", "ten years"),
+                                      selected = "none")
+                )
+              ),
               htmltools::div(
-                style = "height: 625px; overflow: hidden;",
+                style = "height: 515px; overflow: hidden;",
                 htmltools::div(
-                  style = "height: 350px; margin-bottom: 10px; overflow: hidden;",
+                  style = "height: 295px; margin-bottom: 10px; overflow: hidden;",
                   uiOutput('byareaplo'),
                 ),
                 htmltools::div(
-                  style = "height: 275px; overflow: hidden;",
+                  style = "height: 220px; overflow: hidden;",
                   highcharter::highchartOutput("byareagauge"),
                 )
               ),
@@ -166,7 +172,7 @@ ui <- page_navbar(
                         selected = "day"),
               ),
               column(6, selectInput("showtrnd2", "Show trends:",
-                                    choices = c("none", "both", "shortest", "ten years"),
+                                    choices = c("none", "complete", "shortest", "ten years"),
                                     selected = "none")
               )
             ),
@@ -428,7 +434,7 @@ server <- function(input, output, session) {
 
     out <- byareaplo_fun(shape_click, marker_click, alldat, stas, nncdat,
                          inputs$location1, inputs$parameter1,
-                         inputs$daterange1)
+                         inputs$daterange1, input$showtrnd1)
 
     return(out)
 

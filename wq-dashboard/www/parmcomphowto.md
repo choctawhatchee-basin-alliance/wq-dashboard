@@ -23,9 +23,15 @@
 
 <p>The time series plots can also be summarized by means for different time periods. Available options are by day, year, winter (December, January, February), spring (March, April, May), summer (June, July, August), fall (September, October, November), wet season (June through September), or dry season (October through May). If summaries are by season, mean values within each season are plotted on the first month of the selected season. Confidence intervals (95%) are provided for the time period if year or season summaries are selected.</p>
 
-<p>A trend line showing the linear fit to the data can also be included by selecting an option from the top right menu.  Selecting "both" will fit a line to the complete period of record for each plot.  Selecting "shortest" will fit a line to the shortest period of time shared between the two plots.  Selecting "ten years" will fit a line to the most recent ten year period for each plot. The trend line is not shown if ten years of data are not available for a plot.</p>
+<p>A trend line showing the linear fit to the data can also be included by selecting an option from the top right menu.  Selecting "complete" will fit a line to the complete period of record for each plot.  Selecting "shortest" will fit a line to the shortest period of time shared between the two plots.  Selecting "ten years" will fit a line to the most recent ten year period for each plot. The trend line is not shown if ten years of data are not available for a plot.</p>
+
+<img src='parmcomptrnd.png' style='width: 23%; display: block; margin: 0 auto;'>   
+<br>
 
 <p>The hamburger icon on the top right of each plot can be used to view the plot in full screen, download the plot as a png, or download the plot data as a csv.</p>
+
+<img src='hamburger.png' style='width: 13%; display: block; margin: 0 auto;'>   
+<br>
 
 <p>Sub-tabs can be expanded or minimized by clicking the arrows on the top right.</p>
 
