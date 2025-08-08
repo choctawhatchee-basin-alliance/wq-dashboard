@@ -5,5 +5,7 @@ account: beckmw
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 15158328
-bundleId: 10741269
+bundleId: 10747000
 url: https://beckmw.shinyapps.io/wq-dashboard/
+when: 1754680084.35387
+lastSyncTime: 1754680084.35388
