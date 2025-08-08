@@ -92,7 +92,15 @@ ui <- page_navbar(
             sidebar = sidebar(
               id = "byareasidebar",
               fluidRow(
-                column(6, selectInput("showtrnd1", "Show trends:",
+                column(6, 
+                       selectInput("showtrnd1", 
+                                   label = bslib::popover(
+                                     trigger = list(
+                                       "Show trends:",
+                                       icon("info-circle")
+                                     ),
+                                     HTML('<b>none</b>: not shown<br><b>complete</b>: entire record for date range<br><b>ten years</b>: most recent ten years (not shown if date range less than ten years)')
+                                   ),
                                       choices = c("none", "complete", "ten years"),
                                       selected = "none")
                 )
@@ -171,7 +179,14 @@ ui <- page_navbar(
                         choices = c("day", "year", "winter", "spring", "summer", "fall", "wet season", "dry season"),
                         selected = "day"),
               ),
-              column(6, selectInput("showtrnd2", "Show trends:",
+              column(6, selectInput("showtrnd2", 
+                                    label = bslib::popover(
+                                      trigger = list(
+                                        "Show trends:",
+                                        icon("info-circle")
+                                      ),
+                                      HTML('<b>none</b>: not shown<br><b>complete</b>: entire record for date range<br><b>shortest</b>: shortest shared date range<br><b>ten years</b>: most recent ten years (not shown if date range less than ten years)')
+                                    ),
                                     choices = c("none", "complete", "shortest", "ten years"),
                                     selected = "none")
               )
