@@ -30,7 +30,7 @@ cntdat_fun <- function(start_date, end_date,
                     by = "hour")
   
   # Calculate hour of day for each timestamp (0-23)
-  hours <- hour(timestamps)
+  hours <- lubridate::hour(timestamps)
   
   # Calculate day number from start for trend
   days <- as.numeric(as.Date(as.Date(timestamps)) - start_date)
@@ -1592,4 +1592,130 @@ ylab_fun <- function(prm, loc, addmean = TRUE){
   
   return(out)
   
+}
+
+#' Function to get rain data for a single station across multiple years
+#' 
+#' @param station_id Character string indicating the station ID
+#' @param start_date Character string indicating the start date in "YYYY-MM-DD" format
+#' @param end_date Character string indicating the end date in "YYYY-MM-DD" format
+#' @param max_retries Integer indicating the maximum number of retries for API requests
+#' @param noaa_key Character NOAA API key
+#' 
+#' @return daily rainfall in tenths of mm for the station
+getstatrain_fun <- function(station_id, start_date, end_date, max_retries = 5, noaa_key) {
+  
+  tryCatch({
+    cat("Retrieving data for station:", station_id, "from", start_date, "to", end_date, "\n")
+    
+    # Convert dates to Date objects
+    start_dt <- as.Date(start_date)
+    end_dt <- as.Date(end_date)
+    
+    # Create date ranges by year to handle API limitations
+    years <- seq(year(start_dt), year(end_dt))
+    all_station_data <- list()
+    
+    for (yr in years) {
+      # Set year boundaries
+      year_start <- max(start_dt, as.Date(paste0(yr, "-01-01")))
+      year_end <- min(end_dt, as.Date(paste0(yr, "-12-31")))
+
+      cat("  Fetching", yr, "data (", year_start, "to", year_end, ")\n")
+      
+      # Retry logic for this year
+      year_data <- NULL
+      retry_count <- 0
+      
+      while (is.null(year_data) && retry_count < max_retries) {
+        if (retry_count > 0) {
+          cat("    Retry", retry_count, "for", yr, "\n")
+          # Exponential backoff: wait longer between retries
+          Sys.sleep(2^retry_count)
+        }
+        
+        retry_count <- retry_count + 1
+
+        # Attempt to retrieve data for this year
+        tryCatch({
+          api_result <- rnoaa::ncdc(datasetid = 'GHCND',
+                             stationid = paste0('GHCND:', station_id),
+                             datatypeid = 'PRCP',
+                             startdate = as.character(year_start),
+                             enddate = as.character(year_end),
+                             limit = 1000, 
+                            token = noaa_key)
+          
+          if (!is.null(api_result$data) && nrow(api_result$data) > 0) {
+            year_data <- api_result$data
+            cat("    Retrieved", nrow(year_data), "records\n")
+          } else {
+            cat("    No data found for", yr, "\n")
+            # If no data exists (not an error), break out of retry loop
+            break
+          }
+          
+        }, error = function(e) {
+          cat("    Error on attempt", retry_count, "for", yr, ":", e$message, "\n")
+          if (retry_count >= max_retries) {
+            cat("    Maximum retries reached for", yr, ". Skipping this year.\n")
+          }
+        })
+      }
+      
+      # Store data if we got it
+      if (!is.null(year_data)) {
+        all_station_data[[as.character(yr)]] <- year_data
+      }
+      
+      # Add delay between years (even on success)
+      Sys.sleep(0.5)
+    }
+    
+    # Combine all years of data
+    if (length(all_station_data) > 0) {
+      combined_data <- dplyr::bind_rows(all_station_data)
+      cat("Total records for", station_id, ":", nrow(combined_data), "\n")
+      cat("Successfully retrieved data for years:", paste(names(all_station_data), collapse = ", "), "\n\n")
+      return(combined_data)
+    } else {
+      cat("No data found for station:", station_id, "\n\n")
+      return(NULL)
+    }
+    
+  }, error = function(e) {
+    cat("Error retrieving data for station", station_id, ":", e$message, "\n\n")
+    return(NULL)
+  })
+}
+
+#' Function to get rain data for multiple stations across multiple years
+#' 
+#' @param stations List of stations for retrieving rain data, names are stations ids and elements are station names
+#' @param start_date Character string indicating the start date in "YYYY-MM-DD" format
+#' @param end_date Character string indicating the end date in "YYYY-MM-DD" format
+#' @param max_retries Integer indicating the maximum number of retries for API requests
+#' @param noaa_key Character NOAA API key
+#' 
+#' @return daily rainfall in inches for each station
+getallrain_fun <- function(stations, start_date, end_date, max_retries = 5, noaa_key){
+
+  # Retrieve data for all stations
+  raindat <- purrr::map_dfr(names(stations), ~getstatrain_fun(.x, start_date, end_date, max_retries, noaa_key))
+
+  # Process the data
+  out <- raindat |>
+    dplyr::mutate(
+      date = as.Date(date),
+      precip_inches = value / 254, # convert to inches
+      station = gsub('^GHCND:', '', station),
+      station_name = factor(station, levels = names(stations), labels = stations),
+      month = month(date, label = TRUE),
+      year = year(date)
+    ) |> 
+    dplyr::filter(!is.na(precip_inches)) |> 
+    dplyr::select(station, station_name, date, precip_inches, month, year)
+
+  return(out)
+
 }

@@ -7,11 +7,29 @@ library(sf)
 library(janitor)
 library(readxl)
 
+source('wq-dashboard/R/funcs.R')
+
 # need to do this because read only, won't work in non-interactive session
 # also note that sheet reads can lag when not pulled from home
 gs4_auth(scope = "https://www.googleapis.com/auth/spreadsheets.readonly")
 
 # all files https://drive.google.com/drive/u/1/folders/1x51X6p60KOKpC3UEStIkuAWRhOH-8FHS
+
+# get rain data ----------------------------------------------------------
+
+stations <- c(
+  'USC00086240' = 'Niceville',
+  'USW00013884' = 'Crestview',
+  'USC00013251' = 'Geneva'
+)
+
+start_date <- "1990-01-01"
+end_date <- Sys.Date()
+
+noaa_key <- Sys.getenv('NOAA_KEY')
+raindat <- getallrain_fun(stations, start_date, end_date, noaa_key = noaa_key)
+
+save(raindat, file = here::here('wq-dashboard/data/raindat.RData'))
 
 # combine cba (physical) and lakewatch (discrete) ---------------------------------------------
 
