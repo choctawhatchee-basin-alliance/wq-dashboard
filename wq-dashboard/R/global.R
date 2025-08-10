@@ -9,6 +9,8 @@ load(file = 'data/meta.RData')
 load(file = 'data/stas.RData')
 load(file = 'data/nncdat.RData')
 load(file = 'data/cbawbid.RData')
+load(file = 'data/raindat.RData')
+load(file = 'data/rainstas.RData')
 # load(file = 'data/cntdat.RData')
 
 # selections

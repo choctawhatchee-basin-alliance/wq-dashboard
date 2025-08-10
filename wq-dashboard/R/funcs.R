@@ -720,7 +720,8 @@ bystationmap_fun <- function(mapin, bystationdat, stas, parameter, daterange2){
 
 #' Function to create a time series plot for a selected station
 #' 
-#' @param sel Selected station data from the input
+#' @param sela Selected station data from the left map
+#' @param selb Selected station data from the right map
 #' @param bystationdat Data frame containing the water quality data to plot
 #' @param nncdat Data frame containing the NNC data
 #' @param summarize2 Character string indicating how to summarize the data ('day', 'year')
@@ -728,24 +729,37 @@ bystationmap_fun <- function(mapin, bystationdat, stas, parameter, daterange2){
 #' @param parameter2a Character string indicating the first parameter to filter by
 #' @param parameter2b Character string indicating the second parameter to filter by
 #' @param daterange2 Date range to filter the data
-bystationplo_fun <- function(sel, bystationdat, nncdat, summarize2, showtrnd2, parameter2a,
+bystationplo_fun <- function(sela, selb, bystationdat, nncdat, summarize2, showtrnd2, parameter2a,
                              parameter2b, daterange2){
   
-  waterbody <- gsub("(^.*)\\_.*$", "\\1", sel$id)
-  station <- gsub(".*\\_(.*)$", "\\1", sel$id)
+  waterbodya <- gsub("(^.*)\\_.*$", "\\1", sela$id)
+  stationa <- gsub(".*\\_(.*)$", "\\1", sela$id)
+  waterbodyb <- gsub("(^.*)\\_.*$", "\\1", selb$id)
+  stationb <- gsub(".*\\_(.*)$", "\\1", selb$id)
   prm2a <- gsub("(^.*)\\_.*$", "\\1", parameter2a)
   prm2b <- gsub("(^.*)\\_.*$", "\\1", parameter2b)
   loca <- gsub(".*\\_(.*)$", "\\1", parameter2a)
   locb <- gsub(".*\\_(.*)$", "\\1", parameter2b)
+
+  cond_a <- length(waterbodya) > 0 && length(stationa) > 0
+  cond_b <- length(waterbodyb) > 0 && length(stationb) > 0
   
   toplo <- bystationdat |> 
     dplyr::filter(
       date >= as.Date(daterange2[1]) & 
         date <= as.Date(daterange2[2])
-    ) |>
-    dplyr::filter(waterbody == !!waterbody & station == !!station) |> 
+    )
+  
+  if(cond_a || cond_b)
+    toplo <- toplo |>
+      dplyr::filter(
+        (if(cond_a) waterbody == !!waterbodya & station == !!stationa else FALSE) |
+        (if(cond_b) waterbody == !!waterbodyb & station == !!stationb else FALSE)
+      )
+  
+  toplo <- toplo |> 
     dplyr::rename(avev = val) |> 
-    dplyr::select(date, parameter, location, avev)
+    dplyr::select(waterbody, station, date, parameter, location, avev)
   
   if(summarize2 == 'day'){
     ylab1 <- ylab_fun(prm2a, loca, addmean = F)
@@ -759,76 +773,78 @@ bystationplo_fun <- function(sel, bystationdat, nncdat, summarize2, showtrnd2, p
     
     if(summarize2 == 'year')
       toplo <-  toplo |> 
-      dplyr::mutate(
-        date = lubridate::floor_date(date, summarize2),
-      ) 
+        dplyr::mutate(
+          date = lubridate::floor_date(date, summarize2),
+        ) 
     
     if(summarize2 %in% c('wet season', 'dry season'))
       toplo <- toplo |> 
-      dplyr::mutate(
-        mo = lubridate::month(date), 
-        wetdry = as.character(factor(
-          ifelse(mo %in% c(6, 7, 8, 9), "wet", "dry"),
-          levels = c("wet", "dry")
-        )), 
-        wetdrygrp = rep(seq_along(rle(wetdry)$lengths), rle(wetdry)$lengths)
-      ) |>
-      dplyr::mutate(
-        date = lubridate::floor_date(min(date), 'month'), 
-        .by = c(wetdrygrp)
-      ) |> 
-      dplyr::filter(wetdry == gsub('\\sseason$', '', summarize2))
-    
+        dplyr::mutate(
+          mo = lubridate::month(date), 
+          wetdry = as.character(factor(
+            ifelse(mo %in% c(6, 7, 8, 9), "wet", "dry"),
+            levels = c("wet", "dry")
+          )), 
+          wetdrygrp = rep(seq_along(rle(wetdry)$lengths), rle(wetdry)$lengths)
+        ) |>
+        dplyr::mutate(
+          date = lubridate::floor_date(min(date), 'month'), 
+          .by = c(waterbody, station, wetdrygrp)
+        ) |> 
+        dplyr::filter(wetdry == gsub('\\sseason$', '', summarize2))
+      
     if(summarize2 %in% c('winter', 'spring', 'summer', 'fall'))
       toplo <- toplo |>
-      dplyr::mutate(
-        mo = lubridate::month(date), 
-        season = as.character(factor(
-          ifelse(mo %in% c(12, 1, 2), "winter",
-                 ifelse(mo %in% c(3, 4, 5), "spring",
-                        ifelse(mo %in% c(6, 7, 8), "summer", "fall"))),
-          levels = c("winter", "spring", "summer", "fall")
-        )), 
-        seasongrp = rep(seq_along(rle(season)$lengths), rle(season)$lengths)
-      ) |> 
-      dplyr::mutate(
-        date = lubridate::floor_date(min(date), 'month'), 
-        .by = c(seasongrp)
-      ) |> 
-      dplyr::filter(season == summarize2)
+        dplyr::mutate(
+          mo = lubridate::month(date), 
+          season = as.character(factor(
+            ifelse(mo %in% c(12, 1, 2), "winter",
+                  ifelse(mo %in% c(3, 4, 5), "spring",
+                          ifelse(mo %in% c(6, 7, 8), "summer", "fall"))),
+            levels = c("winter", "spring", "summer", "fall")
+          )), 
+          seasongrp = rep(seq_along(rle(season)$lengths), rle(season)$lengths)
+        ) |> 
+        dplyr::mutate(
+          date = lubridate::floor_date(min(date), 'month'), 
+          .by = c(waterbody, station, seasongrp)
+        ) |> 
+        dplyr::filter(season == summarize2)
     
     toplo <- toplo |> 
       dplyr::summarise(
         hivl = tryCatch(t.test(avev, conf.level = 0.95)$conf.int[2], silent = TRUE, error = function(e) NA),
         lovl = tryCatch(t.test(avev, conf.level = 0.95)$conf.int[1], silent = TRUE, error = function(e) NA),
         avev = mean(avev, na.rm = TRUE),
-        .by = c(date, parameter, location)
+        .by = c(waterbody, station, date, parameter, location)
       )
     
   }
   
   toplo1 <- toplo |> 
     dplyr::filter(parameter == prm2a & location == loca) |> 
+    dplyr::filter(
+      if(cond_a) waterbody %in% !!waterbodya & station %in% !!stationa else FALSE
+    ) |> 
     dplyr::arrange(date)
   toplo2 <- toplo |>
     dplyr::filter(parameter == prm2b & location == locb) |> 
+    dplyr::filter(
+      if(cond_b) waterbody %in% !!waterbodyb & station %in% !!stationb else FALSE
+    ) |> 
     dplyr::arrange(date)
   
   # Check for NNC thresholds
   nncchk1 <- nncdat |> 
     dplyr::filter(
-      waterbody %in% !!waterbody & 
-        station %in% !!station & 
-        parameter %in% substr(prm2a, 1, 3)
+      if(cond_a) waterbody %in% !!waterbodya & station %in% !!stationa & parameter %in% substr(prm2a, 1, 3) else FALSE
     ) |> 
     dplyr::select(parameter, value) |> 
     dplyr::distinct()
   
   nncchk2 <- nncdat |> 
     dplyr::filter(
-      waterbody %in% !!waterbody & 
-        station %in% !!station & 
-        parameter %in% substr(prm2b, 1, 3)
+      if(cond_a) waterbody %in% !!waterbodyb & station %in% !!stationb & parameter %in% substr(prm2b, 1, 3) else FALSE
     ) |> 
     dplyr::select(parameter, value) |> 
     dplyr::distinct()
@@ -840,24 +856,31 @@ bystationplo_fun <- function(sel, bystationdat, nncdat, summarize2, showtrnd2, p
   # Create combined chart using htmltools
   hc1 <- bystationplohc_fun(toplo1, toplo2, nncchk1, showtrnd2, date_range_ms, ylab1, summarize2)
   hc2 <- bystationplohc_fun(toplo2, toplo1, nncchk2, showtrnd2, date_range_ms, ylab2, summarize2)
-  
+
   out <- htmltools::div(
     style = "height: 550px; overflow: hidden;",
     
     # Styled title
     htmltools::h5(
       style = "text-align: center; margin: 0 0 10px 0; padding: 5px; color: #333; font-family: Arial, sans-serif;",
-      paste(waterbody, station)
+      if(cond_a)
+        paste(waterbodya, stationa)
     ),
     
     # Charts with equal heights
     htmltools::div(
-      style = "height: 250px; margin-bottom: 10px; overflow: hidden;",
+      style = "height: 230px; margin-bottom: 10px; overflow: hidden;",
       hc1
     ),
     
+    htmltools::h5(
+      style = "text-align: center; margin: 0 0 10px 0; padding: 5px; color: #333; font-family: Arial, sans-serif;",
+      if(cond_b)
+        paste(waterbodyb, stationb)
+    ),
+
     htmltools::div(
-      style = "height: 250px; overflow: hidden;",
+      style = "height: 230px; margin-bottom: 10px; overflow: hidden;",
       hc2
     )
   )
@@ -1045,7 +1068,7 @@ bystationplohc_fun <- function(toplo, toplosupp, nncchk, showtrnd2, date_range_m
   }
   
   out <- hc |> 
-    highcharter::hc_chart(height = 250) |> 
+    highcharter::hc_chart(height = 230) |> 
     highcharter::hc_chart(reflow = FALSE) |> 
     highcharter::hc_exporting(
       enabled = TRUE,
@@ -1427,28 +1450,34 @@ addselareamap_fun <- function(mapsel1){
 
 #' Add marker highlight to station map selection
 #'
-#' @param mapsel2 Data frame containing the selected station's longitude and latitude
-addselstationmap_fun <- function(mapsel2){
+#' @param mapsel2a Data frame containing the selected station's longitude and latitude for the left map
+#' @param mapsel2b Data frame containing the selected station's longitude and latitude for the right map
+addselstationmap_fun <- function(mapsel2a = NULL, mapsel2b = NULL){
   
-  if (!is.null(mapsel2)) {
+  if (!is.null(mapsel2a)) {
     
     leaflet::leafletProxy("bystationmap1") |>
       leaflet::clearGroup("highlight") |>
       leaflet::addCircleMarkers(
-        lng = mapsel2$lng, lat = mapsel2$lat,
+        lng = mapsel2a$data$lng, lat = mapsel2a$data$lat,
         group = "highlight", radius = 8, color = "black",
         fillColor = '#007BC2', fillOpacity = 0, opacity = 1, weight = 6,
         options = leaflet::pathOptions(clickable = FALSE)
       )
     
+  }
+
+  if(!is.null(mapsel2b)){
+
     leaflet::leafletProxy("bystationmap2") |>
       leaflet::clearGroup("highlight") |>
       leaflet::addCircleMarkers(
-        lng = mapsel2$lng, lat = mapsel2$lat,
+        lng = mapsel2b$data$lng, lat = mapsel2b$data$lat,
         group = "highlight", radius = 8, color = "black",
         fillColor = '#007BC2', fillOpacity = 0, opacity = 1, weight = 6,
         options = leaflet::pathOptions(clickable = FALSE)
       )
+    
   }
   
 }

@@ -577,29 +577,32 @@ server <- function(input, output, session) {
       bystationmap_fun(bystationmap1_proxy, bystationdat(), stas, input$parameter2a, input$daterange2)
       bystationmap_fun(bystationmap2_proxy, bystationdat(), stas, input$parameter2b, input$daterange2)
 
-      req(map_sel2())
-
       # Highlight selected station on both maps
-      addselstationmap_fun(map_sel2()$data)
+      if(!is.null(map_sel2a()))
+        addselstationmap_fun(map_sel2a(), NULL)
+
+      if(!is.null(map_sel2b()))
+        addselstationmap_fun(NULL, map_sel2b())
 
     }
 
   }, ignoreInit = FALSE) |> debounce(500)  # 500ms delay
 
-  # Station selection reactive
-  map_sel2 <- reactiveVal(NULL)
+  # Station selection reactives
+  map_sel2a <- reactiveVal(NULL)
+  map_sel2b <- reactiveVal(NULL)
 
   # Handle marker clicks from map 1
   observeEvent(input$bystationmap1_marker_click, {
     if (!is.null(input$bystationmap1_marker_click)) {
-      map_sel2(list(type = "marker", data = input$bystationmap1_marker_click))
+      map_sel2a(list(type = "marker", data = input$bystationmap1_marker_click))
     }
   })
 
   # Handle marker clicks from map 2
   observeEvent(input$bystationmap2_marker_click, {
     if (!is.null(input$bystationmap2_marker_click)) {
-      map_sel2(list(type = "marker", data = input$bystationmap2_marker_click))
+      map_sel2b(list(type = "marker", data = input$bystationmap2_marker_click))
     }
   })
 
@@ -655,28 +658,30 @@ server <- function(input, output, session) {
 
   # Highlight selected station on both maps
   observe({
-    req(map_sel2())
-    addselstationmap_fun(map_sel2()$data)
+    addselstationmap_fun(map_sel2a(), map_sel2b())
   }) |> debounce(500)
 
   # Plot for parameter 1
   bystationplo <- reactive({
 
-    req(map_sel2())
+    req(any(!is.null(map_sel2a()), !is.null(map_sel2b())))
     req(bystationdat())
     req(input$parameter2a)
     req(input$parameter2b)
-    sel <- map_sel2()$data
+    sela <- if(!is.null(map_sel2a())) map_sel2a()$data else NULL
+    selb <- if(!is.null(map_sel2b())) map_sel2b()$data else NULL
 
-    out <- bystationplo_fun(sel, bystationdat(), nncdat, input$summarize2, input$showtrnd2, input$parameter2a, input$parameter2b, input$daterange2)
+    out <- bystationplo_fun(sela, selb, bystationdat(), nncdat, input$summarize2, input$showtrnd2, input$parameter2a, input$parameter2b, input$daterange2)
 
     return(out)
 
   }) |> debounce(1000)
 
   # Toggle sidebar when marker is clicked
-  observeEvent(map_sel2(), {
-    sidebar_toggle("bystationsidebar", open = TRUE)
+  observe({
+    if (!is.null(map_sel2a()) || !is.null(map_sel2b())) {
+      sidebar_toggle("bystationsidebar", open = TRUE)
+    }
   })
 
   # # 3 - cnt data ----
@@ -832,7 +837,7 @@ server <- function(input, output, session) {
   output$parameter2a <- renderUI({
   
     req(dtprmsel())
-    
+
     selectInput('parameter2a', "Select Parameter One:", choices = dtprmsel())
     
   })
