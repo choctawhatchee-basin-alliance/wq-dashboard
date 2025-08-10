@@ -10,7 +10,7 @@ load(file = here('wq-dashboard/data/meta.RData'))
 load(file = here('wq-dashboard/data/cbawbid.RData'))
 load(file = here('wq-dashboard/data/nncdat.RData'))
 load(file = here('wq-dashboard/data/raindat.RData'))
-load(file = here('wq-dahsboard/data/rainstas.RData'))
+load(file = here('wq-dashboard/data/rainstas.RData'))
 
 dtrng <- c(as.Date('1992-11-08'), Sys.Date())
 stasbbox <- c(xmin = -86.78747, ymin = 30.2815, xmax = -85.68101, ymax = 31.10925) |> 
