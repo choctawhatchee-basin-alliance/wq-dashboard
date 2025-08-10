@@ -647,30 +647,65 @@ bystationdat_fun <- function(alldat, parameter2a, parameter2b){
 #' @param daterange2 Date range to filter the data
 bystationmap_fun <- function(mapin, bystationdat, stas, parameter, daterange2){
   
-  prm <- gsub("(^.*)\\_.*$", "\\1", parameter)
-  loc <- gsub(".*\\_(.*)$", "\\1", parameter)
-  
-  tomap <- bystationdat |> 
-    dplyr::filter(parameter == !!prm & location == !!loc) |> 
-    dplyr::filter(
-      date >= as.Date(daterange2[1]) & 
-        date <= as.Date(daterange2[2])
-    ) |>
-    dplyr::summarise(
-      val = mean(val, na.rm = T), 
-      .by = c(waterbody, station, parameter, location)
-    ) 
-  
-  out <- mapin
-  
-  pal <- leaflet::colorNumeric(
-    palette = "YlGnBu",
-    domain = tomap$val,
-    na.color = "transparent"
-  )
-  
-  lab <- ylab_fun(prm, loc)
-  
+  if(parameter != 'rain'){
+
+    prm <- gsub("(^.*)\\_.*$", "\\1", parameter)
+    loc <- gsub(".*\\_(.*)$", "\\1", parameter)
+    
+    tomap <- bystationdat |> 
+      dplyr::filter(parameter == !!prm & location == !!loc) |> 
+      dplyr::filter(
+        date >= as.Date(daterange2[1]) & 
+          date <= as.Date(daterange2[2])
+      ) |>
+      dplyr::summarise(
+        val = mean(val, na.rm = T), 
+        .by = c(waterbody, station, parameter, location)
+      ) 
+    
+    out <- mapin
+    
+    pal <- leaflet::colorNumeric(
+      palette = "YlGnBu",
+      domain = tomap$val,
+      na.color = "transparent"
+    )
+    
+    lab <- ylab_fun(prm, loc)
+
+  }
+
+  if(parameter == 'rain'){
+
+    tomap <- raindat |> 
+      dplyr::filter(
+        date >= as.Date(daterange2[1]) & 
+          date <= as.Date(daterange2[2])
+      ) |>
+      dplyr::mutate(
+        date = lubridate::floor_date(date, 'month')
+      ) |> 
+      dplyr::summarise(
+        val = sum(precip_inches, na.rm = T), 
+        .by = c(station, name, date)
+      ) |>
+      dplyr::summarise(
+        val = mean(val, na.rm = T), 
+        .by =c(station, name)
+      )
+    
+    out <- mapin
+    
+    pal <- leaflet::colorNumeric(
+      palette = "Blues",
+      domain = tomap$val,
+      na.color = "transparent"
+    )
+    
+    lab <- 'Mean monthly rainfall (inches)'
+
+  }
+
   # create map
   if(nrow(tomap) == 0){
     
@@ -680,7 +715,7 @@ bystationmap_fun <- function(mapin, bystationdat, stas, parameter, daterange2){
     
   }
   
-  if(nrow(tomap) != 0) {
+  if(nrow(tomap) != 0 && parameter != 'rain') {
     
     tomap <- dplyr::inner_join(stas, tomap, by = c('waterbody', 'station'))
     
@@ -699,6 +734,29 @@ bystationmap_fun <- function(mapin, bystationdat, stas, parameter, daterange2){
           style = list("font-size" = "16px")
         ),
         layerId = ~paste0(waterbody, "_", station)
+      )
+    
+  }
+  
+  if(nrow(tomap) != 0 && parameter == 'rain') {
+    
+    tomap <- dplyr::inner_join(rainstas, tomap, by = c('station', 'name'))
+    
+    out <- out |> 
+      leaflet::clearMarkers() |> 
+      leaflet::clearControls() |> 
+      leaflet::addCircleMarkers(
+        data = tomap,
+        radius = 7,
+        fillColor = ~pal(val),
+        fillOpacity = 0.7,
+        color = "#666",
+        weight = 1,
+        label = ~paste0(name, " ", station, ", Mean Value: ", round(val, 2)),
+        labelOptions = leaflet::labelOptions(
+          style = list("font-size" = "16px")
+        ),
+        layerId = ~paste0(name, "_", station)
       )
     
   }
@@ -1507,6 +1565,7 @@ addselcntmap_fun <- function(mapsel3){
 #' @param mapsel2 Data frame containing the selected station's ID
 stationprmsel_fun <- function(daterange2){
   
+  # parameters
   out <- alldat |> 
     dplyr::filter(date >= daterange2[1] & date <= daterange2[2]) |>
     dplyr::select(parameter, location) |> 
@@ -1532,6 +1591,13 @@ stationprmsel_fun <- function(daterange2){
     dplyr::arrange(labelnouni, .locale = 'en')
   
   out <- setNames(out$parameter, out$labelnouni)
+
+  # rain
+  rainout <- raindat |> 
+    dplyr::filter(date >= daterange2[1] & date <= daterange2[2])
+
+  if(nrow(rainout) > 0)
+    out <- c(out, 'Rainfall' = 'rain')
   
   return(out)
   
@@ -1738,10 +1804,10 @@ getallrain_fun <- function(stations, start_date, end_date, max_retries = 5, noaa
       date = as.Date(date),
       precip_inches = value / 254, # convert to inches
       station = gsub('^GHCND:', '', station),
-      station_name = factor(station, levels = names(stations), labels = stations)
+      name = factor(station, levels = names(stations), labels = stations)
     ) |> 
     dplyr::filter(!is.na(precip_inches)) |> 
-    dplyr::select(station, station_name, date, precip_inches)
+    dplyr::select(station, name, date, precip_inches)
 
   return(out)
 

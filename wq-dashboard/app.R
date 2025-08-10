@@ -661,7 +661,7 @@ server <- function(input, output, session) {
     addselstationmap_fun(map_sel2a(), map_sel2b())
   }) |> debounce(500)
 
-  # Plot for parameter 1
+  # Parameter comparison plot
   bystationplo <- reactive({
 
     req(any(!is.null(map_sel2a()), !is.null(map_sel2b())))
