@@ -29,6 +29,8 @@ Each file evaluates conditions and characteristics of the following files in the
 * `meta.RData` - Metadata file for `alldat`, no testing is needed
 * `nncdat.RData` - Contains numeric nutrient criteria (NNC) for relevant water quality parameters and WBIDs
 * `stas.RData` - Contains station information
+* `raindat.RData` - Contains rainfall data at three locations
+* `rainstas.RData` - Contains rainfall station locations
 
 Test files in `tests/testthat` evaluate the following:
 
@@ -41,6 +43,8 @@ Test files in `tests/testthat` evaluate the following:
 1. `test-checklocations.R` - Verifies all lat/lon entries in `stas` are within an appropriate bounding box polygon for the region
 1. `test-checknncdat.R` - Verifies stations and waterbodies in `alldat` are in `nncdat` and all WBIDs in `nncdat` are in `cbawbid`
 1. `test-checkparameters.R` - Parameters in `alldat` are included in `meta`
+1. `test-checkraindata.R` - Checks all rainfall data less than or greater than zero inches, dates greater than or equal to 1990-01-01 and less than or equal to system date.
+1. `test-checkrainstations.R` - Verifies station names are shared between `raindat` and `rainstas`
 1. `test-checksamplelocations.R` - Verifies sample location in `alldat` is provided as `surf` or `bott`, no missing entries
 1. `test-checkwaterbodies.R` - All waterbodies in `alldat` are identifiable
 1. `test-checkwbid.R` - All WBIDs in `stas` are identifiable, WBIDs in `alldat` are present in `cbawbid`

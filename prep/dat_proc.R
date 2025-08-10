@@ -6,6 +6,7 @@ library(googledrive)
 library(sf)
 library(janitor)
 library(readxl)
+library(dataRetrieval)
 
 source('wq-dashboard/R/funcs.R')
 
@@ -30,6 +31,26 @@ noaa_key <- Sys.getenv('NOAA_KEY')
 raindat <- getallrain_fun(stations, start_date, end_date, noaa_key = noaa_key)
 
 save(raindat, file = here::here('wq-dashboard/data/raindat.RData'))
+
+# get rain station location ----------------------------------------------
+
+stations <- c(
+    'USC00086240' = 'Niceville',
+    'USW00013884' = 'Crestview',
+    'USC00013251' = 'Geneva'
+  ) |>
+  enframe('station', 'name')
+  
+station_info <- rnoaa::ghcnd_stations()
+
+rainstas <- station_info |> 
+  filter(id %in% stations$station) |> 
+  select(station = id, latitude, longitude) |> 
+  unique() |> 
+  left_join(stations, by = 'station') |> 
+  st_as_sf(coords = c('longitude', 'latitude'), crs = 4326)
+
+save(rainstas, file = here::here('wq-dashboard/data/rainstas.RData'))
 
 # combine cba (physical) and lakewatch (discrete) ---------------------------------------------
 

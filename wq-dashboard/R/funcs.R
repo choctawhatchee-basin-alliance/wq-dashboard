@@ -1709,12 +1709,10 @@ getallrain_fun <- function(stations, start_date, end_date, max_retries = 5, noaa
       date = as.Date(date),
       precip_inches = value / 254, # convert to inches
       station = gsub('^GHCND:', '', station),
-      station_name = factor(station, levels = names(stations), labels = stations),
-      month = month(date, label = TRUE),
-      year = year(date)
+      station_name = factor(station, levels = names(stations), labels = stations)
     ) |> 
     dplyr::filter(!is.na(precip_inches)) |> 
-    dplyr::select(station, station_name, date, precip_inches, month, year)
+    dplyr::select(station, station_name, date, precip_inches)
 
   return(out)
 
