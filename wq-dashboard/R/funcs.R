@@ -789,7 +789,7 @@ bystationmap_fun <- function(mapin, bystationdat, stas, parameter, daterange2){
 #' @param daterange2 Date range to filter the data
 bystationplo_fun <- function(sela, selb, bystationdat, nncdat, summarize2, showtrnd2, parameter2a,
                              parameter2b, daterange2){
-  
+
   waterbodya <- gsub("(^.*)\\_.*$", "\\1", sela$id)
   stationa <- gsub(".*\\_(.*)$", "\\1", sela$id)
   waterbodyb <- gsub("(^.*)\\_.*$", "\\1", selb$id)
@@ -799,6 +799,8 @@ bystationplo_fun <- function(sela, selb, bystationdat, nncdat, summarize2, showt
   loca <- gsub(".*\\_(.*)$", "\\1", parameter2a)
   locb <- gsub(".*\\_(.*)$", "\\1", parameter2b)
 
+  rainstations <- unique(raindat$name)
+  
   cond_a <- length(waterbodya) > 0 && length(stationa) > 0
   cond_b <- length(waterbodyb) > 0 && length(stationb) > 0
   
@@ -808,16 +810,39 @@ bystationplo_fun <- function(sela, selb, bystationdat, nncdat, summarize2, showt
         date <= as.Date(daterange2[2])
     )
   
+  # filter rainfall data for top plot if selected
+  toploraina <- NULL
+  if(cond_a && waterbodya %in% rainstations)
+    toploraina <- raindat |> 
+      dplyr::filter(name %in% waterbodya) |> 
+      dplyr::mutate(
+        parameter = 'rain', 
+        location = 'surf'
+      ) |> 
+      dplyr::select(waterbody = name, station, date, parameter, location, avev = precip_inches)
+  
+  # filter rainfall data for bottom plot if selected
+  toplorainb <- NULL
+  if(cond_b && waterbodyb %in% rainstations)
+    toplorainb <- raindat |> 
+      dplyr::filter(name %in% waterbodyb) |> 
+      dplyr::mutate(
+        parameter = 'rain', 
+        location = 'surf'
+      ) |> 
+      dplyr::select(waterbody = name, station, date, parameter, location, avev = precip_inches)
+  
   if(cond_a || cond_b)
     toplo <- toplo |>
       dplyr::filter(
         (if(cond_a) waterbody == !!waterbodya & station == !!stationa else FALSE) |
         (if(cond_b) waterbody == !!waterbodyb & station == !!stationb else FALSE)
       )
-  
+
   toplo <- toplo |> 
     dplyr::rename(avev = val) |> 
-    dplyr::select(waterbody, station, date, parameter, location, avev)
+    dplyr::select(waterbody, station, date, parameter, location, avev) |> 
+    dplyr::bind_rows(toploraina, toplorainb)
   
   if(summarize2 == 'day'){
     ylab1 <- ylab_fun(prm2a, loca, addmean = F)
@@ -851,7 +876,7 @@ bystationplo_fun <- function(sela, selb, bystationdat, nncdat, summarize2, showt
         ) |> 
         dplyr::filter(wetdry == gsub('\\sseason$', '', summarize2))
       
-    if(summarize2 %in% c('winter', 'spring', 'summer', 'fall'))
+    if(summarize2 %in% c('winter', 'spring', 'summer', 'fall', 'season')){
       toplo <- toplo |>
         dplyr::mutate(
           mo = lubridate::month(date), 
@@ -866,18 +891,45 @@ bystationplo_fun <- function(sela, selb, bystationdat, nncdat, summarize2, showt
         dplyr::mutate(
           date = lubridate::floor_date(min(date), 'month'), 
           .by = c(waterbody, station, seasongrp)
-        ) |> 
-        dplyr::filter(season == summarize2)
-    
+        )
+      
+      if(summarize2 != 'season')
+        tplo <- toplo |>  
+          dplyr::filter(season == summarize2)
+
+    }
+
     toplo <- toplo |> 
-      dplyr::summarise(
-        hivl = tryCatch(t.test(avev, conf.level = 0.95)$conf.int[2], silent = TRUE, error = function(e) NA),
-        lovl = tryCatch(t.test(avev, conf.level = 0.95)$conf.int[1], silent = TRUE, error = function(e) NA),
-        avev = mean(avev, na.rm = TRUE),
-        .by = c(waterbody, station, date, parameter, location)
-      )
-    
+      dplyr::group_nest(parameter) |> 
+      dplyr::mutate(
+        data = purrr::pmap(list(parameter, data), function(parameter, data){
+          if(parameter == 'rain')
+            out <- data |> 
+              dplyr::summarise(
+                hivl = NA_real_, 
+                lovl = NA_real_,
+                avev = sum(avev, na.rm = T),
+                .by = c(waterbody, station, date, location)
+              )
+          if(parameter != 'rain')
+            out <- data |> 
+              dplyr::summarise(
+                hivl = tryCatch(t.test(avev, conf.level = 0.95)$conf.int[2], silent = TRUE, error = function(e) NA), 
+                lovl = tryCatch(t.test(avev, conf.level = 0.95)$conf.int[1], silent = TRUE, error = function(e) NA),
+                avev = mean(avev, na.rm = T),
+                .by = c(waterbody, station, date, location)
+              )
+          return(out)
+        })
+      ) |> 
+      tidyr::unnest('data')
+
   }
+  
+  if(prm2a == 'rain')
+    loca <- 'surf'
+  if(prm2b == 'rain')
+    locb <- 'surf'
   
   toplo1 <- toplo |> 
     dplyr::filter(parameter == prm2a & location == loca) |> 
@@ -955,7 +1007,7 @@ bystationplo_fun <- function(sela, selb, bystationdat, nncdat, summarize2, showt
 #' @param showtrnd2 Character string option for showing the trend line
 #' @param date_range_ms Numeric vector containing the start and end dates in milliseconds
 #' @param ylab Character string for the y-axis label
-#' @param summarize2 Character string indicating how to summarize the data ('day', 'year')
+#' @param summarize2 Character string indicating how to summarize the data ('day', 'year', etc)
 bystationplohc_fun <- function(toplo, toplosupp, nncchk, showtrnd2, date_range_ms, ylab, summarize2){
   
   # Create first chart
@@ -1660,6 +1712,13 @@ datechoice_fun <- function(alldat, location = unique(alldat$location), parameter
 #' @details Will return the parameter name, units, and location.  Location will only be included if parameter has both surface and bottom measurements.
 ylab_fun <- function(prm, loc, addmean = TRUE){
   
+  if(!is.null(loc) && !is.null(prm)){
+    if(prm == 'rain' && loc == 'rain'){
+      out <- "Cumulative rainfall (inches)"
+      return(out)
+    }
+  }
+
   ymeta <- meta |> 
     dplyr::filter(parameter == !!prm) 
   

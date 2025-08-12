@@ -21,7 +21,7 @@
 <img src='parmcompplotex1.png' style='width: 20%; display: block; margin: 0 auto;'>   
 <br>
 
-<p>The time series plots can also be summarized by means for different time periods. Available options are by day, year, winter (December, January, February), spring (March, April, May), summer (June, July, August), fall (September, October, November), wet season (June through September), or dry season (October through May). If summaries are by season, mean values within each season are plotted on the first month of the selected season. Confidence intervals (95%) are provided for the time period if year or season summaries are selected.</p>
+<p>The time series plots can also be summarized by means for different time periods. Available options are by day, year, season (winter, spring, summer, fall), winter (December, January, February), spring (March, April, May), summer (June, July, August), fall (September, October, November), wet season (June through September), or dry season (October through May). If summaries are by season, mean values within each season are plotted on the first month of the selected season or seasons. Confidence intervals (95%) are provided for the time period if year or season summaries are selected.</p>
 
 <p>A trend line showing the linear fit to the data can also be included by selecting an option from the top right menu.  Selecting "complete" will fit a line to the complete period of record for each plot.  Selecting "shortest" will fit a line to the shortest period of time shared between the two plots.  Selecting "ten years" will fit a line to the most recent ten year period for each plot. The trend line is not shown if ten years of data are not available for a plot.</p>
 
