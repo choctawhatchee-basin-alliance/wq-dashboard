@@ -1851,21 +1851,24 @@ getstatrain_fun <- function(station_id, start_date, end_date, max_retries = 5, n
 #' @param max_retries Integer indicating the maximum number of retries for API requests
 #' @param noaa_key Character NOAA API key
 #' 
-#' @return daily rainfall in inches for each station
+#' @return monthly cumulative rainfall in inches for each station
 getallrain_fun <- function(stations, start_date, end_date, max_retries = 5, noaa_key){
 
   # Retrieve data for all stations
   raindat <- purrr::map_dfr(names(stations), ~getstatrain_fun(.x, start_date, end_date, max_retries, noaa_key))
-
+browser()
   # Process the data
   out <- raindat |>
     dplyr::mutate(
-      date = as.Date(date),
+      date = floor_date(as.Date(date), 'month'),
       precip_inches = value / 254, # convert to inches
       station = gsub('^GHCND:', '', station),
       name = factor(station, levels = names(stations), labels = stations)
     ) |> 
-    dplyr::filter(!is.na(precip_inches)) |> 
+    dplyr::summarise(
+      precip_inches = sum(precip_inches, na.rm = T), 
+      .by =c(station, name, date)
+    ) |> 
     dplyr::select(station, name, date, precip_inches)
 
   return(out)
