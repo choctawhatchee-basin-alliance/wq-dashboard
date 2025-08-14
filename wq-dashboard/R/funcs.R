@@ -782,7 +782,7 @@ bystationmap_fun <- function(mapin, bystationdat, stas, parameter, daterange2){
 #' @param selb Selected station data from the right map
 #' @param bystationdat Data frame containing the water quality data to plot
 #' @param nncdat Data frame containing the NNC data
-#' @param summarize2 Character string indicating how to summarize the data ('day', 'year')
+#' @param summarize2 Character string indicating how to summarize the data ('none', 'day', etc)
 #' #' @param showtrnd Logical indicating whether to show trend lines (default FALSE)
 #' @param parameter2a Character string indicating the first parameter to filter by
 #' @param parameter2b Character string indicating the second parameter to filter by
@@ -844,12 +844,12 @@ bystationplo_fun <- function(sela, selb, bystationdat, nncdat, summarize2, showt
     dplyr::select(waterbody, station, date, parameter, location, avev) |> 
     dplyr::bind_rows(toploraina, toplorainb)
   
-  if(summarize2 == 'day'){
+  if(summarize2 == 'none'){
     ylab1 <- ylab_fun(prm2a, loca, addmean = F)
     ylab2 <- ylab_fun(prm2b, locb, addmean = F)
   }
   
-  if(summarize2 != 'day'){
+  if(summarize2 != 'none'){
     
     ylab1 <- ylab_fun(prm2a, loca)
     ylab2 <- ylab_fun(prm2b, locb)
@@ -1007,7 +1007,7 @@ bystationplo_fun <- function(sela, selb, bystationdat, nncdat, summarize2, showt
 #' @param showtrnd2 Character string option for showing the trend line
 #' @param date_range_ms Numeric vector containing the start and end dates in milliseconds
 #' @param ylab Character string for the y-axis label
-#' @param summarize2 Character string indicating how to summarize the data ('day', 'year', etc)
+#' @param summarize2 Character string indicating how to summarize the data ('none', 'year', etc)
 bystationplohc_fun <- function(toplo, toplosupp, nncchk, showtrnd2, date_range_ms, ylab, summarize2){
   
   # Create first chart
@@ -1027,7 +1027,7 @@ bystationplohc_fun <- function(toplo, toplosupp, nncchk, showtrnd2, date_range_m
   
   # Add data series for first chart
   if(nrow(toplo) > 0) {
-    if(summarize2 != 'day') {
+    if(summarize2 != 'none') {
       # Add series with error bars
       hc <- hc |>
         highcharter::hc_add_series(
@@ -1649,7 +1649,7 @@ stationprmsel_fun <- function(daterange2){
     dplyr::filter(date >= daterange2[1] & date <= daterange2[2])
 
   if(nrow(rainout) > 0)
-    out <- c(out, 'Rainfall' = 'rain')
+    out <- c('Rainfall' = 'rain', out)
   
   return(out)
   
@@ -1856,7 +1856,7 @@ getallrain_fun <- function(stations, start_date, end_date, max_retries = 5, noaa
 
   # Retrieve data for all stations
   raindat <- purrr::map_dfr(names(stations), ~getstatrain_fun(.x, start_date, end_date, max_retries, noaa_key))
-browser()
+
   # Process the data
   out <- raindat |>
     dplyr::mutate(

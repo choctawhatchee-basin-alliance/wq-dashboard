@@ -83,8 +83,8 @@ ui <- page_navbar(
                          choices = c("Region (WBID)" = "WBID", "Station" = "Station"),
                          selected = "WBID"),
             selectInput("parameter1", "Select Parameter:", choices = prms),
-            uiOutput("location1"),
-            uiOutput("daterange1")
+            uiOutput("location1out"),
+            uiOutput("daterange1out")
           ),
           layout_sidebar(
             border = FALSE,
@@ -159,12 +159,12 @@ ui <- page_navbar(
               style = "flex: 1; display: flex; gap: 10px; margin-bottom: 10px;",
               div(
                 style = "flex: 1;",
-                uiOutput('parameter2a'),
+                uiOutput('parameter2aout'),
                 leaflet::leafletOutput('bystationmap1', height = "100%")
               ),
               div(
                 style = "flex: 1;",
-                uiOutput('parameter2b'),
+                uiOutput('parameter2bout'),
                 leaflet::leafletOutput('bystationmap2', height = "100%")
               )
             )
@@ -175,9 +175,9 @@ ui <- page_navbar(
           sidebar = sidebar(
             id = "bystationsidebar",
             fluidRow(
-              column(6, selectInput("summarize2", "Summarize By:",
-                        choices = c("day", "year", "season", "winter", "spring", "summer", "fall", "wet season", "dry season"),
-                        selected = "day"),
+              column(6, selectInput("summarize2", "Time summary:",
+                        choices = c("none", "year", "season", "winter", "spring", "summer", "fall", "wet season", "dry season"),
+                        selected = "none"),
               ),
               column(6, selectInput("showtrnd2", 
                                     label = bslib::popover(
@@ -303,8 +303,7 @@ ui <- page_navbar(
           options = list(`actions-box` = TRUE, style = "btn-outline-secondary btn-sm")),
         pickerInput("parameter4", "Select Parameter:", choices = prms, selected = prms, multiple = T,
                     options = list(`actions-box` = TRUE, style = "btn-outline-secondary btn-sm")),
-        uiOutput("location4"),
-        uiOutput("daterange4")
+        uiOutput("daterange4out")
       ),
       border = FALSE,
       downloadButton('dwnld', 'Download data', class = "btn-primary"),
@@ -798,7 +797,7 @@ server <- function(input, output, session) {
   
   # output ----
   
-  output$daterange1 <- renderUI({
+  output$daterange1out <- renderUI({
     
     req(input$location1)
     
@@ -813,7 +812,7 @@ server <- function(input, output, session) {
     
   })
   
-  output$location1 <- renderUI({
+  output$location1out <- renderUI({
     
     parameter1 <- input$parameter1
     
@@ -834,7 +833,7 @@ server <- function(input, output, session) {
     
   })
   
-  output$parameter2a <- renderUI({
+  output$parameter2aout <- renderUI({
   
     req(dtprmsel())
 
@@ -842,7 +841,7 @@ server <- function(input, output, session) {
     
   })
   
-  output$parameter2b <- renderUI({
+  output$parameter2bout <- renderUI({
     
     req(dtprmsel())
     
@@ -850,7 +849,7 @@ server <- function(input, output, session) {
     
   })
   
-  output$daterange3 <- renderUI({
+  output$daterange3out <- renderUI({
     
     # inputs
     parameter3 <- input$parameter3
@@ -865,7 +864,7 @@ server <- function(input, output, session) {
     
   })
   
-  output$daterange4 <- renderUI({
+  output$daterange4out <- renderUI({
 
     # inputs
     waterbody4 <- input$waterbody4
