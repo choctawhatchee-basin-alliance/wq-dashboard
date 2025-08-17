@@ -144,15 +144,26 @@ ui <- page_navbar(
         class = 'card-scroll',
         layout_sidebar(
           border = FALSE,
-          sliderTextInput("daterange2",
+          fluidRow(
+            column(3, 
+              radioButtons("summarize2",
                           label = bslib::popover(
                             trigger = list(
-                              "Select Date Range:",
+                              "Summarize By:",
                               icon("info-circle")
                             ),
-                            HTML('click a station on the maps to view summary info on the right')
+                            HTML('click an area on the map to view summary info on the right, region (WBID) does not apply for rainfall')
                           ),
-                          choices = dtchc, selected = range(dtchc), width = '50%'),
+                          choices = c("Region (WBID)" = "WBID", "Station" = "Station"),
+                          inline = T,
+                          selected = "WBID"),
+            ),
+            column(9, 
+              sliderTextInput("daterange2",
+                            label = "Select Date Range:",
+                            choices = dtchc, selected = range(dtchc), width = '100%')
+            ),
+          ),
           div(
             style = "height: calc(100vh - 400px); display: flex; flex-direction: column;",
             div(
@@ -160,12 +171,12 @@ ui <- page_navbar(
               div(
                 style = "flex: 1;",
                 uiOutput('parameter2aout'),
-                leaflet::leafletOutput('bystationmap1', height = "100%")
+                leaflet::leafletOutput('parmcompmap1', height = "100%")
               ),
               div(
                 style = "flex: 1;",
                 uiOutput('parameter2bout'),
-                leaflet::leafletOutput('bystationmap2', height = "100%")
+                leaflet::leafletOutput('parmcompmap2', height = "100%")
               )
             )
           ),
@@ -173,9 +184,9 @@ ui <- page_navbar(
           position = 'left',
           open = TRUE,
           sidebar = sidebar(
-            id = "bystationsidebar",
+            id = "parmcompsidebar",
             fluidRow(
-              column(6, selectInput("summarize2", "Time summary:",
+              column(6, selectInput("summarize3", "Time summary:",
                         choices = c("none", "year", "season", "winter", "spring", "summer", "fall", "wet season", "dry season"),
                         selected = "none"),
               ),
@@ -191,7 +202,7 @@ ui <- page_navbar(
                                     selected = "none")
               )
             ),
-            uiOutput('bystationplo'),
+            uiOutput('parmcompplo'),
             border_radius = FALSE,
             fillable = FALSE,
             width = "40%",
@@ -243,7 +254,7 @@ ui <- page_navbar(
   #           sidebar = sidebar(
   #             id = "bycntsidebar",
   #             fluidRow(
-  #               column(8, selectInput("summarize3", "Summarize By:",
+  #               column(8, selectInput("summarize4", "Summarize By:",
   #                                     choices = c("none", "day", "week", "month", "quarter", "year"),
   #                                     selected = "month"),
   #               ),
@@ -549,12 +560,12 @@ server <- function(input, output, session) {
   })
 
   # station data
-  bystationdat <- reactive({
+  parmcompdat <- reactive({
 
     req(input$parameter2a)
     req(input$parameter2b)
 
-    out <- bystationdat_fun(alldat, input$parameter2a, input$parameter2b)
+    out <- parmcompdat_fun(alldat, input$parameter2a, input$parameter2b)
 
     return(out)
 
@@ -565,7 +576,7 @@ server <- function(input, output, session) {
   sync_in_progress <- reactiveVal(FALSE)
 
   # Initialize both maps
-  observeEvent(list(bystationdat(), input$daterange2, input$parameter2a, input$parameter2b, input$`main-nav`), {
+  observeEvent(list(parmcompdat(), input$daterange2, input$parameter2a, input$parameter2b, input$`main-nav`), {
 
     if(input$`main-nav` == 'parmcomp'){
 
@@ -573,15 +584,15 @@ server <- function(input, output, session) {
       req(input$parameter2b)
 
       # Initialize both maps with the same data
-      bystationmap_fun(bystationmap1_proxy, bystationdat(), stas, input$parameter2a, input$daterange2)
-      bystationmap_fun(bystationmap2_proxy, bystationdat(), stas, input$parameter2b, input$daterange2)
+      parmcompmap_fun(parmcompmap1_proxy, parmcompdat(), stas, input$parameter2a, input$daterange2)
+      parmcompmap_fun(parmcompmap2_proxy, parmcompdat(), stas, input$parameter2b, input$daterange2)
 
       # Highlight selected station on both maps
       if(!is.null(map_sel2a()))
-        addselstationmap_fun(map_sel2a(), NULL)
+        addselparmcompmap_fun(map_sel2a(), NULL)
 
       if(!is.null(map_sel2b()))
-        addselstationmap_fun(NULL, map_sel2b())
+        addselparmcompmap_fun(NULL, map_sel2b())
 
     }
 
@@ -592,36 +603,36 @@ server <- function(input, output, session) {
   map_sel2b <- reactiveVal(NULL)
 
   # Handle marker clicks from map 1
-  observeEvent(input$bystationmap1_marker_click, {
-    if (!is.null(input$bystationmap1_marker_click)) {
-      map_sel2a(list(type = "marker", data = input$bystationmap1_marker_click))
+  observeEvent(input$parmcompmap1_marker_click, {
+    if (!is.null(input$parmcompmap1_marker_click)) {
+      map_sel2a(list(type = "marker", data = input$parmcompmap1_marker_click))
     }
   })
 
   # Handle marker clicks from map 2
-  observeEvent(input$bystationmap2_marker_click, {
-    if (!is.null(input$bystationmap2_marker_click)) {
-      map_sel2b(list(type = "marker", data = input$bystationmap2_marker_click))
+  observeEvent(input$parmcompmap2_marker_click, {
+    if (!is.null(input$parmcompmap2_marker_click)) {
+      map_sel2b(list(type = "marker", data = input$parmcompmap2_marker_click))
     }
   })
 
   # Synchronize map view when map 1 center/zoom changes
-  observeEvent(list(input$bystationmap1_center, input$bystationmap1_zoom), {
+  observeEvent(list(input$parmcompmap1_center, input$parmcompmap1_zoom), {
     # Add time-based throttling to prevent loops
     current_time <- Sys.time()
     if (!sync_in_progress() &&
-        !is.null(input$bystationmap1_center) &&
-        !is.null(input$bystationmap1_zoom) &&
+        !is.null(input$parmcompmap1_center) &&
+        !is.null(input$parmcompmap1_zoom) &&
         as.numeric(current_time - last_sync_time()) > 0.5) {  # 0.5 second throttle
 
       sync_in_progress(TRUE)
       last_sync_time(current_time)
 
-      leaflet::leafletProxy("bystationmap2") %>%
+      leaflet::leafletProxy("parmcompmap2") %>%
         leaflet::setView(
-          lng = input$bystationmap1_center$lng,
-          lat = input$bystationmap1_center$lat,
-          zoom = input$bystationmap1_zoom
+          lng = input$parmcompmap1_center$lng,
+          lat = input$parmcompmap1_center$lat,
+          zoom = input$parmcompmap1_zoom
         )
 
       # Use reactive timer to reset sync flag
@@ -631,22 +642,22 @@ server <- function(input, output, session) {
   }, ignoreInit = TRUE)
 
   # Synchronize map view when map 2 center/zoom changes
-  observeEvent(list(input$bystationmap2_center, input$bystationmap2_zoom), {
+  observeEvent(list(input$parmcompmap2_center, input$parmcompmap2_zoom), {
     # Add time-based throttling to prevent loops
     current_time <- Sys.time()
     if (!sync_in_progress() &&
-        !is.null(input$bystationmap2_center) &&
-        !is.null(input$bystationmap2_zoom) &&
+        !is.null(input$parmcompmap2_center) &&
+        !is.null(input$parmcompmap2_zoom) &&
         as.numeric(current_time - last_sync_time()) > 0.5) {  # 0.5 second throttle
 
       sync_in_progress(TRUE)
       last_sync_time(current_time)
 
-      leaflet::leafletProxy("bystationmap1") %>%
+      leaflet::leafletProxy("parmcompmap1") %>%
         leaflet::setView(
-          lng = input$bystationmap2_center$lng,
-          lat = input$bystationmap2_center$lat,
-          zoom = input$bystationmap2_zoom
+          lng = input$parmcompmap2_center$lng,
+          lat = input$parmcompmap2_center$lat,
+          zoom = input$parmcompmap2_zoom
         )
 
       # Use reactive timer to reset sync flag
@@ -657,20 +668,20 @@ server <- function(input, output, session) {
 
   # Highlight selected station on both maps
   observe({
-    addselstationmap_fun(map_sel2a(), map_sel2b())
+    addselparmcompmap_fun(map_sel2a(), map_sel2b())
   }) |> debounce(500)
 
   # Parameter comparison plot
-  bystationplo <- reactive({
+  parmcompplo <- reactive({
 
     req(any(!is.null(map_sel2a()), !is.null(map_sel2b())))
-    req(bystationdat())
+    req(parmcompdat())
     req(input$parameter2a)
     req(input$parameter2b)
     sela <- if(!is.null(map_sel2a())) map_sel2a()$data else NULL
     selb <- if(!is.null(map_sel2b())) map_sel2b()$data else NULL
 
-    out <- bystationplo_fun(sela, selb, bystationdat(), nncdat, input$summarize2, input$showtrnd2, input$parameter2a, input$parameter2b, input$daterange2)
+    out <- parmcompplo_fun(sela, selb, parmcompdat(), nncdat, input$summarize3, input$showtrnd2, input$parameter2a, input$parameter2b, input$daterange2)
 
     return(out)
 
@@ -679,7 +690,7 @@ server <- function(input, output, session) {
   # Toggle sidebar when marker is clicked
   observe({
     if (!is.null(map_sel2a()) || !is.null(map_sel2b())) {
-      sidebar_toggle("bystationsidebar", open = TRUE)
+      sidebar_toggle("parmcompsidebar", open = TRUE)
     }
   })
 
@@ -735,7 +746,7 @@ server <- function(input, output, session) {
   #   sel <- map_sel3()
   #   
   #   out <- bycntplo_fun(sel$data, cntdat, input$parameter3,
-  #                        input$daterange3, input$summarize3, input$showtrnd3)
+  #                        input$daterange3, input$summarize4, input$showtrnd3)
   #   
   #   return(out)
   #   
@@ -886,11 +897,11 @@ server <- function(input, output, session) {
   output$byareaplo <- renderUI(byareaplo())
   output$byareagauge <- highcharter::renderHighchart(byareagauge())
   
-  output$bystationmap1 <- leaflet::renderLeaflet(bsmap(stas))
-  output$bystationmap2 <- leaflet::renderLeaflet(bsmap(stas))
-  bystationmap1_proxy <- leaflet::leafletProxy("bystationmap1")
-  bystationmap2_proxy <- leaflet::leafletProxy("bystationmap2")
-  output$bystationplo <- renderUI(bystationplo())
+  output$parmcompmap1 <- leaflet::renderLeaflet(bsmap(stas))
+  output$parmcompmap2 <- leaflet::renderLeaflet(bsmap(stas))
+  parmcompmap1_proxy <- leaflet::leafletProxy("parmcompmap1")
+  parmcompmap2_proxy <- leaflet::leafletProxy("parmcompmap2")
+  output$parmcompplo <- renderUI(parmcompplo())
 
   output$bycntmap <- leaflet::renderLeaflet(bsmap(stas))
   bycntmap_proxy <- leaflet::leafletProxy("bycntmap")

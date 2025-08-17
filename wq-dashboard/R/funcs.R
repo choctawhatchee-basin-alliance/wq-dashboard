@@ -621,7 +621,7 @@ byareagauge_fun <- function(shape_click, marker_click, byareadat, nncdat, parame
 #' @param alldat Data frame containing the water quality data to filter
 #' @param parameter2a Character string indicating the first parameter to filter by
 #' @param parameter2b Character string indicating the second parameter to filter by
-bystationdat_fun <- function(alldat, parameter2a, parameter2b){
+parmcompdat_fun <- function(alldat, parameter2a, parameter2b){
   
   prm2a <- gsub("(^.*)\\_.*$", "\\1", parameter2a)
   prm2b <- gsub("(^.*)\\_.*$", "\\1", parameter2b)
@@ -642,17 +642,17 @@ bystationdat_fun <- function(alldat, parameter2a, parameter2b){
 #'
 #' @param mapin Leaflet map object to update 
 #' @param stas sf object containing station geometries
-#' @param bystationdat Data frame containing the data to summarize and map
+#' @param parmcompdat Data frame containing the data to summarize and map
 #' @param parameter Character string indicating the parameter to filter by
 #' @param daterange2 Date range to filter the data
-bystationmap_fun <- function(mapin, bystationdat, stas, parameter, daterange2){
+parmcompmap_fun <- function(mapin, parmcompdat, stas, parameter, daterange2){
   
   if(parameter != 'rain'){
 
     prm <- gsub("(^.*)\\_.*$", "\\1", parameter)
     loc <- gsub(".*\\_(.*)$", "\\1", parameter)
     
-    tomap <- bystationdat |> 
+    tomap <- parmcompdat |> 
       dplyr::filter(parameter == !!prm & location == !!loc) |> 
       dplyr::filter(
         date >= as.Date(daterange2[1]) & 
@@ -776,18 +776,18 @@ bystationmap_fun <- function(mapin, bystationdat, stas, parameter, daterange2){
   
 }
 
-#' Function to create a time series plot for a selected station
+#' Function to create a time series plot for parameter comparisons
 #' 
-#' @param sela Selected station data from the left map
-#' @param selb Selected station data from the right map
-#' @param bystationdat Data frame containing the water quality data to plot
+#' @param sela Selected data from the left map
+#' @param selb Selected data from the right map
+#' @param parmcompdat Data frame containing the water quality data to plot
 #' @param nncdat Data frame containing the NNC data
-#' @param summarize2 Character string indicating how to summarize the data ('none', 'day', etc)
-#' #' @param showtrnd Logical indicating whether to show trend lines (default FALSE)
+#' @param summarize3 Character string indicating how to summarize the data ('none', 'day', etc)
+#' @param showtrnd Logical indicating whether to show trend lines (default FALSE)
 #' @param parameter2a Character string indicating the first parameter to filter by
 #' @param parameter2b Character string indicating the second parameter to filter by
 #' @param daterange2 Date range to filter the data
-bystationplo_fun <- function(sela, selb, bystationdat, nncdat, summarize2, showtrnd2, parameter2a,
+parmcompplo_fun <- function(sela, selb, parmcompdat, nncdat, summarize3, showtrnd2, parameter2a,
                              parameter2b, daterange2){
 
   waterbodya <- gsub("(^.*)\\_.*$", "\\1", sela$id)
@@ -804,7 +804,7 @@ bystationplo_fun <- function(sela, selb, bystationdat, nncdat, summarize2, showt
   cond_a <- length(waterbodya) > 0 && length(stationa) > 0
   cond_b <- length(waterbodyb) > 0 && length(stationb) > 0
   
-  toplo <- bystationdat |> 
+  toplo <- parmcompdat |> 
     dplyr::filter(
       date >= as.Date(daterange2[1]) & 
         date <= as.Date(daterange2[2])
@@ -844,23 +844,23 @@ bystationplo_fun <- function(sela, selb, bystationdat, nncdat, summarize2, showt
     dplyr::select(waterbody, station, date, parameter, location, avev) |> 
     dplyr::bind_rows(toploraina, toplorainb)
   
-  if(summarize2 == 'none'){
+  if(summarize3 == 'none'){
     ylab1 <- ylab_fun(prm2a, loca, addmean = F)
     ylab2 <- ylab_fun(prm2b, locb, addmean = F)
   }
   
-  if(summarize2 != 'none'){
+  if(summarize3 != 'none'){
     
     ylab1 <- ylab_fun(prm2a, loca)
     ylab2 <- ylab_fun(prm2b, locb)
     
-    if(summarize2 == 'year')
+    if(summarize3 == 'year')
       toplo <-  toplo |> 
         dplyr::mutate(
-          date = lubridate::floor_date(date, summarize2),
+          date = lubridate::floor_date(date, summarize3),
         ) 
     
-    if(summarize2 %in% c('wet season', 'dry season'))
+    if(summarize3 %in% c('wet season', 'dry season'))
       toplo <- toplo |> 
         dplyr::mutate(
           mo = lubridate::month(date), 
@@ -874,9 +874,9 @@ bystationplo_fun <- function(sela, selb, bystationdat, nncdat, summarize2, showt
           date = lubridate::floor_date(min(date), 'month'), 
           .by = c(waterbody, station, wetdrygrp)
         ) |> 
-        dplyr::filter(wetdry == gsub('\\sseason$', '', summarize2))
+        dplyr::filter(wetdry == gsub('\\sseason$', '', summarize3))
       
-    if(summarize2 %in% c('winter', 'spring', 'summer', 'fall', 'season')){
+    if(summarize3 %in% c('winter', 'spring', 'summer', 'fall', 'season')){
       toplo <- toplo |>
         dplyr::mutate(
           mo = lubridate::month(date), 
@@ -893,9 +893,9 @@ bystationplo_fun <- function(sela, selb, bystationdat, nncdat, summarize2, showt
           .by = c(waterbody, station, seasongrp)
         )
       
-      if(summarize2 != 'season')
+      if(summarize3 != 'season')
         tplo <- toplo |>  
-          dplyr::filter(season == summarize2)
+          dplyr::filter(season == summarize3)
 
     }
 
@@ -964,8 +964,8 @@ bystationplo_fun <- function(sela, selb, bystationdat, nncdat, summarize2, showt
                      as.numeric(as.POSIXct(daterange2[2])) * 1000)
   
   # Create combined chart using htmltools
-  hc1 <- bystationplohc_fun(toplo1, toplo2, nncchk1, showtrnd2, date_range_ms, ylab1, summarize2)
-  hc2 <- bystationplohc_fun(toplo2, toplo1, nncchk2, showtrnd2, date_range_ms, ylab2, summarize2)
+  hc1 <- parmcompplohc_fun(toplo1, toplo2, nncchk1, showtrnd2, date_range_ms, ylab1, summarize3)
+  hc2 <- parmcompplohc_fun(toplo2, toplo1, nncchk2, showtrnd2, date_range_ms, ylab2, summarize3)
 
   out <- htmltools::div(
     style = "height: 550px; overflow: hidden;",
@@ -999,7 +999,7 @@ bystationplo_fun <- function(sela, selb, bystationdat, nncdat, summarize2, showt
   
 }
 
-#' Helper function to create highcharts for bystationareaplo_fun
+#' Helper function to create highcharts for parmcompareaplo_fun
 #' 
 #' @param toplo Data frame containing the summarized data for the chart
 #' @param toplo Data frame containing the summarize data for the other chart, used if \code{showtrnd} is not "none"
@@ -1007,8 +1007,8 @@ bystationplo_fun <- function(sela, selb, bystationdat, nncdat, summarize2, showt
 #' @param showtrnd2 Character string option for showing the trend line
 #' @param date_range_ms Numeric vector containing the start and end dates in milliseconds
 #' @param ylab Character string for the y-axis label
-#' @param summarize2 Character string indicating how to summarize the data ('none', 'year', etc)
-bystationplohc_fun <- function(toplo, toplosupp, nncchk, showtrnd2, date_range_ms, ylab, summarize2){
+#' @param summarize3 Character string indicating how to summarize the data ('none', 'year', etc)
+parmcompplohc_fun <- function(toplo, toplosupp, nncchk, showtrnd2, date_range_ms, ylab, summarize3){
   
   # Create first chart
   hc <- highcharter::highchart() |>
@@ -1027,7 +1027,7 @@ bystationplohc_fun <- function(toplo, toplosupp, nncchk, showtrnd2, date_range_m
   
   # Add data series for first chart
   if(nrow(toplo) > 0) {
-    if(summarize2 != 'none') {
+    if(summarize3 != 'none') {
       # Add series with error bars
       hc <- hc |>
         highcharter::hc_add_series(
@@ -1289,9 +1289,9 @@ bystationplohc_fun <- function(toplo, toplosupp, nncchk, showtrnd2, date_range_m
 #' #' @param cntdat Data frame containing the continuous water quality data
 #' #' @param parameter3 Character string indicating the parameter to filter by
 #' #' @param daterange3 Date range to filter the data
-#' #' @param summarize3 Character string indicating how to summarize the data ('none', 'day', 'week', 'quarter' 'year')
+#' #' @param summarize4 Character string indicating how to summarize the data ('none', 'day', 'week', 'quarter' 'year')
 #' #' #' @param showtrnd Logical indicating whether to show trend lines (default FALSE)
-#' bycntplo_fun <- function(sel, cntdat, parameter3, daterange3, summarize3, 
+#' bycntplo_fun <- function(sel, cntdat, parameter3, daterange3, summarize4, 
 #'                          showtrnd){
 #'   
 #'   waterbody <- gsub("(^.*)\\_.*$", "\\1", sel$id)
@@ -1308,16 +1308,16 @@ bystationplohc_fun <- function(toplo, toplosupp, nncchk, showtrnd2, date_range_m
 #'     ) |> 
 #'     dplyr::arrange(date)
 #' 
-#'   if(summarize3 == 'none')
+#'   if(summarize4 == 'none')
 #'     ylab <- ylab_fun(prm3, NULL, addmean = F)
 #'   
-#'   if(summarize3 != 'none'){
+#'   if(summarize4 != 'none'){
 #'     
 #'     ylab <- ylab_fun(prm3, NULL, addmean = T)
 #'     
 #'     toplo <-  toplo |> 
 #'       dplyr::mutate(
-#'         date = lubridate::floor_date(date, summarize3),
+#'         date = lubridate::floor_date(date, summarize4),
 #'       ) |> 
 #'       dplyr::summarise(
 #'         hivl = tryCatch(t.test(avev, conf.level = 0.95)$conf.int[2], silent = TRUE, error = function(e) NA),
@@ -1349,7 +1349,7 @@ bystationplohc_fun <- function(toplo, toplosupp, nncchk, showtrnd2, date_range_m
 #'     
 #'     toplo <- toplo |> 
 #'       dplyr::mutate(date = as.numeric(as.POSIXct(date)) * 1000)
-#'     if(summarize3 != 'none') {
+#'     if(summarize4 != 'none') {
 #'       # Add series with error bars
 #'       hc <- hc |>
 #'         highcharter::hc_add_series(
@@ -1558,15 +1558,15 @@ addselareamap_fun <- function(mapsel1){
   
 }
 
-#' Add marker highlight to station map selection
+#' Add highlight to parmcomp map selection
 #'
-#' @param mapsel2a Data frame containing the selected station's longitude and latitude for the left map
-#' @param mapsel2b Data frame containing the selected station's longitude and latitude for the right map
-addselstationmap_fun <- function(mapsel2a = NULL, mapsel2b = NULL){
+#' @param mapsel2a Data frame containing the selected location's longitude and latitude for the left map
+#' @param mapsel2b Data frame containing the selected location's longitude and latitude for the right map
+addselparmcompmap_fun <- function(mapsel2a = NULL, mapsel2b = NULL){
   
   if (!is.null(mapsel2a)) {
     
-    leaflet::leafletProxy("bystationmap1") |>
+    leaflet::leafletProxy("parmcompmap1") |>
       leaflet::clearGroup("highlight") |>
       leaflet::addCircleMarkers(
         lng = mapsel2a$data$lng, lat = mapsel2a$data$lat,
@@ -1579,7 +1579,7 @@ addselstationmap_fun <- function(mapsel2a = NULL, mapsel2b = NULL){
 
   if(!is.null(mapsel2b)){
 
-    leaflet::leafletProxy("bystationmap2") |>
+    leaflet::leafletProxy("parmcompmap2") |>
       leaflet::clearGroup("highlight") |>
       leaflet::addCircleMarkers(
         lng = mapsel2b$data$lng, lat = mapsel2b$data$lat,
