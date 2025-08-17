@@ -284,7 +284,7 @@ byareaplo_fun <- function(shape_click, marker_click, alldat, stas, nncdat, locat
       dplyr::filter(WBID %in% id) |> 
       dplyr::pull(WATERBODY_NAME) |> 
       unique()
-    ttl <- paste(ttl, "-", id)
+    ttl <- paste0(ttl, " (", id, ")")
     
     # get nnc line if present
     chknnc <- nncdat |> 
@@ -855,14 +855,20 @@ parmcompplo_fun <- function(sela, selb, parmcompdat, nncdat, summarize3, showtrn
 
   rainstations <- unique(raindat$name)
   
+  ttla <- NULL
+  ttlb <- NULL
+
   cond_a <- length(waterbodya) > 0 && length(stationa) > 0
   cond_b <- length(waterbodyb) > 0 && length(stationb) > 0
-  
-  toplo <- parmcompdat |> 
+
+  toplo <- alldat |> 
     dplyr::filter(
       date >= as.Date(daterange2[1]) & 
         date <= as.Date(daterange2[2])
-    )
+    ) |> 
+    dplyr::filter(parameter %in% c(prm2a, prm2b)) |> 
+    dplyr::filter(location %in% c(loca, locb)) |> 
+    dplyr::rename(avev = val)
   
   # filter rainfall data for top plot if selected
   toploraina <- NULL
@@ -885,17 +891,79 @@ parmcompplo_fun <- function(sela, selb, parmcompdat, nncdat, summarize3, showtrn
         location = 'surf'
       ) |> 
       dplyr::select(waterbody = name, station, date, parameter, location, avev = precip_inches)
-  
-  if(cond_a || cond_b)
-    toplo <- toplo |>
-      dplyr::filter(
-        (if(cond_a) waterbody == !!waterbodya & station == !!stationa else FALSE) |
-        (if(cond_b) waterbody == !!waterbodyb & station == !!stationb else FALSE)
-      )
 
-  toplo <- toplo |> 
-    dplyr::rename(avev = val) |> 
-    dplyr::select(waterbody, station, date, parameter, location, avev) |> 
+  toploa <- NULL
+  if(cond_a){
+
+    if(waterbodya %in% stas$WBID){
+      tojn <- stas |> 
+        dplyr::filter(
+          WBID == !!waterbodya
+        ) |> 
+        sf::st_set_geometry(NULL) |> 
+        dplyr::select(waterbody, station, WBID, WATERBODY_NAME)
+      toploa <- toplo |> 
+        dplyr::inner_join(tojn, by = c('waterbody', 'station')) |> 
+        dplyr::summarise(
+          avev = mean(avev, na.rm = TRUE),
+          .by = c(WBID, date, parameter, location)
+        ) |> 
+        dplyr::rename(waterbody = WBID) |> 
+        dplyr::mutate(
+          station = !!waterbodya
+        )
+       ttla <- paste0(unique(tojn$WATERBODY_NAME), ' (', tojn$WBID, ')')
+      
+    }
+
+    if(!waterbodya %in% stas$WBID){
+     
+      ttla <- paste(waterbodya, stationa)
+
+      toploa <- toplo |>
+        dplyr::filter(
+          waterbody == !!waterbodya & station == !!stationa
+        ) 
+    }
+    
+  }
+
+  toplob <- NULL
+  if(cond_b){
+
+    if(waterbodyb %in% stas$WBID){
+      tojn <- stas |> 
+        dplyr::filter(
+          WBID == !!waterbodyb
+        ) |> 
+        sf::st_set_geometry(NULL) |> 
+        dplyr::select(waterbody, station, WBID, WATERBODY_NAME)
+      toplob <- toplo |> 
+        dplyr::inner_join(tojn, by = c('waterbody', 'station')) |> 
+        dplyr::summarise(
+          avev = mean(avev, na.rm = TRUE),
+          .by = c(WBID, date, parameter, location)
+        ) |> 
+        dplyr::rename(waterbody = WBID) |> 
+        dplyr::mutate(
+          station = !!waterbodyb
+        )
+        ttlb <- paste0(unique(tojn$WATERBODY_NAME), ' (', tojn$WBID, ')')
+      
+    }
+
+    if(!waterbodyb %in% stas$WBID){
+
+      ttlb <- paste(waterbodyb, stationb)
+
+      toplob <- toplo |>
+        dplyr::filter(
+          waterbody == !!waterbodyb & station == !!stationb
+        )
+
+    }
+  }
+  toplo <- dplyr::bind_rows(toploa, toplob) |> 
     dplyr::bind_rows(toploraina, toplorainb)
   
   if(summarize3 == 'none'){
@@ -1028,7 +1096,7 @@ parmcompplo_fun <- function(sela, selb, parmcompdat, nncdat, summarize3, showtrn
     htmltools::h5(
       style = "text-align: center; margin: 0 0 10px 0; padding: 5px; color: #333; font-family: Arial, sans-serif;",
       if(cond_a)
-        paste(waterbodya, stationa)
+        ttla
     ),
     
     # Charts with equal heights
@@ -1040,7 +1108,7 @@ parmcompplo_fun <- function(sela, selb, parmcompdat, nncdat, summarize3, showtrn
     htmltools::h5(
       style = "text-align: center; margin: 0 0 10px 0; padding: 5px; color: #333; font-family: Arial, sans-serif;",
       if(cond_b)
-        paste(waterbodyb, stationb)
+        ttlb
     ),
 
     htmltools::div(
@@ -1614,33 +1682,53 @@ addselareamap_fun <- function(mapsel1){
 
 #' Add highlight to parmcomp map selection
 #'
-#' @param mapsel2a Data frame containing the selected location's longitude and latitude for the left map
-#' @param mapsel2b Data frame containing the selected location's longitude and latitude for the right map
+#' @param mapsel2a Data frame containing the selected location for the left map
+#' @param mapsel2b Data frame containing the selected location for the right map
 addselparmcompmap_fun <- function(mapsel2a = NULL, mapsel2b = NULL){
-  
+
   if (!is.null(mapsel2a)) {
     
-    leaflet::leafletProxy("parmcompmap1") |>
-      leaflet::clearGroup("highlight") |>
-      leaflet::addCircleMarkers(
-        lng = mapsel2a$data$lng, lat = mapsel2a$data$lat,
-        group = "highlight", radius = 8, color = "black",
-        fillColor = '#007BC2', fillOpacity = 0, opacity = 1, weight = 6,
-        options = leaflet::pathOptions(clickable = FALSE)
-      )
+    if(mapsel2a$data$id %in% cbawbid$WBID)
+      leaflet::leafletProxy("parmcompmap1") |>
+        leaflet::clearGroup("highlight") |>
+        leaflet::addPolygons(
+          data = cbawbid |> dplyr::filter(WBID == mapsel2a$data$id), opacity = 1,
+          group = "highlight", color = "black", weight = 6, fillOpacity = 0,
+          options = leaflet::pathOptions(clickable = FALSE)
+        )
+      
+    if(!mapsel2a$data$id %in% cbawbid$WBID)
+      leaflet::leafletProxy("parmcompmap1") |>
+        leaflet::clearGroup("highlight") |>
+        leaflet::addCircleMarkers(
+          lng = mapsel2a$data$lng, lat = mapsel2a$data$lat,
+          group = "highlight", radius = 8, color = "black",
+          fillColor = '#007BC2', fillOpacity = 0, opacity = 1, weight = 6,
+          options = leaflet::pathOptions(clickable = FALSE)
+        )
     
   }
 
   if(!is.null(mapsel2b)){
 
-    leaflet::leafletProxy("parmcompmap2") |>
-      leaflet::clearGroup("highlight") |>
-      leaflet::addCircleMarkers(
-        lng = mapsel2b$data$lng, lat = mapsel2b$data$lat,
-        group = "highlight", radius = 8, color = "black",
-        fillColor = '#007BC2', fillOpacity = 0, opacity = 1, weight = 6,
-        options = leaflet::pathOptions(clickable = FALSE)
-      )
+    if(mapsel2b$data$id %in% cbawbid$WBID)
+      leaflet::leafletProxy("parmcompmap2") |>
+        leaflet::clearGroup("highlight") |>
+        leaflet::addPolygons(
+          data = cbawbid |> dplyr::filter(WBID == mapsel2b$data$id), opacity = 1,
+          group = "highlight", color = "black", weight = 6, fillOpacity = 0,
+          options = leaflet::pathOptions(clickable = FALSE)
+        )
+    
+    if(!mapsel2b$data$id %in% cbawbid$WBID)
+      leaflet::leafletProxy("parmcompmap2") |>
+        leaflet::clearGroup("highlight") |>
+        leaflet::addCircleMarkers(
+          lng = mapsel2b$data$lng, lat = mapsel2b$data$lat,
+          group = "highlight", radius = 8, color = "black",
+          fillColor = '#007BC2', fillOpacity = 0, opacity = 1, weight = 6,
+          options = leaflet::pathOptions(clickable = FALSE)
+        )
     
   }
   

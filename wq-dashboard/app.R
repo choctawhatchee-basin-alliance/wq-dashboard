@@ -603,10 +603,24 @@ server <- function(input, output, session) {
   map_sel2a <- reactiveVal(NULL)
   map_sel2b <- reactiveVal(NULL)
 
+  # Handle shape clicks from map 1
+  observeEvent(input$parmcompmap1_shape_click, {
+    if (!is.null(input$parmcompmap1_shape_click)) {
+      map_sel2a(list(type = "shape", data = input$parmcompmap1_shape_click))
+    }
+  })
+
   # Handle marker clicks from map 1
   observeEvent(input$parmcompmap1_marker_click, {
     if (!is.null(input$parmcompmap1_marker_click)) {
       map_sel2a(list(type = "marker", data = input$parmcompmap1_marker_click))
+    }
+  })
+
+  # Handle shape clicks from map 2
+  observeEvent(input$parmcompmap2_shape_click, {
+    if (!is.null(input$parmcompmap2_shape_click)) {
+      map_sel2b(list(type = "shape", data = input$parmcompmap2_shape_click))
     }
   })
 
