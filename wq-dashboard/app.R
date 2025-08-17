@@ -509,17 +509,17 @@ server <- function(input, output, session) {
   # parameters to select
   dtprmsel <- reactive({
 
-    stationprmsel_fun(input$daterange2)
+    parmcompprmsel_fun(input$daterange2, input$summarize2)
 
   })
 
   # retain last parameter selection on daterange2 change
-  observeEvent(input$daterange2, {
+  observeEvent(list(input$daterange2, input$summarize2), {
 
     req(input$parameter2a)
     req(input$parameter2b)
 
-    dtprmsel <- stationprmsel_fun(input$daterange2)
+    dtprmsel <- parmcompprmsel_fun(input$daterange2, input$summarize2)
 
     # Get current selection
     curparameter2a <- input$parameter2a
@@ -530,8 +530,8 @@ server <- function(input, output, session) {
     # update choices but preserve selection if it exists
     if (!is.null(curparameter2a)) {
       if (!curparameter2a %in% dtprmsel) {
-        curparameter2a <- stationprmsel[stationprmsel %in% curparameter2a]
-        names(curparameter2a) <- paste(names(curparameter2a), "(not in date range)")
+        curparameter2a <- parmcompprmsel[parmcompprmsel %in% curparameter2a]
+        names(curparameter2a) <- paste(names(curparameter2a), "(not available)")
         choices <- c(curparameter2a, choices)
       }
       updateSelectInput(session, "parameter2a",
@@ -545,8 +545,8 @@ server <- function(input, output, session) {
 
     if(!is.null(curparameter2b)) {
       if (!curparameter2b %in% dtprmsel) {
-        curparameter2b <- stationprmsel[stationprmsel %in% curparameter2b]
-        names(curparameter2b) <- paste(names(curparameter2b), "(not in date range)")
+        curparameter2b <- parmcompprmsel[parmcompprmsel %in% curparameter2b]
+        names(curparameter2b) <- paste(names(curparameter2b), "(not available)")
         choices <- c(curparameter2b, choices)
       }
       updateSelectInput(session, "parameter2b",
@@ -559,13 +559,14 @@ server <- function(input, output, session) {
 
   })
 
-  # station data
+  # parmcomp data
   parmcompdat <- reactive({
 
     req(input$parameter2a)
     req(input$parameter2b)
 
-    out <- parmcompdat_fun(alldat, input$parameter2a, input$parameter2b)
+    out <- parmcompdat_fun(alldat, raindat, stas, rainstas, input$summarize2, input$parameter2a, 
+      input$parameter2b, input$daterange2)
 
     return(out)
 
@@ -576,7 +577,7 @@ server <- function(input, output, session) {
   sync_in_progress <- reactiveVal(FALSE)
 
   # Initialize both maps
-  observeEvent(list(parmcompdat(), input$daterange2, input$parameter2a, input$parameter2b, input$`main-nav`), {
+  observeEvent(list(parmcompdat(), input$parameter2a, input$parameter2b, input$`main-nav`), {
 
     if(input$`main-nav` == 'parmcomp'){
 
@@ -584,8 +585,8 @@ server <- function(input, output, session) {
       req(input$parameter2b)
 
       # Initialize both maps with the same data
-      parmcompmap_fun(parmcompmap1_proxy, parmcompdat(), stas, input$parameter2a, input$daterange2)
-      parmcompmap_fun(parmcompmap2_proxy, parmcompdat(), stas, input$parameter2b, input$daterange2)
+      parmcompmap_fun(parmcompmap1_proxy, parmcompdat(), input$parameter2a)
+      parmcompmap_fun(parmcompmap2_proxy, parmcompdat(), input$parameter2b)
 
       # Highlight selected station on both maps
       if(!is.null(map_sel2a()))
@@ -694,6 +695,11 @@ server <- function(input, output, session) {
     }
   })
 
+  # toggle areamap close sidebar, summarize1 changes
+  observeEvent(input$summarize2, {
+    sidebar_toggle("parmcompsidebar", open = FALSE)
+  })  
+  
   # # 3 - cnt data ----
   # 
   # # data to map

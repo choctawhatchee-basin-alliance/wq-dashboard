@@ -619,49 +619,113 @@ byareagauge_fun <- function(shape_click, marker_click, byareadat, nncdat, parame
 #' Function to filter data by selected parameters and date range
 #' 
 #' @param alldat Data frame containing the water quality data to filter
+#' @param raindat Data frame with rainfall data
+#' @param stas Station location info
+#' @param rainstas Rain station location info
+#' @param summarize2 Character string for area to summarize by
 #' @param parameter2a Character string indicating the first parameter to filter by
 #' @param parameter2b Character string indicating the second parameter to filter by
-parmcompdat_fun <- function(alldat, parameter2a, parameter2b){
+#' @param daterange2 Date range to filter the water quality data
+parmcompdat_fun <- function(alldat, raindat, stas, rainstas, summarize2, parameter2a, parameter2b, daterange2){
   
   prm2a <- gsub("(^.*)\\_.*$", "\\1", parameter2a)
   prm2b <- gsub("(^.*)\\_.*$", "\\1", parameter2b)
   loca <- gsub(".*\\_(.*)$", "\\1", parameter2a)
   locb <- gsub(".*\\_(.*)$", "\\1", parameter2b)
   
-  out <- alldat |> 
-    dplyr::filter((parameter == prm2a & location == loca) | 
-                    (parameter == prm2b & location == locb)
-    ) |>
+  dat <- alldat |> 
+    dplyr::filter(
+      ((parameter == prm2a & location == loca) | 
+          (parameter == prm2b & location == locb)) &
+        date >= as.Date(daterange2[1]) & 
+        date <= as.Date(daterange2[2])
+    ) |> 
+    dplyr::select(waterbody, station, date, parameter, val) |> 
     dplyr::filter(!is.na(val))
+  dat <- dplyr::inner_join(stas, dat, by = c("waterbody", "station")) |> 
+    dplyr::select(waterbody, station, date, parameter, val, WBID, WATERBODY_NAME) |> 
+    sf::st_set_geometry(NULL)
+  
+  if (summarize2 == "WBID") {
+    
+    out <- dat |>
+      tidyr::unite('stas', waterbody, station) |> 
+      dplyr::summarise(
+        val = mean(val, na.rm = TRUE),
+        stas = length(unique(stas)),
+        .by = c(WBID, WATERBODY_NAME, parameter)
+      ) |> 
+      dplyr::mutate(
+        stas = dplyr::case_when(
+          stas == 1 ~ paste0(stas, " station"),
+          stas > 1 ~ paste0(stas, " stations"),
+          TRUE ~ "no stations"
+        )
+      ) |> 
+      dplyr::inner_join(cbawbid, by = c('WBID', 'WATERBODY_NAME')) |> 
+      sf::st_as_sf() |> 
+      dplyr::filter(!is.na(val))
+    
+  }
+  
+  if (summarize2 == "Station") {
+    
+    out <- dat |>  
+      dplyr::summarise(
+        val = mean(val, na.rm = TRUE),
+        .by = c(waterbody, station, parameter)
+      ) |> 
+      dplyr::left_join(stas, by = c('waterbody', 'station')) |> 
+      dplyr::select(-name, -WBID, -datestr, -dateend, -WATERBODY_NAME) |>
+      tidyr::unite('stas', waterbody, station, sep = '_', remove = F) |> 
+      sf::st_as_sf() |> 
+      dplyr::filter(!is.na(val))
+
+    if('rain' %in% c(prm2a, prm2b)){
+
+      toadd <- raindat |> 
+        dplyr::filter(
+          date >= as.Date(daterange2[1]) & 
+          date <= as.Date(daterange2[2])
+        ) |> 
+        dplyr::mutate(
+          parameter = 'rain'
+        ) |> 
+        dplyr::select(waterbody = name, station, date, parameter, val = precip_inches) |> 
+        dplyr::summarise(
+          val = mean(val, na.rm = TRUE),
+          .by = c(waterbody, station, parameter)
+        ) |> 
+        dplyr::left_join(rainstas, by = c('waterbody' = 'name', 'station')) |> 
+        tidyr::unite('stas', waterbody, station, sep = '_', remove = F) |> 
+        sf::st_as_sf() |> 
+        dplyr::filter(!is.na(val))
+          
+      out <- out |> 
+        dplyr::bind_rows(toadd)
+
+    }
+    
+  }
   
   return(out)
-  
+
 }
 
 #' Function to update the map with summarized data by area
 #'
-#' @param mapin Leaflet map object to update 
-#' @param stas sf object containing station geometries
+#' @param mapin Leaflet map object to update
 #' @param parmcompdat Data frame containing the data to summarize and map
 #' @param parameter Character string indicating the parameter to filter by
-#' @param daterange2 Date range to filter the data
-parmcompmap_fun <- function(mapin, parmcompdat, stas, parameter, daterange2){
-  
+parmcompmap_fun <- function(mapin, parmcompdat, parameter){
+
   if(parameter != 'rain'){
 
     prm <- gsub("(^.*)\\_.*$", "\\1", parameter)
     loc <- gsub(".*\\_(.*)$", "\\1", parameter)
     
     tomap <- parmcompdat |> 
-      dplyr::filter(parameter == !!prm & location == !!loc) |> 
-      dplyr::filter(
-        date >= as.Date(daterange2[1]) & 
-          date <= as.Date(daterange2[2])
-      ) |>
-      dplyr::summarise(
-        val = mean(val, na.rm = T), 
-        .by = c(waterbody, station, parameter, location)
-      ) 
+      dplyr::filter(parameter == !!prm) 
     
     out <- mapin
     
@@ -677,22 +741,8 @@ parmcompmap_fun <- function(mapin, parmcompdat, stas, parameter, daterange2){
 
   if(parameter == 'rain'){
 
-    tomap <- raindat |> 
-      dplyr::filter(
-        date >= as.Date(daterange2[1]) & 
-          date <= as.Date(daterange2[2])
-      ) |>
-      dplyr::mutate(
-        date = lubridate::floor_date(date, 'month')
-      ) |> 
-      dplyr::summarise(
-        val = sum(precip_inches, na.rm = T), 
-        .by = c(station, name, date)
-      ) |>
-      dplyr::summarise(
-        val = mean(val, na.rm = T), 
-        .by =c(station, name)
-      )
+    tomap <- parmcompdat |> 
+      dplyr::filter(parameter == 'rain')
     
     out <- mapin
     
@@ -710,16 +760,43 @@ parmcompmap_fun <- function(mapin, parmcompdat, stas, parameter, daterange2){
   if(nrow(tomap) == 0){
     
     out <- out %>%
+      leaflet::clearShapes() |> 
       leaflet::clearMarkers() |> 
       leaflet::clearControls()
     
   }
   
-  if(nrow(tomap) != 0 && parameter != 'rain') {
-    
-    tomap <- dplyr::inner_join(stas, tomap, by = c('waterbody', 'station'))
-    
+  if('WBID' %in% names(tomap)){
+
     out <- out |> 
+      leaflet::clearShapes() |> 
+      leaflet::clearMarkers() |> 
+      leaflet::clearControls() |> 
+      leaflet::addPolygons(
+        data = tomap,
+        fillColor = ~pal(val),
+        fillOpacity = 0.7,
+        color = "#666",
+        weight = 1,
+        highlightOptions = leaflet::highlightOptions(
+          weight = 3,
+          color = "#666",
+          fillOpacity = 0.7,
+          bringToFront = FALSE
+        ),
+        label = ~ lapply(paste0(WATERBODY_NAME, ' - ', WBID, "<br>Value: ", round(val, 2), " (", stas , ")"), HTML),
+        labelOptions = leaflet::labelOptions(
+          style = list("font-size" = "16px")
+        ), 
+        layerId = ~ WBID
+      )
+
+  }
+
+  if(!'WBID' %in% names(tomap)){
+
+    out <- out |> 
+      leaflet::clearShapes() |> 
       leaflet::clearMarkers() |> 
       leaflet::clearControls() |> 
       leaflet::addCircleMarkers(
@@ -734,29 +811,6 @@ parmcompmap_fun <- function(mapin, parmcompdat, stas, parameter, daterange2){
           style = list("font-size" = "16px")
         ),
         layerId = ~paste0(waterbody, "_", station)
-      )
-    
-  }
-  
-  if(nrow(tomap) != 0 && parameter == 'rain') {
-    
-    tomap <- dplyr::inner_join(rainstas, tomap, by = c('station', 'name'))
-    
-    out <- out |> 
-      leaflet::clearMarkers() |> 
-      leaflet::clearControls() |> 
-      leaflet::addCircleMarkers(
-        data = tomap,
-        radius = 7,
-        fillColor = ~pal(val),
-        fillOpacity = 0.7,
-        color = "#666",
-        weight = 1,
-        label = ~paste0(name, " ", station, ", Mean Value: ", round(val, 2)),
-        labelOptions = leaflet::labelOptions(
-          style = list("font-size" = "16px")
-        ),
-        layerId = ~paste0(name, "_", station)
       )
     
   }
@@ -1614,8 +1668,9 @@ addselcntmap_fun <- function(mapsel3){
 
 #' Function to get the list of parameters for given dates
 #' 
-#' @param mapsel2 Data frame containing the selected station's ID
-stationprmsel_fun <- function(daterange2){
+#' @param daterange2 Date range input
+#' @param summarize2 Summarize input
+parmcompprmsel_fun <- function(daterange2, summarize2){
   
   # parameters
   out <- alldat |> 
@@ -1644,13 +1699,17 @@ stationprmsel_fun <- function(daterange2){
   
   out <- setNames(out$parameter, out$labelnouni)
 
-  # rain
-  rainout <- raindat |> 
-    dplyr::filter(date >= daterange2[1] & date <= daterange2[2])
+  # add rain if station selected
+  if(summarize2 == 'Station'){
 
-  if(nrow(rainout) > 0)
-    out <- c('Rainfall' = 'rain', out)
-  
+    rainout <- raindat |> 
+      dplyr::filter(date >= daterange2[1] & date <= daterange2[2])
+
+    if(nrow(rainout) > 0)
+      out <- c('Rainfall' = 'rain', out)
+    
+  }
+
   return(out)
   
 }
