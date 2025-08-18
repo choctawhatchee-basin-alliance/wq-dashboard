@@ -4,9 +4,9 @@
 
 <h4 style = 'text-align: center'>Using this Tab</h4>
 
-<p>This tab provides a comparison of parameters at the same location. Begin by choosing a date range and parameters to compare using the selections above the maps.</p>
+<p>This tab provides a comparison of parameters for selected regions (WBIDs) or stations. Begin by choosing an area type to summarize (region or station), date range, and parameters to compare using the selections above the maps.</p>
 
-<p>The maps show the mean values using a color gradient for the selected parameters and date range. Mousing over a station on the map will show additional information. The example below shows information for summarized station including the waterbody and station identifier and the mean value of the parameter for the date range.</p>
+<p>The maps show the mean values using a color gradient for the selected summary areas, parameters, and date range. Mousing over a location on the map will show additional information. The example below shows information for summarized station including the waterbody and station identifier and the mean value of the parameter for the date range.</p>
  
 <img src='parmcompmapex1.png' style='width: 30%; display: block; margin: 0 auto;'>   
 <br>
@@ -16,7 +16,7 @@
 <img src='mapcontrols.png' style='width: 13%; display: block; margin: 0 auto;'>   
 <br>
 
-<p>Clicking a station on the map will highlight the selection and open the far right tab showing additional information. A station selected on one map will also be highlighted on the other map. A time series plot for the selected station will appear on the far right, showing values for the two parameters in the maps. Values for the left map are shown on the top and values for the right map are shown on the bottom. If available, relevant numeric nutrient criteria (NNC) are also shown on the plots as red lines. Note that these values are provided as reference only and cannot be used for regulatory assessment. Mousing over the plot will show additional information for the date and value at that point in the time series.</p>
+<p>Clicking a region or station on the map will highlight the selection and open the far right tab showing additional information. A time series plot for the selected location will appear on the far right, showing values for the chosen parameters in the maps. Values for the left map are shown on the top and values for the right map are shown on the bottom. If available, relevant numeric nutrient criteria (NNC) are also shown on the plots as red lines. Note that these values are provided as reference only and cannot be used for regulatory assessment. Mousing over the plot will show additional information for the date and value at that point in the time series.</p>
 
 <img src='parmcompplotex1.png' style='width: 20%; display: block; margin: 0 auto;'>   
 <br>

@@ -570,7 +570,7 @@ server <- function(input, output, session) {
 
     return(out)
 
-  })
+  }) |> debounce(1000)
 
   # shared reactive values for map synchronization
   last_sync_time <- reactiveVal(Sys.time())
@@ -597,12 +597,18 @@ server <- function(input, output, session) {
 
     }
 
-  }, ignoreInit = FALSE) |> debounce(500)  # 500ms delay
+  }, ignoreInit = FALSE) |> debounce(1000)  # 1000ms delay
 
   # Station selection reactives
   map_sel2a <- reactiveVal(NULL)
   map_sel2b <- reactiveVal(NULL)
 
+  # reset map selection when summarize2 changes
+  observeEvent(input$summarize2, {
+    map_sel2a(NULL)
+    map_sel2b(NULL)
+  }, ignoreInit = TRUE)
+  
   # Handle shape clicks from map 1
   observeEvent(input$parmcompmap1_shape_click, {
     if (!is.null(input$parmcompmap1_shape_click)) {

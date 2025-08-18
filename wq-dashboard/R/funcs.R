@@ -200,7 +200,7 @@ byareamap_fun <- function(mapin, byareadat, summarize1, parameter1, location1){
           fillOpacity = 0.7,
           bringToFront = FALSE
         ),
-        label = ~ lapply(paste0(WATERBODY_NAME, ' - ', WBID, "<br>Value: ", round(val, 2), " (", stas , ")"), HTML),
+        label = ~ lapply(paste0(WATERBODY_NAME, ' (', WBID, ")<br>Value: ", round(val, 2), " (", stas , ")"), HTML),
         labelOptions = leaflet::labelOptions(
           style = list("font-size" = "16px")
         ), 
@@ -216,7 +216,7 @@ byareamap_fun <- function(mapin, byareadat, summarize1, parameter1, location1){
         fillOpacity = 0.7,
         color = "#666",
         weight = 1,
-        label = ~paste0(waterbody, ' ', station, ", Value: ", round(val, 2)),
+        label = ~ lapply(paste0(waterbody, ' (', station, ")<br>Value: ", round(val, 2)), HTML),
         labelOptions = leaflet::labelOptions(
           style = list("font-size" = "16px")
         ),
@@ -299,7 +299,7 @@ byareaplo_fun <- function(shape_click, marker_click, alldat, stas, nncdat, locat
     id <- marker_click$id
     waterbody <- sub("_(.*)", "", id)
     station <- sub(".*_(.*)", "\\1", id)
-    ttl <- paste(waterbody, station)
+    ttl <- paste0(waterbody, ' (', station, ')')
     
     toplo <- toplo |> 
       dplyr::filter(waterbody == !!waterbody & station == !!station) |> 
@@ -784,7 +784,7 @@ parmcompmap_fun <- function(mapin, parmcompdat, parameter){
           fillOpacity = 0.7,
           bringToFront = FALSE
         ),
-        label = ~ lapply(paste0(WATERBODY_NAME, ' - ', WBID, "<br>Value: ", round(val, 2), " (", stas , ")"), HTML),
+        label = ~ lapply(paste0(WATERBODY_NAME, ' (', WBID, ")<br>Value: ", round(val, 2), " (", stas , ")"), HTML),
         labelOptions = leaflet::labelOptions(
           style = list("font-size" = "16px")
         ), 
@@ -806,7 +806,7 @@ parmcompmap_fun <- function(mapin, parmcompdat, parameter){
         fillOpacity = 0.7,
         color = "#666",
         weight = 1,
-        label = ~paste0(waterbody, " ", station, ", Mean Value: ", round(val, 2)),
+        label = ~ lapply(paste0(waterbody, " (", station, ")<br>Value: ", round(val, 2)), HTML),
         labelOptions = leaflet::labelOptions(
           style = list("font-size" = "16px")
         ),
@@ -930,7 +930,7 @@ parmcompplo_fun <- function(sela, selb, parmcompdat, nncdat, summarize3, showtrn
           waterbody == !!waterbodya & station == !!stationa
         ) 
       
-      ttla <- paste(waterbodya, stationa)
+      ttla <- paste0(waterbodya, ' (', stationa, ')')
       
       nncchka <- nncchka |> 
         dplyr::filter(
