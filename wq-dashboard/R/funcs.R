@@ -854,9 +854,6 @@ parmcompplo_fun <- function(sela, selb, parmcompdat, nncdat, summarize3, showtrn
   locb <- gsub(".*\\_(.*)$", "\\1", parameter2b)
 
   rainstations <- unique(raindat$name)
-  
-  ttla <- NULL
-  ttlb <- NULL
 
   cond_a <- length(waterbodya) > 0 && length(stationa) > 0
   cond_b <- length(waterbodyb) > 0 && length(stationb) > 0
@@ -893,6 +890,8 @@ parmcompplo_fun <- function(sela, selb, parmcompdat, nncdat, summarize3, showtrn
       dplyr::select(waterbody = name, station, date, parameter, location, avev = precip_inches)
 
   toploa <- NULL
+  ttla <- NULL
+  nncchka <- nncdat
   if(cond_a){
 
     if(waterbodya %in% stas$WBID){
@@ -912,26 +911,45 @@ parmcompplo_fun <- function(sela, selb, parmcompdat, nncdat, summarize3, showtrn
         dplyr::mutate(
           station = !!waterbodya
         )
-       ttla <- paste0(unique(tojn$WATERBODY_NAME), ' (', tojn$WBID, ')')
       
+      ttla <- paste0(unique(tojn$WATERBODY_NAME), ' (', unique(tojn$WBID), ')')
+      
+      nncchka <- nncchka |> 
+        dplyr::filter(
+          WBID %in% !!waterbodya & parameter %in% substr(prm2a, 1, 3)
+        ) |> 
+        dplyr::select(parameter, value) |> 
+        dplyr::distinct()
+
     }
 
     if(!waterbodya %in% stas$WBID){
-     
-      ttla <- paste(waterbodya, stationa)
 
       toploa <- toplo |>
         dplyr::filter(
           waterbody == !!waterbodya & station == !!stationa
         ) 
+      
+      ttla <- paste(waterbodya, stationa)
+      
+      nncchka <- nncchka |> 
+        dplyr::filter(
+          waterbody %in% !!waterbodya & station %in% !!stationa & parameter %in% substr(prm2a, 1, 3)
+        ) |> 
+        dplyr::select(parameter, value) |> 
+        dplyr::distinct()
+        
     }
     
   }
 
   toplob <- NULL
+  ttlb <- NULL
+  nncchkb <- nncdat
   if(cond_b){
 
     if(waterbodyb %in% stas$WBID){
+
       tojn <- stas |> 
         dplyr::filter(
           WBID == !!waterbodyb
@@ -948,21 +966,38 @@ parmcompplo_fun <- function(sela, selb, parmcompdat, nncdat, summarize3, showtrn
         dplyr::mutate(
           station = !!waterbodyb
         )
-        ttlb <- paste0(unique(tojn$WATERBODY_NAME), ' (', tojn$WBID, ')')
       
+      ttlb <- paste0(unique(tojn$WATERBODY_NAME), ' (', unique(tojn$WBID), ')')
+      
+      nncchkb <- nncchkb |> 
+        dplyr::filter(
+          WBID %in% !!waterbodyb & parameter %in% substr(prm2b, 1, 3)
+        ) |> 
+        dplyr::select(parameter, value) |> 
+        dplyr::distinct()
+
     }
 
     if(!waterbodyb %in% stas$WBID){
-
-      ttlb <- paste(waterbodyb, stationb)
 
       toplob <- toplo |>
         dplyr::filter(
           waterbody == !!waterbodyb & station == !!stationb
         )
 
+      ttlb <- paste(waterbodyb, stationb)
+
+      nncchkb <- nncchkb |> 
+        dplyr::filter(
+          waterbody %in% !!waterbodyb & station %in% !!stationb & parameter %in% substr(prm2b, 1, 3)
+        ) |> 
+        dplyr::select(parameter, value) |> 
+        dplyr::distinct()
+
     }
+
   }
+
   toplo <- dplyr::bind_rows(toploa, toplob) |> 
     dplyr::bind_rows(toploraina, toplorainb)
   
@@ -1066,28 +1101,13 @@ parmcompplo_fun <- function(sela, selb, parmcompdat, nncdat, summarize3, showtrn
     ) |> 
     dplyr::arrange(date)
   
-  # Check for NNC thresholds
-  nncchk1 <- nncdat |> 
-    dplyr::filter(
-      if(cond_a) waterbody %in% !!waterbodya & station %in% !!stationa & parameter %in% substr(prm2a, 1, 3) else FALSE
-    ) |> 
-    dplyr::select(parameter, value) |> 
-    dplyr::distinct()
-  
-  nncchk2 <- nncdat |> 
-    dplyr::filter(
-      if(cond_a) waterbody %in% !!waterbodyb & station %in% !!stationb & parameter %in% substr(prm2b, 1, 3) else FALSE
-    ) |> 
-    dplyr::select(parameter, value) |> 
-    dplyr::distinct()
-  
   # Convert dates to milliseconds for Highcharts
   date_range_ms <- c(as.numeric(as.POSIXct(daterange2[1])) * 1000,
                      as.numeric(as.POSIXct(daterange2[2])) * 1000)
   
   # Create combined chart using htmltools
-  hc1 <- parmcompplohc_fun(toplo1, toplo2, nncchk1, showtrnd2, date_range_ms, ylab1, summarize3)
-  hc2 <- parmcompplohc_fun(toplo2, toplo1, nncchk2, showtrnd2, date_range_ms, ylab2, summarize3)
+  hc1 <- parmcompplohc_fun(toplo1, toplo2, nncchka, showtrnd2, date_range_ms, ylab1, summarize3)
+  hc2 <- parmcompplohc_fun(toplo2, toplo1, nncchkb, showtrnd2, date_range_ms, ylab2, summarize3)
 
   out <- htmltools::div(
     style = "height: 550px; overflow: hidden;",
