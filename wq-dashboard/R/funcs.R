@@ -332,10 +332,47 @@ byareaplo_fun <- function(shape_click, marker_click, alldat, stas, nncdat, locat
       min = date_range_ms[1],
       max = date_range_ms[2],
       title = list(text = "")
-    ) |>
-    highcharter::hc_yAxis(title = list(text = ylab)) |>
-    highcharter::hc_legend(enabled = FALSE)
+    )
   
+  # Configure y-axes based on whether dual axis is needed for temp
+  if(grepl('Temperature', ylab)) {
+
+    primary_label <- ylab
+    secondary_label <- gsub('\\(F\\)', '(C)', ylab)
+    
+    # For axis scaling: C = (F - 32) * 5/9
+    hc <- hc |>
+      highcharter::hc_yAxis_multiples(
+        list(
+          title = list(text = primary_label),
+          id = "primary-axis"
+        ),
+        list(
+          title = list(text = secondary_label),
+          id = "secondary-axis",
+          opposite = TRUE,
+          # Link the axes with proper conversion
+          linkedTo = 0,
+          labels = list(
+            formatter = highcharter::JS(
+              "function() {
+                return ((this.value - 32) * 5/9).toFixed(1);
+              }"
+            )
+          )
+        )
+      )
+    
+  } else {
+    # Single y-axis
+    hc <- hc |>
+      highcharter::hc_yAxis(title = list(text = ylab))
+  }
+
+  # enable legend
+  hc <- hc |> 
+    highcharter::hc_legend(enabled = FALSE)
+
   # Add data series
   if(nrow(toplo) > 0) {
     hc <- hc |>
@@ -346,7 +383,17 @@ byareaplo_fun <- function(shape_click, marker_click, alldat, stas, nncdat, locat
         color = "blue",
         marker = list(radius = 3, fillColor = "lightblue"),
         tooltip = list(
-          pointFormatter = highcharter::JS("function() { return 'Value: ' + this.y.toFixed(2); }")
+          pointFormatter = if(grepl('Temperature', ylab)) {
+            highcharter::JS(paste0(
+              "function() { 
+                var val = this.y;
+                var valC = ((val - 32) * 5/9).toFixed(2);
+                return 'Value: ' + val.toFixed(2) + ' / ' + valC;
+              }"
+            ))
+          } else {
+            highcharter::JS("function() { return 'Value: ' + this.y.toFixed(2); }")
+          }
         )
       )
   }
@@ -449,7 +496,8 @@ byareaplo_fun <- function(shape_click, marker_click, alldat, stas, nncdat, locat
       filename = "myplot",
       buttons = list(
         contextButton = list(
-          menuItems = c("viewFullscreen", "downloadPNG", "downloadCSV")
+          menuItems = c("viewFullscreen", "downloadPNG", "downloadCSV"), 
+          y = -10
         )
       )
     )
@@ -542,6 +590,15 @@ byareagauge_fun <- function(shape_click, marker_click, byareadat, nncdat, parame
   )
   col <- pal(curval)
   
+  valin <- round(curval, 2)
+  val <- valin
+  # calculate celsius
+  if(parameter1 == 'temp'){
+    val2 <- round((curval - 32) * 5/9, 2)
+    val <- paste0(val, ' / ', val2)
+    units <- paste0(units, ' / C')
+  }
+
   out <- highcharter::highchart() |>
     highcharter::hc_chart(type = "solidgauge") |>
     highcharter::hc_add_theme(
@@ -587,11 +644,11 @@ byareagauge_fun <- function(shape_click, marker_click, byareadat, nncdat, parame
     ) |>
     highcharter::hc_add_series(
       name = "Value",
-      data = list(round(curval, 2)),
+      data = list(valin),
       color = col,
       dataLabels = list(
         format = paste0('<div style="text-align:center">',
-                        '<span style="font-size:25px">{y}</span><br/>',
+                        '<span style="font-size:20px">', val, '</span><br/>',
                         '<span style="font-size:16px;opacity:0.4">Time Series Mean (', units, ')</span>',
                         '</div>')
       ),
@@ -1051,7 +1108,7 @@ parmcompplo_fun <- function(sela, selb, parmcompdat, nncdat, summarize3, showtrn
         )
       
       if(summarize3 != 'season')
-        tplo <- toplo |>  
+        toplo <- toplo |>  
           dplyr::filter(season == summarize3)
 
     }
@@ -1163,10 +1220,47 @@ parmcompplohc_fun <- function(toplo, toplosupp, nncchk, showtrnd2, date_range_ms
       min = date_range_ms[1],
       max = date_range_ms[2],
       title = list(text = "")
-    ) |>
-    highcharter::hc_yAxis(title = list(text = ylab)) |>
-    highcharter::hc_legend(enabled = FALSE)
+    ) 
   
+  # Configure y-axes based on whether dual axis is needed for temp
+  if(grepl('Temperature', ylab)) {
+
+    primary_label <- ylab
+    secondary_label <- gsub('\\(F\\)', '(C)', ylab)
+    
+    # For axis scaling: C = (F - 32) * 5/9
+    hc <- hc |>
+      highcharter::hc_yAxis_multiples(
+        list(
+          title = list(text = primary_label),
+          id = "primary-axis"
+        ),
+        list(
+          title = list(text = secondary_label),
+          id = "secondary-axis",
+          opposite = TRUE,
+          # Link the axes with proper conversion
+          linkedTo = 0,
+          labels = list(
+            formatter = highcharter::JS(
+              "function() {
+                return ((this.value - 32) * 5/9).toFixed(1);
+              }"
+            )
+          )
+        )
+      )
+    
+  } else {
+    # Single y-axis
+    hc <- hc |>
+      highcharter::hc_yAxis(title = list(text = ylab))
+  }    
+  
+  # enable legend
+  hc <- hc |>
+    highcharter::hc_legend(enabled = FALSE)
+
   # Add data series for first chart
   if(nrow(toplo) > 0) {
     if(summarize3 != 'none') {
@@ -1189,7 +1283,17 @@ parmcompplohc_fun <- function(toplo, toplosupp, nncchk, showtrnd2, date_range_ms
           color = "blue",
           marker = list(radius = 3, fillColor = "lightblue"),
           tooltip = list(
-            pointFormatter = highcharter::JS("function() { return 'Value: ' + this.y.toFixed(2); }")
+            pointFormatter = if(grepl('Temperature', ylab)) {
+              highcharter::JS(paste0(
+                "function() { 
+                  var val = this.y;
+                  var valC = ((val - 32) * 5/9).toFixed(2);
+                  return 'Value: ' + val.toFixed(2) + ' / ' + valC;
+                }"
+              ))
+            } else {
+              highcharter::JS("function() { return 'Value: ' + this.y.toFixed(2); }")
+            }
           )
         )
     } else {
@@ -1202,7 +1306,17 @@ parmcompplohc_fun <- function(toplo, toplosupp, nncchk, showtrnd2, date_range_ms
           color = "blue",
           marker = list(radius = 3, fillColor = "lightblue"),
           tooltip = list(
-            pointFormatter = highcharter::JS("function() { return 'Value: ' + this.y.toFixed(2); }")
+            pointFormatter = if(grepl('Temperature', ylab)) {
+              highcharter::JS(paste0(
+                "function() { 
+                  var val = this.y;
+                  var valC = ((val - 32) * 5/9).toFixed(2);
+                  return 'Value: ' + val.toFixed(2) + ' / ' + valC;
+                }"
+              ))
+            } else {
+              highcharter::JS("function() { return 'Value: ' + this.y.toFixed(2); }")
+            }
           )
         )
     }
@@ -1327,7 +1441,8 @@ parmcompplohc_fun <- function(toplo, toplosupp, nncchk, showtrnd2, date_range_ms
       filename = "myplot",
       buttons = list(
         contextButton = list(
-          menuItems = c("viewFullscreen", "downloadPNG", "downloadCSV")
+          menuItems = c("viewFullscreen", "downloadPNG", "downloadCSV"), 
+          y = -10
         )
       )
     )
