@@ -4,11 +4,11 @@ on:
       - main
       - master
     
-name: build 
+name: tests
 
 jobs:
   render:
-    name: build
+    name: tests
     runs-on: macOS-latest
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
