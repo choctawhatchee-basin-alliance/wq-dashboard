@@ -1,4 +1,4 @@
-name: Process Water Quality Data
+name: data-build
 
 on:
   workflow_dispatch:  # Manual triggering only
@@ -81,7 +81,7 @@ jobs:
         
     - name: Upload artifacts
       if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: processed-data
         path: |
