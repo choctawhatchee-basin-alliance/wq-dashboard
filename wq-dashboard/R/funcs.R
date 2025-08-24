@@ -1042,7 +1042,7 @@ parmcompplo_fun <- function(sela, selb, parmcompdat, nncdat, summarize3, showtrn
           waterbody == !!waterbodyb & station == !!stationb
         )
 
-      ttlb <- paste(waterbodyb, stationb)
+      ttlb <- paste0(waterbodyb, ' (', stationb, ')')
 
       nncchkb <- nncchkb |> 
         dplyr::filter(
