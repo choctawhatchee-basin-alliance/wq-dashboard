@@ -7,15 +7,36 @@ library(sf)
 library(janitor)
 library(readxl)
 library(dataRetrieval)
+library(jsonlite)
 
 source('wq-dashboard/R/funcs.R')
 
 # need to do this because read only, won't work in non-interactive session
 # also note that sheet reads can lag when not pulled from home
-gs4_auth(
-  email = 'mbafs2012@gmail.com',
-  scope = "https://www.googleapis.com/auth/spreadsheets.readonly"
-)
+service_account_key <- Sys.getenv('GOOGLE_SERVICE_ACCOUNT_KEY')
+
+if (service_account_key != "") {
+  # First, completely reset authentication
+  gs4_deauth()
+  
+  # Parse and write key
+  key_data <- fromJSON(service_account_key)
+  temp_key_file <- tempfile(fileext = ".json")
+  on.exit(file.remove(temp_key_file), add = TRUE)
+  write_json(key_data, temp_key_file, auto_unbox = TRUE)
+  
+  # Try authenticating with explicit options
+  gs4_auth(
+    path = temp_key_file,
+    cache = FALSE,
+    use_oob = TRUE
+  )
+} else {
+  gs4_auth(
+    email = 'mbafs2012@gmail.com',
+    scope = "https://www.googleapis.com/auth/spreadsheets.readonly"
+  )
+}
 
 # all files https://drive.google.com/drive/u/1/folders/1x51X6p60KOKpC3UEStIkuAWRhOH-8FHS
 
@@ -57,7 +78,8 @@ save(rainstas, file = here::here('wq-dashboard/data/rainstas.RData'))
 
 # combine cba (physical) and lakewatch (discrete) ---------------------------------------------
 
-# physical data - CBA
+# https://docs.google.com/spreadsheets/d/16_B7XLMDDgL-4RDz4UaFE4Gk569tYi2xaf1f96mAauY/edit?usp=drive_link
+# CBA Water Chemistry
 rawdat1 <- read_sheet('16_B7XLMDDgL-4RDz4UaFE4Gk569tYi2xaf1f96mAauY', na = c('NA', '', '.'))
 
 dat1 <- rawdat1 |> 
@@ -106,7 +128,8 @@ dat1 <- rawdat1 |>
 
 cbadat <- dat1
 
-# nutrient data - lakewatch
+# https://docs.google.com/spreadsheets/d/1h4yvi9AnISVFbH_AvBw7wDx7s5-4VIOdqD-VToExmvg/edit?usp=drive_link
+# LAKEWATCH nutrients
 rawdat2 <- read_sheet('1h4yvi9AnISVFbH_AvBw7wDx7s5-4VIOdqD-VToExmvg', na = c('NA', '', '.'), col_types = 'c')#cccccccccccccccccccccccccccccc')
 
 # inactive lakewatch stations to remove
@@ -217,6 +240,8 @@ capwords <- function(s, strict = FALSE) {
   sapply(strsplit(s, split = " "), cap, USE.NAMES = !is.null(names(s)))
 }
 
+# https://docs.google.com/spreadsheets/d/13ob5pYoKnYMTMn-jqKFFT6e0QyrDPXmBK9QtcB0gnrw/edit?usp=drive_link
+# Station IDs_2025
 rawdat <- read_sheet('13ob5pYoKnYMTMn-jqKFFT6e0QyrDPXmBK9QtcB0gnrw')
 
 # this has wbid but it's from an older wbid layer, not all are in the current fdep layer
@@ -322,6 +347,8 @@ save(meta, file = 'wq-dashboard/data/meta.RData')
 
 # nnc references ------------------------------------------------------------------------------
 
+# https://docs.google.com/spreadsheets/d/1VQWzS-GMOzc-Xs0XoTa8Ifz8QyG_6WhU8THJPjRqWBs/edit?usp=drive_link
+# NNC Mapping
 nncraw <- read_sheet('1VQWzS-GMOzc-Xs0XoTa8Ifz8QyG_6WhU8THJPjRqWBs', 
                      col_types = 'cccccddd', na = c('NA', '', '.'))  
 
