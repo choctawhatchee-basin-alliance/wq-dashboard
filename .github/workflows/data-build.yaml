@@ -51,7 +51,7 @@ jobs:
           readxl
           dataRetrieval
           here
-          rnoaa
+          ropensci/rnoaa
           lubridate
           rsconnect
           jsonlite
