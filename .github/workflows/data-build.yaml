@@ -45,6 +45,7 @@ jobs:
         cache-version: 3  # Increment this to clear cache
         packages: |
           bsicons
+          cpp11
           dataRetrieval
           googledrive
           googlesheets4
@@ -62,7 +63,7 @@ jobs:
           sf
           tidyverse
 
-    - name: Run R script
+    - name: Data processing
       run: |
         R -e "
         # Set working directory
@@ -71,27 +72,7 @@ jobs:
         # Source and run the script
         source('prep/dat_proc.R')
         "
-        
-    - name: Commit and push updated data files
-      run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        git add -A
-        if ! git diff --staged --quiet; then
-          git commit -m "Update data files - $(date)"
-          git push
-        else
-          echo "No changes to commit"
-        fi
-        
-    - name: Upload artifacts
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: processed-data
-        path: |
-          wq-dashboard/data/*.RData
-          
+
     - name: Deploy to shinyapps.io
       run: |
         R -e "
@@ -111,7 +92,27 @@ jobs:
           account = 'beckmw',
           forceUpdate = TRUE
         )
-        "
+        "   
+
+    - name: Commit and push updated files
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add -A
+        if ! git diff --staged --quiet; then
+          git commit -m "Update data"
+          git push
+        else
+          echo "No changes to commit"
+        fi
+        
+    - name: Upload artifacts
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: processed-data
+        path: |
+          wq-dashboard/data/*.RData
         
     - name: Cleanup
       if: always()
