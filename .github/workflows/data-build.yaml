@@ -44,18 +44,23 @@ jobs:
       with:
         cache-version: 3  # Increment this to clear cache
         packages: |
-          tidyverse
-          googlesheets4
-          googledrive
-          sf
-          janitor
-          readxl
+          bsicons
           dataRetrieval
+          googledrive
+          googlesheets4
           here
+          highcharter
           httr
+          janitor
+          jsonlite          
           lubridate
+          markdown
+          readxl
+          reactable
           rsconnect
-          jsonlite
+          shinyWidgets
+          sf
+          tidyverse
 
     - name: Run R script
       run: |
