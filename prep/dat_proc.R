@@ -65,12 +65,18 @@ stations <- c(
   ) |>
   enframe('station', 'name')
   
-station_info <- rnoaa::ghcnd_stations()
+# station_info <- rnoaa::ghcnd_stations()
 
-rainstas <- station_info |> 
-  filter(id %in% stations$station) |> 
-  select(station = id, latitude, longitude) |> 
-  unique() |> 
+# rainstas <- station_info |> 
+#   filter(id %in% stations$station) |> 
+#   select(station = id, latitude, longitude) |> 
+#   unique() 
+
+rainstas <- tibble(
+    station = c("USC00013251", "USC00086240", "USW00013884"),
+    latitude = c(31.0383, 30.5317, 30.7772), 
+    longitude = c(-85.8708, -86.4928, -86.5194)
+  ) |> 
   left_join(stations, by = 'station') |> 
   st_as_sf(coords = c('longitude', 'latitude'), crs = 4326)
 

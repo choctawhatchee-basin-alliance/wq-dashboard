@@ -42,7 +42,7 @@ jobs:
     - name: Setup R dependencies
       uses: r-lib/actions/setup-r-dependencies@v2
       with:
-        cache-version: 2  # Increment this to clear cache
+        cache-version: 3  # Increment this to clear cache
         packages: |
           tidyverse
           googlesheets4
@@ -52,13 +52,10 @@ jobs:
           readxl
           dataRetrieval
           here
+          httr
           lubridate
           rsconnect
           jsonlite
-        extra-packages: |
-          ropensci/rnoaa
-        
-
 
     - name: Run R script
       run: |

@@ -2049,7 +2049,7 @@ getstatrain_fun <- function(station_id, start_date, end_date, max_retries = 5, n
     end_dt <- as.Date(end_date)
     
     # Create date ranges by year to handle API limitations
-    years <- seq(year(start_dt), year(end_dt))
+    years <- seq(lubridate::year(start_dt), lubridate::year(end_dt))
     all_station_data <- list()
     
     for (yr in years) {
@@ -2074,16 +2074,38 @@ getstatrain_fun <- function(station_id, start_date, end_date, max_retries = 5, n
 
         # Attempt to retrieve data for this year
         tryCatch({
-          api_result <- rnoaa::ncdc(datasetid = 'GHCND',
-                             stationid = paste0('GHCND:', station_id),
-                             datatypeid = 'PRCP',
-                             startdate = as.character(year_start),
-                             enddate = as.character(year_end),
-                             limit = 1000, 
-                            token = noaa_key)
           
-          if (!is.null(api_result$data) && nrow(api_result$data) > 0) {
-            year_data <- api_result$data
+          # Build the API URL and parameters
+          base_url <- "https://www.ncei.noaa.gov/cdo-web/api/v2/data"
+          
+          params <- list(
+            datasetid = "GHCND",
+            stationid = paste0("GHCND:", station_id),
+            datatypeid = "PRCP",
+            startdate = as.character(year_start),
+            enddate = as.character(year_end),
+            limit = 1000,
+            units = "standard"
+          )
+          
+          # Make the API request
+          response <- httr::GET(
+            url = base_url,
+            query = params,
+            httr::add_headers(token = noaa_key)
+          )
+          
+          # Check if request was successful
+          if (httr::status_code(response) != 200) {
+            stop(paste("API request failed with status:", httr::status_code(response)))
+          }
+          
+          # Parse JSON response
+          content <- jsonlite::fromJSON(httr::content(response, as = "text"), flatten = TRUE)
+          
+          # Extract results
+          if ("results" %in% names(content) && length(content$results) > 0) {
+            year_data <- content$results
             cat("    Retrieved", nrow(year_data), "records\n")
           } else {
             cat("    No data found for", yr, "\n")
