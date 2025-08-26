@@ -2038,7 +2038,7 @@ ylab_fun <- function(prm, loc, addmean = TRUE){
 #' @param max_retries Integer indicating the maximum number of retries for API requests
 #' @param noaa_key Character NOAA API key
 #' 
-#' @return daily rainfall in tenths of mm for the station
+#' @return daily rainfall in inches for the station
 getstatrain_fun <- function(station_id, start_date, end_date, max_retries = 5, noaa_key) {
   
   tryCatch({
@@ -2165,7 +2165,7 @@ getallrain_fun <- function(stations, start_date, end_date, max_retries = 5, noaa
   out <- raindat |>
     dplyr::mutate(
       date = floor_date(as.Date(date), 'month'),
-      precip_inches = value / 254, # convert to inches
+      precip_inches = value,
       station = gsub('^GHCND:', '', station),
       name = factor(station, levels = names(stations), labels = stations)
     ) |> 
