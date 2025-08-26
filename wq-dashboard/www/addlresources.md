@@ -7,8 +7,7 @@
 
 <b>MONITORING</b>
 
-CBA Annual Reports<br>
-<b>Forthcoming!</b>
+CBA Annual Reports: <b>Forthcoming!</b>
 
 Florida Healthy Beaches Bacteria Sampling: <a href='https://www.floridahealth.gov/environmental-health/beach-water-quality/' target='_blank'>link</a>
 
