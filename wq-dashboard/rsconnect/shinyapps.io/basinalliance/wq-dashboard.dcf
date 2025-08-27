@@ -1,0 +1,10 @@
+name: wq-dashboard
+title:
+username: basinalliance
+account: basinalliance
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 15283383
+bundleId: 10827705
+url: https://basinalliance.shinyapps.io/wq-dashboard/
+version: 1
