@@ -886,20 +886,20 @@ server <- function(input, output, session) {
     
   })
   
-  output$daterange3out <- renderUI({
+  # output$daterange3out <- renderUI({
     
-    # inputs
-    parameter3 <- input$parameter3
+  #   # inputs
+  #   parameter3 <- input$parameter3
 
-    dtchc <- cntdat |> 
-      dplyr::select(timestamp, contains(parameter3)) |> 
-      dplyr::pull(timestamp) |> 
-      sort()
+  #   dtchc <- cntdat |> 
+  #     dplyr::select(timestamp, contains(parameter3)) |> 
+  #     dplyr::pull(timestamp) |> 
+  #     sort()
     
-    sliderTextInput("daterange3", "Select Date Range:",
-                    choices = dtchc, selected = range(dtchc))
+  #   sliderTextInput("daterange3", "Select Date Range:",
+  #                   choices = dtchc, selected = range(dtchc))
     
-  })
+  # })
   
   output$daterange4out <- renderUI({
 
@@ -929,10 +929,10 @@ server <- function(input, output, session) {
   parmcompmap2_proxy <- leaflet::leafletProxy("parmcompmap2")
   output$parmcompplo <- renderUI(parmcompplo())
 
-  output$bycntmap <- leaflet::renderLeaflet(bsmap(stas))
-  bycntmap_proxy <- leaflet::leafletProxy("bycntmap")
-  output$bycntplo <- renderUI(bycntplo())
-  output$bycntgauge <- highcharter::renderHighchart(bycntgauge())
+  # output$bycntmap <- leaflet::renderLeaflet(bsmap(stas))
+  # bycntmap_proxy <- leaflet::leafletProxy("bycntmap")
+  # output$bycntplo <- renderUI(bycntplo())
+  # output$bycntgauge <- highcharter::renderHighchart(bycntgauge())
   
   # download table
   output$dltabout <- reactable::renderReactable(dltab())
