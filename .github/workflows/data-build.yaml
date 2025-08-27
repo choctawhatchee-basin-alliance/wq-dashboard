@@ -89,7 +89,7 @@ jobs:
         deployApp(
           appDir = 'wq-dashboard',
           appName = 'wq-dashboard',
-          account = 'beckmw',
+          account = 'basinalliance',
           forceUpdate = TRUE
         )
         "   
