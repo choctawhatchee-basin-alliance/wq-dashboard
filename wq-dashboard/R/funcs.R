@@ -323,7 +323,10 @@ byareaplo_fun <- function(shape_click, marker_click, alldat, stas, nncdat, locat
   
   # Create chart
   hc <- highcharter::highchart() |>
-    highcharter::hc_chart(type = "line") |>
+    highcharter::hc_chart(
+      type = "line",
+      zoomType = 'xy'
+    ) |>
     highcharter::hc_add_theme(
       highcharter::hc_theme(chart = list(backgroundColor = 'white'))
     ) |> 
@@ -1211,7 +1214,10 @@ parmcompplohc_fun <- function(toplo, toplosupp, nncchk, showtrnd2, date_range_ms
   
   # Create first chart
   hc <- highcharter::highchart() |>
-    highcharter::hc_chart(type = "line") |>
+    highcharter::hc_chart(
+      type = "line",
+      zoomType = 'xy'
+    ) |>
     highcharter::hc_add_theme(
       highcharter::hc_theme(chart = list(backgroundColor = 'white'))
     ) |> 
