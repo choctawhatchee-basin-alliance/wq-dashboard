@@ -40,6 +40,11 @@ if (service_account_key != "") {
 
 # all files https://drive.google.com/drive/u/1/folders/1x51X6p60KOKpC3UEStIkuAWRhOH-8FHS
 
+# WBIDs for downstream matching
+allwbid <- st_read('https://ca.dep.state.fl.us/arcgis/rest/services/OpenData/WBIDS/MapServer/0/query?outFields=*&where=1%3D1&f=geojson') |> 
+  st_make_valid() |> 
+  select(WBID, WATERBODY_NAME)
+
 # get rain data ----------------------------------------------------------
 
 stations <- c(
@@ -56,7 +61,7 @@ raindat <- getallrain_fun(stations, start_date, end_date, noaa_key = noaa_key)
 
 save(raindat, file = here::here('wq-dashboard/data/raindat.RData'))
 
-# get rain station location ----------------------------------------------
+# get rain station locations and WBIDs -----------------------------------
 
 stations <- c(
     'USC00086240' = 'Niceville',
@@ -72,6 +77,7 @@ stations <- c(
 #   select(station = id, latitude, longitude) |> 
 #   unique() 
 
+# rain stations
 rainstas <- tibble(
     station = c("USC00013251", "USC00086240", "USW00013884"),
     latitude = c(31.0383, 30.5317, 30.7772), 
@@ -80,6 +86,16 @@ rainstas <- tibble(
   left_join(stations, by = 'station') |> 
   st_as_sf(coords = c('longitude', 'latitude'), crs = 4326)
 
+# rain WBIDs
+rainwbid <- allwbid[rainstas,] |> 
+  mutate(
+    WATERBODY_NAME = capwords(tolower(WATERBODY_NAME))
+  )
+
+# add WBID to rainstas
+rainstas <- st_join(rainstas, rainwbid, join = st_intersects, left = TRUE)
+
+save(rainwbid, file = 'wq-dashboard/data/rainwbid.RData')
 save(rainstas, file = here::here('wq-dashboard/data/rainstas.RData'))
 
 # combine cba (physical) and lakewatch (discrete) ---------------------------------------------
@@ -267,9 +283,6 @@ stas <- rawdat |>
   select(-`GPS abbr.`) |> 
   st_as_sf(coords = c('Longitude', 'Latitude'), crs = 4326)
 
-allwbid <- st_read('https://ca.dep.state.fl.us/arcgis/rest/services/OpenData/WBIDS/MapServer/0/query?outFields=*&where=1%3D1&f=geojson') |> 
-  st_make_valid() |> 
-  select(WBID, WATERBODY_NAME)
 cbawbid <- allwbid[stas,] |> 
   mutate(
     WATERBODY_NAME = capwords(tolower(WATERBODY_NAME)),

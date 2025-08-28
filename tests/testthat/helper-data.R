@@ -11,6 +11,7 @@ load(file = here('wq-dashboard/data/cbawbid.RData'))
 load(file = here('wq-dashboard/data/nncdat.RData'))
 load(file = here('wq-dashboard/data/raindat.RData'))
 load(file = here('wq-dashboard/data/rainstas.RData'))
+load(file = here('wq-dashboard/data/rainwbid.RData'))
 
 dtrng <- c(as.Date('1992-11-08'), Sys.Date())
 stasbbox <- c(xmin = -86.78747, ymin = 30.2815, xmax = -85.68101, ymax = 31.10925) |> 
@@ -51,3 +52,4 @@ wbid <- c("959H", "959E", "786A", "959I", "1027A", "959A", "906D", "917",
           "49B", "679", "570", "49", "49F", "881A", "742", "957", "944", 
           "937", "495A", "1040A", "959D", "1037", "959G", "1009A", "959J", 
           "959", "959C", "1055A", "568A", "959B", "568", "1040D")
+rnwbid <- c("644", "160B")
