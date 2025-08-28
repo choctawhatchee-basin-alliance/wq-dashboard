@@ -61,6 +61,7 @@ jobs:
           rsconnect
           shinyWidgets
           sf
+          testthat
           tidyverse
 
     - name: Data processing
@@ -105,17 +106,10 @@ jobs:
         else
           echo "No changes to commit"
         fi
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUBPAT }}
-        
-    - name: Upload artifacts
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: processed-data
-        path: |
-          wq-dashboard/data/*.RData
-        
+
+    - name: Run tests
+        run: Rscript -e "library(testthat); testthat::test_dir('tests/testthat', reporter = c('progress', 'fail'))"        
+
     - name: Cleanup
       if: always()
       run: |
