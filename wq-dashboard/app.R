@@ -509,7 +509,7 @@ server <- function(input, output, session) {
   # parameters to select
   dtprmsel <- reactive({
 
-    parmcompprmsel_fun(input$daterange2, input$summarize2)
+    parmcompprmsel_fun(input$daterange2)
 
   })
 
@@ -519,7 +519,7 @@ server <- function(input, output, session) {
     req(input$parameter2a)
     req(input$parameter2b)
 
-    dtprmsel <- parmcompprmsel_fun(input$daterange2, input$summarize2)
+    dtprmsel <- parmcompprmsel_fun(input$daterange2)
 
     # Get current selection
     curparameter2a <- input$parameter2a
@@ -696,13 +696,12 @@ server <- function(input, output, session) {
   parmcompplo <- reactive({
 
     req(any(!is.null(map_sel2a()), !is.null(map_sel2b())))
-    req(parmcompdat())
     req(input$parameter2a)
     req(input$parameter2b)
     sela <- if(!is.null(map_sel2a())) map_sel2a()$data else NULL
     selb <- if(!is.null(map_sel2b())) map_sel2b()$data else NULL
 
-    out <- parmcompplo_fun(sela, selb, parmcompdat(), nncdat, input$summarize3, input$showtrnd2, input$parameter2a, input$parameter2b, input$daterange2)
+    out <- parmcompplo_fun(sela, selb, nncdat, input$summarize3, input$showtrnd2, input$parameter2a, input$parameter2b, input$daterange2)
 
     return(out)
 

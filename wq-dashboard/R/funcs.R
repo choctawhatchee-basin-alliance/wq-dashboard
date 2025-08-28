@@ -726,6 +726,40 @@ parmcompdat_fun <- function(alldat, raindat, stas, rainstas, summarize2, paramet
       sf::st_as_sf() |> 
       dplyr::filter(!is.na(val))
     
+    if('rain' %in% c(prm2a, prm2b)){
+
+      toadd <- raindat |> 
+        dplyr::filter(
+          date >= as.Date(daterange2[1]) & 
+          date <= as.Date(daterange2[2])
+        ) |> 
+        dplyr::mutate(
+          parameter = 'rain'
+        ) |> 
+        dplyr::inner_join(rainstas, dat, by = c("name", "station")) |> 
+        dplyr::select(-geometry) |> 
+        tidyr::unite('stas', name, station) |>
+        dplyr::summarise(
+          val = mean(precip_inches, na.rm = TRUE),
+          stas = length(unique(stas)),
+          .by = c(WBID, WATERBODY_NAME, parameter)
+        ) |> 
+        dplyr::mutate(
+          stas = dplyr::case_when(
+            stas == 1 ~ paste0(stas, " station"),
+            stas > 1 ~ paste0(stas, " stations"),
+            TRUE ~ "no stations"
+          )
+        ) |> 
+        dplyr::inner_join(rainwbid, by = c('WBID', 'WATERBODY_NAME')) |> 
+        sf::st_as_sf() |> 
+        dplyr::filter(!is.na(val))
+          
+      out <- out |> 
+        dplyr::bind_rows(toadd)
+
+    }
+
   }
   
   if (summarize2 == "Station") {
@@ -826,7 +860,8 @@ parmcompmap_fun <- function(mapin, parmcompdat, parameter){
     
   }
   
-  if('WBID' %in% names(tomap)){
+  # WBIDs
+  if(!'POINT' %in% st_geometry_type(tomap)){
 
     out <- out |> 
       leaflet::clearShapes() |> 
@@ -853,7 +888,8 @@ parmcompmap_fun <- function(mapin, parmcompdat, parameter){
 
   }
 
-  if(!'WBID' %in% names(tomap)){
+  # stations
+  if('POINT' %in% st_geometry_type(tomap)){
 
     out <- out |> 
       leaflet::clearShapes() |> 
@@ -901,7 +937,7 @@ parmcompmap_fun <- function(mapin, parmcompdat, parameter){
 #' @param parameter2a Character string indicating the first parameter to filter by
 #' @param parameter2b Character string indicating the second parameter to filter by
 #' @param daterange2 Date range to filter the data
-parmcompplo_fun <- function(sela, selb, parmcompdat, nncdat, summarize3, showtrnd2, parameter2a,
+parmcompplo_fun <- function(sela, selb, nncdat, summarize3, showtrnd2, parameter2a,
                              parameter2b, daterange2){
 
   waterbodya <- gsub("(^.*)\\_.*$", "\\1", sela$id)
@@ -915,6 +951,9 @@ parmcompplo_fun <- function(sela, selb, parmcompdat, nncdat, summarize3, showtrn
 
   rainstations <- unique(raindat$name)
 
+  ttla <- NULL
+  ttlb <- NULL
+  
   cond_a <- length(waterbodya) > 0 && length(stationa) > 0
   cond_b <- length(waterbodyb) > 0 && length(stationb) > 0
 
@@ -929,28 +968,73 @@ parmcompplo_fun <- function(sela, selb, parmcompdat, nncdat, summarize3, showtrn
   
   # filter rainfall data for top plot if selected
   toploraina <- NULL
-  if(cond_a && waterbodya %in% rainstations)
+  if(cond_a && (waterbodya %in% rainstations | waterbodya %in% rainstas$WBID)){
+
     toploraina <- raindat |> 
-      dplyr::filter(name %in% waterbodya) |> 
+      dplyr::left_join(sf::st_set_geometry(rainstas, NULL), by = c('station', 'name')) |> 
+      dplyr::filter(name %in% waterbodya | WBID %in% waterbodya) |> 
       dplyr::mutate(
         parameter = 'rain', 
         location = 'surf'
-      ) |> 
-      dplyr::select(waterbody = name, station, date, parameter, location, avev = precip_inches)
-  
+      )
+    
+    ttla <- paste0(unique(toploraina$WATERBODY_NAME), ' (', unique(toploraina$WBID), ')')
+    
+    if(waterbodya %in% rainstas$WBID)
+      toploraina <- toploraina |> 
+        dplyr::rename(waterbody = WBID) |> 
+        dplyr::summarize(
+          avev = mean(precip_inches, na.rm = TRUE),
+          .by = c(waterbody, date, parameter, location)
+        ) |> 
+        dplyr::mutate(
+          station = !!waterbodya
+        )
+    else 
+      toploraina <- toploraina |> 
+        dplyr::rename(
+          waterbody = name, 
+          avev = precip_inches
+        ) |> 
+        dplyr::select(-WBID, -WATERBODY_NAME)
+    
+  }
+
   # filter rainfall data for bottom plot if selected
   toplorainb <- NULL
-  if(cond_b && waterbodyb %in% rainstations)
+  if(cond_b && (waterbodyb %in% rainstations | waterbodyb %in% rainstas$WBID)){
+
     toplorainb <- raindat |> 
-      dplyr::filter(name %in% waterbodyb) |> 
+      dplyr::left_join(sf::st_set_geometry(rainstas, NULL), by = c('station', 'name')) |>
+      dplyr::filter(name %in% waterbodyb | WBID %in% waterbodyb) |> 
       dplyr::mutate(
         parameter = 'rain', 
         location = 'surf'
-      ) |> 
-      dplyr::select(waterbody = name, station, date, parameter, location, avev = precip_inches)
+      )
+    
+    ttlb <- paste0(unique(toplorainb$WATERBODY_NAME), ' (', unique(toplorainb$WBID), ')')
+    
+    if(waterbodyb %in% rainstas$WBID)
+      toplorainb <- toplorainb |> 
+        dplyr::rename(waterbody = WBID) |> 
+        dplyr::summarize(
+          avev = mean(precip_inches, na.rm = TRUE),
+          .by = c(waterbody, date, parameter, location)
+        ) |> 
+        dplyr::mutate(
+          station = !!waterbodyb
+        )
+    else 
+      toplorainb <- toplorainb |> 
+        dplyr::rename(
+          avev = precip_inches,
+          waterbody = name
+        ) |> 
+        dplyr::select(-WBID, -WATERBODY_NAME)
+    
+  }
 
   toploa <- NULL
-  ttla <- NULL
   nncchka <- nncdat
   if(cond_a){
 
@@ -983,7 +1067,7 @@ parmcompplo_fun <- function(sela, selb, parmcompdat, nncdat, summarize3, showtrn
 
     }
 
-    if(!waterbodya %in% stas$WBID){
+    if(!waterbodya %in% stas$WBID & !waterbodya %in% rainstas$WBID){
 
       toploa <- toplo |>
         dplyr::filter(
@@ -1004,7 +1088,6 @@ parmcompplo_fun <- function(sela, selb, parmcompdat, nncdat, summarize3, showtrn
   }
 
   toplob <- NULL
-  ttlb <- NULL
   nncchkb <- nncdat
   if(cond_b){
 
@@ -1038,7 +1121,7 @@ parmcompplo_fun <- function(sela, selb, parmcompdat, nncdat, summarize3, showtrn
 
     }
 
-    if(!waterbodyb %in% stas$WBID){
+    if(!waterbodyb %in% stas$WBID & !waterbodyb %in% rainstas$WBID){
 
       toplob <- toplo |>
         dplyr::filter(
@@ -1060,7 +1143,7 @@ parmcompplo_fun <- function(sela, selb, parmcompdat, nncdat, summarize3, showtrn
 
   toplo <- dplyr::bind_rows(toploa, toplob) |> 
     dplyr::bind_rows(toploraina, toplorainb)
-  
+
   if(summarize3 == 'none'){
     ylab1 <- ylab_fun(prm2a, loca, addmean = F)
     ylab2 <- ylab_fun(prm2b, locb, addmean = F)
@@ -1838,7 +1921,16 @@ addselparmcompmap_fun <- function(mapsel2a = NULL, mapsel2b = NULL){
           options = leaflet::pathOptions(clickable = FALSE)
         )
       
-    if(!mapsel2a$data$id %in% cbawbid$WBID)
+    if(mapsel2a$data$id %in% rainwbid$WBID)
+      leaflet::leafletProxy("parmcompmap1") |>
+        leaflet::clearGroup("highlight") |>
+        leaflet::addPolygons(
+          data = rainwbid |> dplyr::filter(WBID == mapsel2a$data$id), opacity = 1,
+          group = "highlight", color = "black", weight = 6, fillOpacity = 0,
+          options = leaflet::pathOptions(clickable = FALSE)
+        )
+      
+    if(!mapsel2a$data$id %in% cbawbid$WBID & !mapsel2a$data$id %in% rainwbid$WBID)
       leaflet::leafletProxy("parmcompmap1") |>
         leaflet::clearGroup("highlight") |>
         leaflet::addCircleMarkers(
@@ -1861,7 +1953,16 @@ addselparmcompmap_fun <- function(mapsel2a = NULL, mapsel2b = NULL){
           options = leaflet::pathOptions(clickable = FALSE)
         )
     
-    if(!mapsel2b$data$id %in% cbawbid$WBID)
+    if(mapsel2b$data$id %in% rainwbid$WBID)
+      leaflet::leafletProxy("parmcompmap2") |>
+        leaflet::clearGroup("highlight") |>
+        leaflet::addPolygons(
+          data = rainwbid |> dplyr::filter(WBID == mapsel2b$data$id), opacity = 1,
+          group = "highlight", color = "black", weight = 6, fillOpacity = 0,
+          options = leaflet::pathOptions(clickable = FALSE)
+        )
+    
+    if(!mapsel2b$data$id %in% cbawbid$WBID & !mapsel2b$data$id %in% rainwbid$WBID)
       leaflet::leafletProxy("parmcompmap2") |>
         leaflet::clearGroup("highlight") |>
         leaflet::addCircleMarkers(
@@ -1875,31 +1976,30 @@ addselparmcompmap_fun <- function(mapsel2a = NULL, mapsel2b = NULL){
   
 }
 
-#' Add marker highlight to continuous map selection
-#'
-#' @param mapsel3 Data frame containing the selected area or station's ID
-addselcntmap_fun <- function(mapsel3){
+# #' Add marker highlight to continuous map selection
+# #'
+# #' @param mapsel3 Data frame containing the selected area or station's ID
+# addselcntmap_fun <- function(mapsel3){
   
-  if (!is.null(mapsel3)) {
+#   if (!is.null(mapsel3)) {
     
-    leaflet::leafletProxy("bycntmap") |>
-      leaflet::clearGroup("highlight") |>
-      leaflet::addCircleMarkers(
-        lng = mapsel3$lng, lat = mapsel3$lat,
-        group = "highlight", radius = 8, color = "black",
-        fillColor = '#007BC2', fillOpacity = 0, opacity = 1, weight = 6,
-        options = leaflet::pathOptions(clickable = FALSE)
-      )
+#     leaflet::leafletProxy("bycntmap") |>
+#       leaflet::clearGroup("highlight") |>
+#       leaflet::addCircleMarkers(
+#         lng = mapsel3$lng, lat = mapsel3$lat,
+#         group = "highlight", radius = 8, color = "black",
+#         fillColor = '#007BC2', fillOpacity = 0, opacity = 1, weight = 6,
+#         options = leaflet::pathOptions(clickable = FALSE)
+#       )
     
-  }
+#   }
   
-}
+# }
 
 #' Function to get the list of parameters for given dates
 #' 
 #' @param daterange2 Date range input
-#' @param summarize2 Summarize input
-parmcompprmsel_fun <- function(daterange2, summarize2){
+parmcompprmsel_fun <- function(daterange2){
   
   # parameters
   out <- alldat |> 
@@ -1928,16 +2028,12 @@ parmcompprmsel_fun <- function(daterange2, summarize2){
   
   out <- setNames(out$parameter, out$labelnouni)
 
-  # add rain if station selected
-  if(summarize2 == 'Station'){
+  # add rain
+  rainout <- raindat |> 
+    dplyr::filter(date >= daterange2[1] & date <= daterange2[2])
 
-    rainout <- raindat |> 
-      dplyr::filter(date >= daterange2[1] & date <= daterange2[2])
-
-    if(nrow(rainout) > 0)
-      out <- c('Rainfall' = 'rain', out)
-    
-  }
+  if(nrow(rainout) > 0)
+    out <- c('Rainfall' = 'rain', out)
 
   return(out)
   
