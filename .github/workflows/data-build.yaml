@@ -108,7 +108,7 @@ jobs:
         fi
 
     - name: Run tests
-        run: Rscript -e "library(testthat); testthat::test_dir('tests/testthat', reporter = c('progress', 'fail'))"        
+      run: Rscript -e "library(testthat); testthat::test_dir('tests/testthat', reporter = c('progress', 'fail'))"        
 
     - name: Cleanup
       if: always()
