@@ -105,6 +105,8 @@ jobs:
         else
           echo "No changes to commit"
         fi
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_PAT }}
         
     - name: Upload artifacts
       if: always()
