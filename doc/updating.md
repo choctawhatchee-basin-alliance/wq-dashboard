@@ -10,9 +10,9 @@ To run the update worklfow, complete the following steps.
 
 1. Make any changes to the source data on Google Drive.  Note that the data structure and file names cannot change when updating data, otherwise the update process will likely fail. 
 1. Navigate to [Actions](https://github.com/choctawhatchee-basin-alliance/wq-dashboard/actions) -> [data-build](https://github.com/choctawhatchee-basin-alliance/wq-dashboard/actions/workflows/data-build.yaml) on the main repository page.
-1. On the right side of the page, you will see a button that says "Run workflow".  Clicking the button will open a dropdown menu with a green button for "Run workflow".  Click this green button to initiate the update. 
+1. On the right side of the page, you will see a button that says "Run workflow".  Clicking the button will open a dropdown menu with a green button for "Run workflow".  Click this green button to initiate the update.<br> 
 ![](update.png)
-1. You will see a new "data-build" process initiate after a few seconds on the workflow runs menu.  You can click on the process to view the update progress. The update should only take about 10 or 15 minutes, but sometimes can take longer if the system or R dependencies are updating.
+1. You will see a new "data-build" process initiate after a few seconds on the workflow runs menu.  You can click on the process to view the update progress. The update should only take about 10 or 15 minutes, but sometimes can take longer if the system or R dependencies are updating.<br>
 ![](buildsteps.png)
 1. If the update is successful, you will see a green check next to the process when it is complete.  You will see a red x if it fails.  You can examine the build details to see where the process failed.  Sometimes rerunning the workflow will fix the issue, but failures may also occur if the data import steps require attention.  In the latter case, please email [mbeck@tbep.org](mailto:mbeck@tbep.org) for troubleshooting. 
 
@@ -25,9 +25,11 @@ All documentation on the dashboard is included in the folder [wq-dashboard/www](
 The files are written in markdown, which includes a mix of markdown syntax, HTML, and plain text.  Do not modify any of the markdown syntax or HTML unless you want to change the appearance of the text. 
 
 To modify a file, click on the file in the menu to view its content.  You'll see the file rendered as it would on the dashboard.  Click the pencil icon on the top right to edit. The file will then open in its "raw" format showing the text, markdown syntax, and HTML.  
+
 ![](edit.png)
 
 Make any necessary changes and then select "Commit changes..." from the top right. A small window will pop up prompting you for a commit message.  Provide a brief description of what you changed, e.g., "update text in how to file".  Click "Commit changes" on the bottom when you are done. This will create a log of the changes in the version control history for the repository.
+
 ![](commit.png)
 
 After updating any of the files, you will need to deploy the changes to the dashboard on shinyapps.io.  Simply follow the steps above to run the update and deployment workflow. 
