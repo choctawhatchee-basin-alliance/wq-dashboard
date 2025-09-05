@@ -20,7 +20,7 @@
 * <a href="#" data-nav="byarea" target="_self"><strong>By Area</strong></a>: data for a specific region (WBID) or station are displayed once selected on the map
 * <a href="#" data-nav="parmcomp" target="_self"><strong>Parameter Comparison</strong></a>:  visually compare the results of multiple parameters at once
 * <a href="#" data-nav="download" target="_self"><strong>Download</strong></a>: download monthly water quality data by filtering for waterbody, parameter, and date of interest
-* <a href="#" data-nav="oyster" target="_self"><strong>Oyster Habitat Suitability</strong></a>: explore the suitability of different regions of Choctawhatchee Bay for the Eastern Oyster, <i>Crassostrea virginica</i> based on water quality, substrate, and other factors and analysis
+* <a href="#" data-nav="oyster" target="_self"><strong>Oyster Habitat Suitability</strong></a>: use the map layers to explore the suitability of different regions of Choctawhatchee Bay for the Eastern Oyster, <i>Crassostrea virginica</i>, based on water quality, substrate, other factors, and modeling
 * <a href="#" data-nav="addlresources" target="_self"><strong>Additional Resources</strong></a>: links to other local environmental programs
 
 <p>The first three tabs contain a "How To Use"" pane with instructions for how to interact with the data within those tabs.</p>

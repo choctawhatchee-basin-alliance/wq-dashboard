@@ -152,7 +152,7 @@ ui <- page_navbar(
                               "Summarize By:",
                               icon("info-circle")
                             ),
-                            HTML('click an area on the map to view summary info on the right, region (WBID) does not apply for rainfall')
+                            HTML('click an area on the map to view summary info on the right, region (WBID) does not apply for stations in Alabama')
                           ),
                           choices = c("Region (WBID)" = "WBID", "Station" = "Station"),
                           inline = T,

@@ -21,7 +21,7 @@
 <img src='byareaplotex1.png' style='width: 40%; display: block; margin: 0 auto;'>   
 <br>
 
-<p>A trend line showing the linear fit to the data can also be included by selecting an option from the top left menu.  Selecting "complete" will fit a line to the complete period of record. Selecting "ten years" will fit a line to the most recent ten year period. The trend line is not shown if ten years of data are not available for a plot.</p>
+<p>A trend line showing the linear fit to the data can also be included by selecting an option from the top right menu.  Selecting "complete" will fit a line to the complete period of record. Selecting "ten years" will fit a line to the most recent ten year period. The trend line is not shown if ten years of data are not available for a plot.</p>
 
 <img src='byareatrnd.png' style='width: 20%; display: block; margin: 0 auto;'>   
 <br>
