@@ -23,7 +23,7 @@
 * <a href="#" data-nav="oyster" target="_self"><strong>Oyster Habitat Suitability</strong></a>: use the map layers to explore the suitability of different regions of Choctawhatchee Bay for the Eastern Oyster, <i>Crassostrea virginica</i>, based on water quality, substrate, other factors, and modeling
 * <a href="#" data-nav="addlresources" target="_self"><strong>Additional Resources</strong></a>: links to other local environmental programs
 
-<p>The first three tabs contain a "How To Use"" pane with instructions for how to interact with the data within those tabs.</p>
+<p>The first three tabs contain a "How To Use" pane with instructions for how to interact with the data within those tabs.</p>
 
 <h4 style = 'text-align: center;'>Dashboard Info</h4>
 
