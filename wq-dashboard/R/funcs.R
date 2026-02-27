@@ -852,12 +852,14 @@ parmcompmap_fun <- function(mapin, parmcompdat, parameter){
 
   # create map
   if(nrow(tomap) == 0){
-    
+
     out <- out %>%
-      leaflet::clearShapes() |> 
-      leaflet::clearMarkers() |> 
+      leaflet::clearShapes() |>
+      leaflet::clearMarkers() |>
       leaflet::clearControls()
-    
+
+    return(out)
+
   }
   
   # WBIDs
