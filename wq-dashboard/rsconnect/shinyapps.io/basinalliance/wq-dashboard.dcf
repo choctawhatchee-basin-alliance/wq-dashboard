@@ -5,6 +5,6 @@ account: basinalliance
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 15283383
-bundleId: 11636275
+bundleId: 11636339
 url: https://basinalliance.shinyapps.io/wq-dashboard/
 version: 1
