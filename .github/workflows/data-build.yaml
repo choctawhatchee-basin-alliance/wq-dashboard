@@ -55,6 +55,7 @@ jobs:
           janitor
           jsonlite          
           lubridate
+          magrittr
           markdown
           readxl
           reactable

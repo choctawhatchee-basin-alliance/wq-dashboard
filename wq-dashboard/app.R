@@ -649,7 +649,7 @@ server <- function(input, output, session) {
       sync_in_progress(TRUE)
       last_sync_time(current_time)
 
-      leaflet::leafletProxy("parmcompmap2") %>%
+      leaflet::leafletProxy("parmcompmap2") |>
         leaflet::setView(
           lng = input$parmcompmap1_center$lng,
           lat = input$parmcompmap1_center$lat,
@@ -674,7 +674,7 @@ server <- function(input, output, session) {
       sync_in_progress(TRUE)
       last_sync_time(current_time)
 
-      leaflet::leafletProxy("parmcompmap1") %>%
+      leaflet::leafletProxy("parmcompmap1") |>
         leaflet::setView(
           lng = input$parmcompmap2_center$lng,
           lat = input$parmcompmap2_center$lat,

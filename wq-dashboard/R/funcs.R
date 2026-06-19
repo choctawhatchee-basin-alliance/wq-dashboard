@@ -75,14 +75,14 @@ bsmap <- function(bnds){
   
   esri <- rev(grep("^Esri", leaflet::providers, value = TRUE))
   
-  m <- leaflet::leaflet() %>%
+  m <- leaflet::leaflet() |>
     leaflet::fitBounds(bnds[['xmin']], bnds[['ymin']], bnds[['xmax']], bnds[['ymax']])
-  
+
   for (provider in esri) {
-    m <- m %>% leaflet::addProviderTiles(provider, group = provider)
+    m <- m |> leaflet::addProviderTiles(provider, group = provider)
   }
-  
-  out <- m %>%
+
+  out <- m |>
     leaflet::addLayersControl(baseGroups = names(esri),
                               options = leaflet::layersControlOptions(collapsed = T),
                               position = 'topleft')
@@ -166,9 +166,9 @@ byareamap_fun <- function(mapin, byareadat, summarize1, parameter1, location1){
   
   # create map
   if(inherits(byareadat, 'try-error'))
-    out <- mapin %>%
-      leaflet::clearShapes() |> 
-      leaflet::clearMarkers() |> 
+    out <- mapin |>
+      leaflet::clearShapes() |>
+      leaflet::clearMarkers() |>
       leaflet::clearControls()
   
   if(!inherits(byareadat, 'try-error')) {
@@ -181,11 +181,11 @@ byareamap_fun <- function(mapin, byareadat, summarize1, parameter1, location1){
     
     lab <- ylab_fun(parameter1, location1)
     
-    out <- mapin %>%
-      leaflet::clearShapes() |> 
-      leaflet::clearMarkers() |> 
+    out <- mapin |>
+      leaflet::clearShapes() |>
+      leaflet::clearMarkers() |>
       leaflet::clearControls()
-    
+
     if(summarize1 == 'WBID')
       out <- out |> 
       leaflet::addPolygons(
@@ -853,7 +853,7 @@ parmcompmap_fun <- function(mapin, parmcompdat, parameter){
   # create map
   if(nrow(tomap) == 0){
 
-    out <- out %>%
+    out <- out |>
       leaflet::clearShapes() |>
       leaflet::clearMarkers() |>
       leaflet::clearControls()
