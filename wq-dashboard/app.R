@@ -371,7 +371,7 @@ server <- function(input, output, session) {
       location1 = input$location1,
       daterange1 = input$daterange1
     )
-  }) %>% debounce(500)  # 500ms delay
+  }) |> debounce(500)
 
   # data to map and gauge - using debounced inputs
   byareadat <- reactive({
